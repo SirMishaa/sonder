@@ -45,6 +45,12 @@ return RectorConfig::configure()
         AddOverrideAttributeToOverriddenMethodsRector::class,
         MakeInheritedMethodVisibilitySameAsParentRector::class,
         AddOverrideAttributeToOverriddenPropertiesRector::class,
+
+        // This file runs before Composer's autoloader is required on its last
+        // line, so it cannot reference framework classes. Rector's Laravel
+        // rules rewrite `$_ENV[...]` into `Illuminate\Support\Env::get()`
+        // here, which is a fatal error at worker boot.
+        __DIR__.'/public/frankenphp-worker.php',
     ])
     ->withPreparedSets(
         deadCode: true,

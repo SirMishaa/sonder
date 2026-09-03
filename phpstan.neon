@@ -13,6 +13,13 @@ parameters:
         - public
         - routes
 
+    # ytmusicapi/ytmusicapi builds YTMusic from traits living in files whose
+    # names do not match the trait names (src/mixins/browse.php holds `Browse`),
+    # so they are `include`d at runtime rather than autoloaded. Static analysis
+    # cannot follow that, and every method on YTMusic reads as undefined
+    # without this.
+    scanDirectories:
+        - vendor/ytmusicapi/ytmusicapi/src
 
     level: max
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserEmailResetNotificationController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\UserEmailVerificationNotificationController;
 use App\Http\Controllers\UserPasswordController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\UserTwoFactorAuthenticationController;
+use App\Http\Controllers\YouTubeMusicConnectionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -17,6 +19,18 @@ Route::get('/', fn () => Inertia::render('Welcome'))->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard');
+
+    // YouTube Music Connection...
+    Route::get('youtube-music', [YouTubeMusicConnectionController::class, 'create'])
+        ->name('youtube-music-connection.create');
+    Route::post('youtube-music', [YouTubeMusicConnectionController::class, 'store'])
+        ->name('youtube-music-connection.store');
+    Route::delete('youtube-music', [YouTubeMusicConnectionController::class, 'destroy'])
+        ->name('youtube-music-connection.destroy');
+
+    // Playlists...
+    Route::get('playlists', [PlaylistController::class, 'index'])->name('playlist.index');
+    Route::get('playlists/{playlistId}', [PlaylistController::class, 'show'])->name('playlist.show');
 });
 
 Route::middleware('auth')->group(function (): void {

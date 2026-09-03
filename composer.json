@@ -10,29 +10,32 @@
     "license": "MIT",
     "require": {
         "php": "^8.5.0",
-        "inertiajs/inertia-laravel": "^v3.3.1",
-        "laravel/fortify": "^1.38.0",
-        "laravel/framework": "^13.25.0",
-        "laravel/octane": "^2.19",
+        "inertiajs/inertia-laravel": "^3.3.2",
+        "laravel/fortify": "^1.39.0",
+        "laravel/framework": "^13.30.1",
+        "laravel/octane": "^2.19.1",
         "laravel/wayfinder": "^0.1.21",
-        "nunomaduro/essentials": "^1.2.0"
+        "nunomaduro/essentials": "^1.2.0",
+        "spatie/laravel-data": "^4.23",
+        "spatie/laravel-typescript-transformer": "^3.3",
+        "ytmusicapi/ytmusicapi": "^1.12"
     },
     "require-dev": {
-        "driftingly/rector-laravel": "^2.5.0",
+        "driftingly/rector-laravel": "^2.6.2",
         "fakerphp/faker": "^1.24.1",
-        "larastan/larastan": "^3.10.0",
-        "laravel/boost": "^2.5.3",
+        "larastan/larastan": "^3.11.0",
+        "laravel/boost": "^2.7.0",
         "laravel/pail": "^1.2.7",
         "laravel/pao": "^1.1.4",
         "laravel/pint": "^1.30.5",
         "laravel/tinker": "^3.0.2",
-        "mockery/mockery": "^1.6.13",
+        "mockery/mockery": "^1.6.15",
         "nunomaduro/collision": "^8.9.5",
-        "pestphp/pest": "^5.1.1",
+        "pestphp/pest": "^5.1.3",
         "pestphp/pest-plugin-browser": "^5.0.1",
         "pestphp/pest-plugin-laravel": "^5.0.1",
         "pestphp/pest-plugin-type-coverage": "^5.0.2",
-        "rector/rector": "^2.6.2",
+        "rector/rector": "^2.6.6",
         "roave/security-advisories": "dev-latest"
     },
     "autoload": {
@@ -53,16 +56,17 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
             "@php artisan migrate --force",
+            "@php artisan typescript:transform",
             "bun install",
             "bun run build"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"bun run dev\" --names=server,queue,logs,vite --kill-others"
+            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#a7f3d0,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"php artisan typescript:transform --watch\" \"bun run dev\" --names=server,queue,logs,types,vite --kill-others"
         ],
         "devWithOctane": [
             "Composer\\Config::disableProcessTimeout",
-            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan octane:start --watch --server=frankenphp --port=8003 --caddyfile=Caddyfile\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"bun run dev\" --names=server,queue,logs,vite --kill-others"
+            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#a7f3d0,#fdba74\" \"php artisan octane:start --watch --server=frankenphp --port=8003 --caddyfile=Caddyfile\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"php artisan typescript:transform --watch\" \"bun run dev\" --names=server,queue,logs,types,vite --kill-others"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
@@ -96,7 +100,7 @@
             "rector --dry-run",
             "bun run test:lint"
         ],
-        "test:unit": "XDEBUG_MODE=\"coverage\" pest --parallel --coverage --exactly=100.0 --tia",
+        "test:unit": "time XDEBUG_MODE=\"coverage\" pest --parallel --coverage --tia",
         "test:types": [
             "phpstan",
             "bun run test:types"
