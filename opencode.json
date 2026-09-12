@@ -5,8 +5,9 @@
             "type": "local",
             "enabled": true,
             "command": [
-                "php",
-                "artisan",
+                "wsl.exe",
+                "/usr/bin/php",
+                "/home/mishaa/dev/sonder/artisan",
                 "boost:mcp"
             ]
         }

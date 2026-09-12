@@ -1,6 +1,7 @@
 includes:
     - vendor/larastan/larastan/extension.neon
     - vendor/nesbot/carbon/extension.neon
+    - vendor/pestphp/pest-plugin-phpstan/extension.neon
     - phar://phpstan.phar/conf/bleedingEdge.neon
 
 parameters:
@@ -12,6 +13,7 @@ parameters:
         - database
         - public
         - routes
+        - tests
 
     # ytmusicapi/ytmusicapi builds YTMusic from traits living in files whose
     # names do not match the trait names (src/mixins/browse.php holds `Browse`),

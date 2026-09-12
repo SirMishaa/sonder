@@ -69,7 +69,7 @@ it('picks the smallest thumbnail wide enough to stay sharp', function () use ($m
         ],
     ]);
 
-    expect($track->thumbnailUrl)->toBe('right.jpg');
+    expect($track->thumbnailUrl)->toBe(route('thumbnail.show', ['hash' => hash('md5', 'right.jpg'), 'url' => 'right.jpg']));
 });
 
 it('falls back to the largest thumbnail when none is wide enough', function () use ($mapper): void {
@@ -80,7 +80,7 @@ it('falls back to the largest thumbnail when none is wide enough', function () u
         ],
     ]);
 
-    expect($track->thumbnailUrl)->toBe('biggest.jpg');
+    expect($track->thumbnailUrl)->toBe(route('thumbnail.show', ['hash' => hash('md5', 'biggest.jpg'), 'url' => 'biggest.jpg']));
 });
 
 it('survives thumbnails that are missing or malformed', function () use ($mapper): void {

@@ -139,7 +139,8 @@ final readonly class PayloadMapper
 
     /**
      * Picks the smallest thumbnail that is still large enough to render
-     * sharply, falling back to the largest available.
+     * sharply, falling back to the largest available. Returns a local URL
+     * that proxies the thumbnail through our server.
      */
     private function thumbnail(object $payload): ?string
     {
@@ -163,13 +164,31 @@ final readonly class PayloadMapper
 
         usort($candidates, fn (object $a, object $b): int => $this->width($a) <=> $this->width($b));
 
+        $originalUrl = null;
+
         foreach ($candidates as $candidate) {
             if ($this->width($candidate) >= self::THUMBNAIL_WIDTH) {
-                return $this->string($candidate, 'url');
+                $originalUrl = $this->string($candidate, 'url');
+                break;
             }
         }
 
-        return $this->string($candidates[count($candidates) - 1], 'url');
+        if ($originalUrl === null) {
+            $originalUrl = $this->string($candidates[count($candidates) - 1], 'url');
+        }
+
+        return $this->localThumbnailUrl($originalUrl);
+    }
+
+    private function localThumbnailUrl(?string $originalUrl): ?string
+    {
+        if ($originalUrl === null) {
+            return null;
+        }
+
+        $hash = hash('md5', $originalUrl);
+
+        return route('thumbnail.show', ['hash' => $hash, 'url' => $originalUrl]);
     }
 
     private function width(object $thumbnail): int

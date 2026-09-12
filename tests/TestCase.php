@@ -6,6 +6,7 @@ namespace Tests;
 
 use App\Services\YouTubeMusic\Client;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Http;
 use Tests\Support\FakeYouTubeMusicClient;
 
 abstract class TestCase extends BaseTestCase
@@ -21,14 +22,21 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
-        $this->app?->instance(Client::class, new FakeYouTubeMusicClient());
+        $this->app->instance(Client::class, new FakeYouTubeMusicClient());
+
+        Http::fake([
+            '*/__inertia_ssr*' => Http::response(''),
+        ]);
     }
 
     protected function fakeYouTubeMusic(): FakeYouTubeMusicClient
     {
-        $client = $this->app?->make(Client::class);
+        /** @var Client $client */
+        $client = $this->app->make(Client::class);
 
-        assert($client instanceof FakeYouTubeMusicClient);
+        if (! $client instanceof FakeYouTubeMusicClient) {
+            throw new \RuntimeException('Expected FakeYouTubeMusicClient, got '.get_class($client));
+        }
 
         return $client;
     }

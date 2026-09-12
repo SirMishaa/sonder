@@ -2,17 +2,20 @@
 
 declare(strict_types=1);
 
+use App\Models\Playlist;
 use App\Models\User;
 use App\Models\YouTubeMusicAccount;
 use Tests\Support\FakeYouTubeMusicClient;
 
 it('lists the playlists of the connected account', function (): void {
     $user = User::factory()->create();
-    YouTubeMusicAccount::factory()->for($user)->create(['account_name' => 'Mishaa']);
+    $account = YouTubeMusicAccount::factory()->for($user)->create(['account_name' => 'Mishaa']);
     $this->fakeYouTubeMusic()->playlists = [
         FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1', title: 'Deep Focus'),
         FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL2', title: 'Gaming'),
     ];
+    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1', title: 'Deep Focus');
+    $this->fakeYouTubeMusic()->tracks['PL2'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL2', title: 'Gaming');
 
     $response = $this->actingAs($user)->get(route('playlist.index'));
 
@@ -22,6 +25,8 @@ it('lists the playlists of the connected account', function (): void {
             ->where('accountName', 'Mishaa')
             ->has('playlists', 2)
             ->where('playlists.0.title', 'Deep Focus'));
+
+    expect(Playlist::query()->count())->toBe(2);
 });
 
 it('sends a user with no connection to the connection page', function (): void {
@@ -41,14 +46,14 @@ it('sends the user back to reconnect when the cookie stopped working', function 
         ->assertSessionHasErrors('cookie');
 });
 
-it('renders the playlist shell before the tracks arrive', function (): void {
-    // The shell comes from the cached summary; the tracks are deferred because
-    // they cost a chain of continuation requests.
+it('renders the playlist with tracks from the database', function (): void {
     $user = User::factory()->create();
-    YouTubeMusicAccount::factory()->for($user)->create();
+    $account = YouTubeMusicAccount::factory()->for($user)->create();
     $fake = $this->fakeYouTubeMusic();
     $fake->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1', title: 'Deep Focus')];
     $fake->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1', title: 'Deep Focus');
+
+    $this->actingAs($user)->get(route('playlist.index'));
 
     $response = $this->actingAs($user)->get(route('playlist.show', 'PL1'));
 
@@ -57,51 +62,42 @@ it('renders the playlist shell before the tracks arrive', function (): void {
             ->component('playlist/Show')
             ->where('playlistId', 'PL1')
             ->where('summary.title', 'Deep Focus')
-            ->missing('playlist')
-            ->loadDeferredProps(fn ($reload) => $reload
-                ->where('playlist.title', 'Deep Focus')
-                ->has('playlist.tracks', 1)
-                ->where('playlist.tracks.0.artists', 'Ludwig Göransson')));
+            ->where('playlist.title', 'Deep Focus')
+            ->has('playlist.tracks', 1)
+            ->where('playlist.tracks.0.artists', 'Ludwig Göransson'));
 });
 
-it('renders a playlist that is absent from the library listing', function (): void {
+it('redirects when playlist is not in the database', function (): void {
     $user = User::factory()->create();
     YouTubeMusicAccount::factory()->for($user)->create();
-    $fake = $this->fakeYouTubeMusic();
-    $fake->tracks['PL_UNLISTED'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL_UNLISTED');
 
     $response = $this->actingAs($user)->get(route('playlist.show', 'PL_UNLISTED'));
 
-    $response->assertOk()
-        ->assertInertia(fn ($page) => $page->where('summary', null));
+    $response->assertRedirectToRoute('playlist.index');
 });
 
-it('passes the known track count down so the cache can key on it', function (): void {
+it('syncs playlists from YouTube Music to the database', function (): void {
     $user = User::factory()->create();
-    YouTubeMusicAccount::factory()->for($user)->create();
+    $account = YouTubeMusicAccount::factory()->for($user)->create();
     $fake = $this->fakeYouTubeMusic();
     $fake->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1', trackCount: 42)];
     $fake->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
 
-    $this->actingAs($user)
-        ->get(route('playlist.show', 'PL1'))
-        ->assertInertia(fn ($page) => $page->loadDeferredProps(fn ($reload) => $reload->has('playlist')));
+    $this->actingAs($user)->get(route('playlist.index'));
 
-    $call = collect($fake->calls)->firstWhere('method', 'playlist');
+    $playlist = Playlist::query()->where('youtube_playlist_id', 'PL1')->firstOrFail();
 
-    expect($call)->not->toBeNull()
-        ->and($call['trackCount'])->toBe(42);
+    expect($playlist->track_count)->toBe(42)
+        ->and($playlist->tracks()->count())->toBe(1);
 });
 
-it('sends the user back to reconnect when a playlist page finds a dead cookie', function (): void {
+it('redirects to playlist index when playlist not found', function (): void {
     $user = User::factory()->create();
     YouTubeMusicAccount::factory()->for($user)->create();
-    $this->fakeYouTubeMusic()->shouldFail = true;
 
     $response = $this->actingAs($user)->get(route('playlist.show', 'PL1'));
 
-    $response->assertRedirectToRoute('youtube-music-connection.create')
-        ->assertSessionHasErrors('cookie');
+    $response->assertRedirectToRoute('playlist.index');
 });
 
 it('sends a user with no connection away from a playlist', function (): void {

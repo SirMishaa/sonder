@@ -1,8 +1,8 @@
 {
     "agents": [
         "claude_code",
-        "codex",
-        "copilot"
+        "copilot",
+        "opencode"
     ],
     "cloud": true,
     "guidelines": true,
@@ -11,6 +11,7 @@
     "sail": false,
     "skills": [
         "infer-conventions",
+        "deploying-to-cloud",
         "fortify-development",
         "laravel-best-practices",
         "testing-best-practices",

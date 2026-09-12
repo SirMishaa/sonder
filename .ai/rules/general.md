@@ -17,3 +17,13 @@ nothing else.
 Keep unrelated changes in separate commits — do not fold pre-existing working
 tree drift (regenerated tooling files, vendor guideline updates) into a feature
 commit.
+
+## PHPStan: Always run on modified PHP files
+After modifying any PHP file, run PHPStan at level 8 on the modified files:
+
+```bash
+vendor/bin/phpstan analyze --level 8 path/to/modified/file.php
+```
+
+Fix all reported issues before considering the work complete. PHPStan catches
+type errors, undefined methods, and logic issues that tests might miss.

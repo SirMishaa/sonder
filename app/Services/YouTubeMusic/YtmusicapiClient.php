@@ -39,6 +39,7 @@ final readonly class YtmusicapiClient implements Client
             if (is_object($payload)) {
                 $playlists[] = $this->mapper->playlistSummary($payload);
             }
+
         }
 
         return $playlists;

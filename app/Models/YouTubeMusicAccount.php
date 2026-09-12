@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property-read string $id
@@ -54,5 +55,13 @@ final class YouTubeMusicAccount extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return HasMany<Playlist, $this>
+     */
+    public function playlists(): HasMany
+    {
+        return $this->hasMany(Playlist::class, 'youtube_music_account_id');
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\SessionController;
+use App\Http\Controllers\ThumbnailController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserEmailResetNotificationController;
 use App\Http\Controllers\UserEmailVerificationController;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', fn () => Inertia::render('Welcome'))->name('home');
+
+Route::get('thumbnails/{hash}', [ThumbnailController::class, 'show'])->name('thumbnail.show');
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard');

@@ -16,7 +16,9 @@ final class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Admin',
             'email' => 'mishaa.pro@proton.me',
-            'two_factor_recovery_codes' => '111111',
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_confirmed_at' => null,
             'email_verified_at' => now(),
             'password' => Hash::make('mishaa.pro@proton.me'),
         ]);

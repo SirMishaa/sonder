@@ -11,6 +11,7 @@
 /storage/*.key
 /storage/pail
 /tests/Browser/Screenshots
+/tests/.pest
 /vendor
 .DS_Store
 .env

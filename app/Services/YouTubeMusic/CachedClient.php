@@ -23,13 +23,13 @@ use Illuminate\Contracts\Cache\Repository;
  */
 final readonly class CachedClient implements Client
 {
-    private const int ACCOUNT_TTL = 3600;
+    private const int ACCOUNT_TTL = 86400; // 24 hours
 
-    private const int PLAYLISTS_TTL = 300;
+    private const int PLAYLISTS_TTL = 3600; // 1 hour (instead of 5 minutes)
 
-    private const int PLAYLIST_TTL = 86400;
+    private const int PLAYLIST_TTL = 604800; // 7 days
 
-    private const int UNVERSIONED_PLAYLIST_TTL = 300;
+    private const int UNVERSIONED_PLAYLIST_TTL = 3600; // 1 hour (instead of 5 minutes)
 
     public function __construct(
         private Client $client,
@@ -56,11 +56,9 @@ final readonly class CachedClient implements Client
 
     public function playlist(string $cookie, string $playlistId, ?int $trackCount = null): PlaylistData
     {
-        return $this->cache->remember(
-            $this->key($cookie, sprintf('playlist:%s:%s', $playlistId, $trackCount ?? 'unknown')),
-            $trackCount === null ? self::UNVERSIONED_PLAYLIST_TTL : self::PLAYLIST_TTL,
-            fn (): PlaylistData => $this->client->playlist($cookie, $playlistId, $trackCount),
-        );
+        return sprintf('playlist:%s:%s', $playlistId, $trackCount ?? 'unknown')
+                |> (fn ($x) => $this->key($cookie, $x))
+                |> (fn ($x) => $this->cache->remember($x, $trackCount === null ? self::UNVERSIONED_PLAYLIST_TTL : self::PLAYLIST_TTL, fn (): PlaylistData => $this->client->playlist($cookie, $playlistId, $trackCount)));
     }
 
     /**
@@ -69,6 +67,8 @@ final readonly class CachedClient implements Client
      */
     private function key(string $cookie, string $suffix): string
     {
-        return sprintf('ytm:%s:%s', mb_substr(hash('sha256', $cookie), 0, 16), $suffix);
+        return hash('sha256', $cookie)
+                |> (fn ($x) => mb_substr($x, 0, 16))
+                |> (fn ($x) => sprintf('ytm:%s:%s', $x, $suffix));
     }
 }

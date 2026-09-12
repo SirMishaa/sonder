@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\SyncPlaylistsFromYouTubeMusicAction;
 use App\Data\PlaylistData;
 use App\Data\PlaylistSummaryData;
+use App\Data\TrackData;
 use App\Exceptions\YouTubeMusicException;
+use App\Models\Playlist;
 use App\Models\User;
-use App\Models\YouTubeMusicAccount;
-use App\Services\YouTubeMusic\Client;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -17,7 +18,7 @@ use Inertia\Response;
 
 final readonly class PlaylistController
 {
-    public function index(#[CurrentUser] User $user, Client $client): Response|RedirectResponse
+    public function index(#[CurrentUser] User $user, SyncPlaylistsFromYouTubeMusicAction $sync): Response|RedirectResponse
     {
         $account = $user->youTubeMusicAccount()->first();
 
@@ -25,11 +26,24 @@ final readonly class PlaylistController
             return to_route('youtube-music-connection.create');
         }
 
-        try {
-            $playlists = $client->playlists($account->cookie);
-        } catch (YouTubeMusicException) {
-            return $this->expired();
+        if ($account->playlists()->count() === 0 || $account->playlists()->max('last_synced_at') < now()->subHour()) {
+            try {
+                $sync->handle($account);
+            } catch (YouTubeMusicException) {
+                return $this->expired();
+            }
         }
+
+        $playlists = $account->playlists()->get()->map(
+            fn (Playlist $playlist) => PlaylistSummaryData::from([
+                'id' => $playlist->youtube_playlist_id,
+                'title' => $playlist->title,
+                'description' => $playlist->description,
+                'trackCount' => $playlist->track_count,
+                'thumbnailUrl' => $playlist->thumbnail_url,
+                'author' => $playlist->author,
+            ])
+        );
 
         return Inertia::render('playlist/Index', [
             'accountName' => $account->account_name,
@@ -37,7 +51,7 @@ final readonly class PlaylistController
         ]);
     }
 
-    public function show(string $playlistId, #[CurrentUser] User $user, Client $client): Response|RedirectResponse
+    public function show(string $playlistId, #[CurrentUser] User $user): Response|RedirectResponse
     {
         $account = $user->youTubeMusicAccount()->first();
 
@@ -45,36 +59,52 @@ final readonly class PlaylistController
             return to_route('youtube-music-connection.create');
         }
 
-        try {
-            $summary = $this->summary($client, $account, $playlistId);
-        } catch (YouTubeMusicException) {
-            return $this->expired();
+        $playlist = $account->playlists()
+            ->where('youtube_playlist_id', $playlistId)
+            ->with('tracks')
+            ->first();
+
+        if ($playlist === null) {
+            return to_route('playlist.index');
         }
+
+        $summary = PlaylistSummaryData::from([
+            'id' => $playlist->youtube_playlist_id,
+            'title' => $playlist->title,
+            'description' => $playlist->description,
+            'trackCount' => $playlist->track_count,
+            'thumbnailUrl' => $playlist->thumbnail_url,
+            'author' => $playlist->author,
+        ]);
+
+        $tracks = $playlist->tracks->map(fn ($track) => TrackData::from([
+            'videoId' => $track->youtube_video_id,
+            'title' => $track->title,
+            'artists' => $track->artists,
+            'album' => $track->album,
+            'duration' => $track->duration,
+            'durationSeconds' => $track->duration_seconds,
+            'thumbnailUrl' => $track->thumbnail_url,
+            'isExplicit' => $track->is_explicit,
+            'isAvailable' => $track->is_available,
+        ]));
+
+        $playlistData = PlaylistData::from([
+            'id' => $playlist->youtube_playlist_id,
+            'title' => $playlist->title,
+            'description' => $playlist->description,
+            'trackCount' => $playlist->track_count,
+            'duration' => $playlist->duration,
+            'thumbnailUrl' => $playlist->thumbnail_url,
+            'author' => $playlist->author,
+            'tracks' => $tracks->toArray(),
+        ]);
 
         return Inertia::render('playlist/Show', [
             'playlistId' => $playlistId,
             'summary' => $summary,
-            // Tracks arrive through a chain of continuation requests and can
-            // take several seconds. The page shell renders from the summary,
-            // already cached by the index, while this resolves. `rescue`
-            // reports a failure to the exception handler and lets the page
-            // render its retry state instead of erroring out entirely.
-            'playlist' => Inertia::defer(
-                fn (): PlaylistData => $client->playlist($account->cookie, $playlistId, $summary?->trackCount),
-                rescue: true,
-            ),
+            'playlist' => $playlistData,
         ]);
-    }
-
-    private function summary(Client $client, YouTubeMusicAccount $account, string $playlistId): ?PlaylistSummaryData
-    {
-        foreach ($client->playlists($account->cookie) as $playlist) {
-            if ($playlist->id === $playlistId) {
-                return $playlist;
-            }
-        }
-
-        return null;
     }
 
     private function expired(): RedirectResponse
