@@ -30,6 +30,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('youtube-music-connection.store');
     Route::delete('youtube-music', [YouTubeMusicConnectionController::class, 'destroy'])
         ->name('youtube-music-connection.destroy');
+    Route::get('youtube-music/sync/{sync}', [YouTubeMusicConnectionController::class, 'show'])
+        ->name('youtube-music-connection.sync');
 
     // Playlists...
     Route::get('playlists', [PlaylistController::class, 'index'])->name('playlist.index');

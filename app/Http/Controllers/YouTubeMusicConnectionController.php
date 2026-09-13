@@ -6,9 +6,12 @@ namespace App\Http\Controllers;
 
 use App\Actions\ConnectYouTubeMusicAccount;
 use App\Actions\DisconnectYouTubeMusicAccount;
+use App\Actions\StartYouTubeMusicSync;
+use App\Data\YouTubeMusicSyncData;
 use App\Exceptions\YouTubeMusicException;
 use App\Http\Requests\CreateYouTubeMusicConnectionRequest;
 use App\Models\User;
+use App\Models\YouTubeMusicSync;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -27,16 +30,28 @@ final readonly class YouTubeMusicConnectionController
         CreateYouTubeMusicConnectionRequest $request,
         #[CurrentUser] User $user,
         ConnectYouTubeMusicAccount $action,
+        StartYouTubeMusicSync $startSync,
     ): RedirectResponse {
         try {
-            $action->handle($user, $request->string('cookie')->value());
+            $account = $action->handle($user, $request->string('cookie')->value());
         } catch (YouTubeMusicException) {
             return back()->withErrors([
                 'cookie' => 'YouTube Music rejected this cookie. Make sure you are signed in, and copy the header again.',
             ]);
         }
 
-        return to_route('playlist.index');
+        $sync = $startSync->handle($account);
+
+        return to_route('youtube-music-connection.sync', $sync);
+    }
+
+    public function show(YouTubeMusicSync $sync, #[CurrentUser] User $user): Response
+    {
+        abort_unless($sync->isOwnedBy($user), 404);
+
+        return Inertia::render('youtube-music-connection/Sync', [
+            'sync' => YouTubeMusicSyncData::fromModel($sync),
+        ]);
     }
 
     public function destroy(#[CurrentUser] User $user, DisconnectYouTubeMusicAccount $action): RedirectResponse
