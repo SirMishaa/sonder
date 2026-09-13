@@ -47,10 +47,18 @@ truly zero-config mode): the `mercure { publisher_jwt ...; subscriber_jwt
 ...; }` Caddy directive must share a secret with Laravel's broadcasting
 config. The app's `Caddyfile` already has a `{$CADDY_SERVER_EXTRA_DIRECTIVES}`
 placeholder with a comment reading "Mercure configuration is injected
-here...", but nothing confirms Laravel Cloud populates it automatically for
-Mercure today (no such resource in the `cloud` CLI). We therefore set
-`CADDY_SERVER_EXTRA_DIRECTIVES` ourselves, identically in local `.env` and in
-the Cloud environment's variables.
+here...". That placeholder, and every other `{$CADDY_SERVER_*}` one in the
+file, is populated by **Laravel Octane's own `StartFrankenPhpCommand`**
+(`vendor/laravel/octane/src/Commands/StartFrankenPhpCommand.php`), not by
+Laravel Cloud magic: its `buildMercureConfig()` method reads a `'mercure'`
+key from `config/octane.php` and renders it into the `CADDY_SERVER_EXTRA_DIRECTIVES`
+env var it passes to the Caddy process. Both local dev (`octane:start
+--server=frankenphp --caddyfile=Caddyfile`, per `composer.json`'s `dev`
+script) and Cloud (which runs the app via Octane, per the `usesOctane: true`
+environment flag and the presence of this exact Octane-authored Caddyfile)
+go through this same command, so a single `config/octane.php` change enables
+Mercure identically in both places — no manual `CADDY_SERVER_EXTRA_DIRECTIVES`
+env var needed.
 
 ## Design
 
@@ -62,10 +70,16 @@ the Cloud environment's variables.
   the FrankenPHP built-in hub via `mercure_publish()`), `secret =>
   env('MERCURE_JWT_SECRET')`, `subscribe_expiration => 15` (minutes — margin
   for slow syncs on large libraries).
+- `config/octane.php`: add a `'mercure'` key —
+  `['publisher_jwt' => env('MERCURE_JWT_SECRET'), 'subscriber_jwt' =>
+  env('MERCURE_JWT_SECRET')]` — so Octane's FrankenPHP server command emits
+  the matching Caddy `mercure {...}` directive. No `anonymous` directive: we
+  only use private, authenticated channels.
 - `.env` / `.env.example` additions:
   - `BROADCAST_CONNECTION=mercure`
-  - `MERCURE_JWT_SECRET=` (32+ byte secret, generated per environment)
-  - `CADDY_SERVER_EXTRA_DIRECTIVES=mercure { publisher_jwt {$MERCURE_JWT_SECRET} subscriber_jwt {$MERCURE_JWT_SECRET} }`
+  - `MERCURE_JWT_SECRET=` (32+ byte secret, one value shared by both the
+    Caddy hub and Laravel's broadcaster, since the hub must verify tokens
+    Laravel signs)
 - `routes/channels.php` (new file): authorize
   `youtube-music-sync.{syncId}` for the owning user only.
 
@@ -190,6 +204,19 @@ new enum `App\Enums\YouTubeMusicSyncStatus`.
 - `routes/channels.php`: only the owning user is authorized for
   `youtube-music-sync.{syncId}`.
 
+### Deployment
+
+The Laravel Cloud app `sonder` (`app-a2bc340a-5f0f-4124-9076-569a3b879b2f`,
+environment `production`, `env-a2bc340c-dd3b-4a0e-9048-fe7a829a2491`) already
+runs with Octane enabled. Before/with the deploy that ships this feature:
+
+- Set `MERCURE_JWT_SECRET` and `BROADCAST_CONNECTION=mercure` on the
+  `production` environment via `cloud environment:variables` (or the
+  dashboard) — a value distinct from the local dev one.
+- No other Cloud-side resource to provision: confirmed via `cloud` CLI
+  (v0.5.0) that there is no `mercure` resource type, only unrelated
+  `websocket-application`/`websocket-cluster` (Reverb) ones.
+
 ## Open questions / risks
 
 - `laravel/framework:13.x-dev` is a moving target until the next tagged
@@ -199,3 +226,9 @@ new enum `App\Enums\YouTubeMusicSyncStatus`.
 - No auto-refresh of the Mercure subscriber cookie in the frontend client;
   syncs longer than `subscribe_expiration` (15 min) will silently stop
   receiving updates. Acceptable for now given current sync durations.
+- Assumes Laravel Cloud runs this app's Octane worker through
+  `php artisan octane:start --server=frankenphp` (or equivalent), which is
+  what makes `config('octane.mercure')` take effect. This should be
+  double-checked on the first deploy — if Cloud instead invokes FrankenPHP
+  directly, `CADDY_SERVER_EXTRA_DIRECTIVES` would need to be set by hand as
+  a Cloud environment variable instead.
