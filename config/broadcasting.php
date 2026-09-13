@@ -10,7 +10,9 @@ return [
 
         'mercure' => [
             'driver' => 'mercure',
+            'url' => env('MERCURE_URL'),
             'secret' => env('MERCURE_JWT_SECRET'),
+            'cookie_name' => env('MERCURE_COOKIE_NAME'),
             'subscribe_expiration' => 15,
         ],
 

@@ -19,6 +19,7 @@
         "spatie/laravel-data": "^4.23",
         "spatie/laravel-typescript-transformer": "^3.3",
         "symfony/mercure": "^0.8",
+        "web-token/jwt-library": "^4.1",
         "ytmusicapi/ytmusicapi": "^1.12.2"
     },
     "require-dev": {
