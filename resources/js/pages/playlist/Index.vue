@@ -1,23 +1,54 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { ListMusic, Settings2 } from 'lucide-vue-next';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ListMusic, LoaderCircle, Settings2 } from 'lucide-vue-next';
+import { onMounted, onUnmounted, reactive } from 'vue';
 import PlaylistController from '@/actions/App/Http/Controllers/PlaylistController';
 import YouTubeMusicConnectionController from '@/actions/App/Http/Controllers/YouTubeMusicConnectionController';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { subscribeToPrivateChannel } from '@/lib/mercure';
 import type { BreadcrumbItem } from '@/types';
 
 type Props = {
     accountName: string;
     playlists: App.Data.PlaylistSummaryData[];
+    activeSync: App.Data.YouTubeMusicSyncData | null;
 };
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Playlists', href: PlaylistController.index() },
 ];
+
+const sync = props.activeSync ? reactive({ ...props.activeSync, visible: true }) : null;
+
+let unsubscribe: (() => void) | null = null;
+
+onMounted(() => {
+    if (!sync) {
+        return;
+    }
+
+    unsubscribe = subscribeToPrivateChannel(`youtube-music-sync.${sync.id}`, (message) => {
+        if (message.event !== 'sync.updated') {
+            return;
+        }
+
+        const payload = message.payload as App.Data.YouTubeMusicSyncData;
+        Object.assign(sync, payload);
+
+        if (payload.status === 'completed') {
+            sync.visible = false;
+            router.reload({ only: ['playlists', 'accountName'] });
+        } else if (payload.status === 'failed') {
+            sync.visible = false;
+        }
+    });
+});
+
+onUnmounted(() => unsubscribe?.());
 </script>
 
 <template>
@@ -30,6 +61,13 @@ const breadcrumbs: BreadcrumbItem[] = [
                     :title="`${playlists.length} playlists`"
                     :description="`Signed in to YouTube Music as ${accountName}`"
                 />
+                <div
+                    v-if="sync?.visible"
+                    class="flex items-center gap-2 rounded-full border bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground"
+                >
+                    <LoaderCircle class="size-3.5 animate-spin" />
+                    Syncing… {{ sync.syncedPlaylists }}/{{ sync.totalPlaylists ?? '…' }}
+                </div>
                 <Button as-child variant="outline" size="sm">
                     <Link :href="YouTubeMusicConnectionController.create()">
                         <Settings2 />
