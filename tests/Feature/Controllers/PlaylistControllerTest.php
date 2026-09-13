@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Enums\YouTubeMusicSyncStatus;
 use App\Models\Playlist;
 use App\Models\User;
 use App\Models\YouTubeMusicAccount;
+use App\Models\YouTubeMusicSync;
 use Tests\Support\FakeYouTubeMusicClient;
 
 it('lists the playlists of the connected account', function (): void {
@@ -17,16 +19,19 @@ it('lists the playlists of the connected account', function (): void {
     $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1', title: 'Deep Focus');
     $this->fakeYouTubeMusic()->tracks['PL2'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL2', title: 'Gaming');
 
+    // First visit: nothing synced yet, redirects to the blocking sync page.
+    $this->actingAs($user)->get(route('playlist.index'))
+        ->assertRedirectToRoute('youtube-music-connection.sync', YouTubeMusicSync::query()->firstOrFail());
+
     $response = $this->actingAs($user)->get(route('playlist.index'));
 
     $response->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('playlist/Index')
             ->where('accountName', 'Mishaa')
+            ->where('activeSync', null)
             ->has('playlists', 2)
             ->where('playlists.0.title', 'Deep Focus'));
-
-    expect(Playlist::query()->count())->toBe(2);
 });
 
 it('sends a user with no connection to the connection page', function (): void {
@@ -35,15 +40,33 @@ it('sends a user with no connection to the connection page', function (): void {
     $response->assertRedirectToRoute('youtube-music-connection.create');
 });
 
-it('sends the user back to reconnect when the cookie stopped working', function (): void {
+it('redirects to the sync page and fails the sync when the cookie stopped working', function (): void {
     $user = User::factory()->create();
     YouTubeMusicAccount::factory()->for($user)->create();
     $this->fakeYouTubeMusic()->shouldFail = true;
 
     $response = $this->actingAs($user)->get(route('playlist.index'));
 
-    $response->assertRedirectToRoute('youtube-music-connection.create')
-        ->assertSessionHasErrors('cookie');
+    $response->assertRedirectToRoute('youtube-music-connection.sync', YouTubeMusicSync::query()->firstOrFail());
+    expect(YouTubeMusicSync::query()->firstOrFail()->status)->toBe(YouTubeMusicSyncStatus::Failed);
+});
+
+it('refreshes stale playlists in the background instead of blocking', function (): void {
+    $user = User::factory()->create();
+    $account = YouTubeMusicAccount::factory()->for($user)->create();
+    Playlist::factory()->for($account, 'youtubeMusicAccount')->create([
+        'last_synced_at' => now()->subDays(2),
+    ]);
+    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
+    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
+
+    $response = $this->actingAs($user)->get(route('playlist.index'));
+
+    $response->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('playlist/Index')
+            ->has('activeSync')
+            ->where('activeSync.status', 'completed'));
 });
 
 it('renders the playlist with tracks from the database', function (): void {

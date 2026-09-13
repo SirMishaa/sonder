@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Actions\SyncPlaylistsFromYouTubeMusicAction;
+use App\Actions\StartYouTubeMusicSync;
 use App\Data\PlaylistData;
 use App\Data\PlaylistSummaryData;
 use App\Data\TrackData;
-use App\Exceptions\YouTubeMusicException;
+use App\Data\YouTubeMusicSyncData;
+use App\Enums\YouTubeMusicSyncStatus;
 use App\Models\Playlist;
 use App\Models\User;
+use App\Models\YouTubeMusicSync;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -18,7 +20,7 @@ use Inertia\Response;
 
 final readonly class PlaylistController
 {
-    public function index(#[CurrentUser] User $user, SyncPlaylistsFromYouTubeMusicAction $sync): Response|RedirectResponse
+    public function index(#[CurrentUser] User $user, StartYouTubeMusicSync $startSync): Response|RedirectResponse
     {
         $account = $user->youTubeMusicAccount()->first();
 
@@ -26,13 +28,25 @@ final readonly class PlaylistController
             return to_route('youtube-music-connection.create');
         }
 
-        if ($account->playlists()->count() === 0 || $account->playlists()->max('last_synced_at') < now()->subHour()) {
-            try {
-                $sync->handle($account);
-            } catch (YouTubeMusicException) {
-                return $this->expired();
-            }
+        if ($account->playlists()->doesntExist()) {
+            $sync = $startSync->handle($account);
+
+            return to_route('youtube-music-connection.sync', $sync);
         }
+
+        $activeSync = $account->playlists()->max('last_synced_at') < now()->subHour()
+            ? $startSync->handle($account)
+            : YouTubeMusicSync::query()
+                ->where('youtube_music_account_id', $account->id)
+                ->whereIn('status', [YouTubeMusicSyncStatus::Pending, YouTubeMusicSyncStatus::Syncing])
+                ->latest('created_at')
+                ->first();
+
+        // `StartYouTubeMusicSync::handle()` returns the in-memory instance
+        // created before the job was dispatched. Under the sync queue driver
+        // the job runs inline and mutates the DB row immediately, so this
+        // refresh keeps the rendered sync state current in every environment.
+        $activeSync?->refresh();
 
         $playlists = $account->playlists()->get()->map(
             fn (Playlist $playlist) => PlaylistSummaryData::from([
@@ -48,6 +62,7 @@ final readonly class PlaylistController
         return Inertia::render('playlist/Index', [
             'accountName' => $account->account_name,
             'playlists' => $playlists,
+            'activeSync' => $activeSync !== null ? YouTubeMusicSyncData::fromModel($activeSync) : null,
         ]);
     }
 
@@ -104,13 +119,6 @@ final readonly class PlaylistController
             'playlistId' => $playlistId,
             'summary' => $summary,
             'playlist' => $playlistData,
-        ]);
-    }
-
-    private function expired(): RedirectResponse
-    {
-        return to_route('youtube-music-connection.create')->withErrors([
-            'cookie' => 'The stored cookie no longer works. YouTube Music cookies expire after a few weeks; paste a fresh one.',
         ]);
     }
 }
