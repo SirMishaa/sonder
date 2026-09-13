@@ -35,5 +35,16 @@ thumbnailUrl: string | null,
 isExplicit: boolean,
 isAvailable: boolean,
 };
+export type YouTubeMusicSyncData = {
+id: string,
+status: App.Enums.YouTubeMusicSyncStatus,
+totalPlaylists: number | null,
+syncedPlaylists: number,
+currentPlaylistTitle: string | null,
+errorMessage: string | null,
+};
+}
+namespace Enums {
+export type YouTubeMusicSyncStatus = 'pending' | 'syncing' | 'completed' | 'failed';
 }
 }
