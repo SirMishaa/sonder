@@ -27,3 +27,17 @@ vendor/bin/phpstan analyze --level 8 path/to/modified/file.php
 
 Fix all reported issues before considering the work complete. PHPStan catches
 type errors, undefined methods, and logic issues that tests might miss.
+
+## Always run tests with --tia and --parallel
+When running tests, always use both --tia (Test Impact Analysis for 22x speed) and --parallel flags:
+
+```bash
+./vendor/bin/pest --tia --parallel
+```
+
+Or via artisan:
+```bash
+php artisan test --parallel
+```
+
+Never run tests without these flags in local development. Only CI should run the full suite without --tia.
