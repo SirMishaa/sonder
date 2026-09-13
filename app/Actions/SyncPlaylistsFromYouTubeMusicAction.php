@@ -7,18 +7,28 @@ namespace App\Actions;
 use App\Models\Playlist;
 use App\Models\YouTubeMusicAccount;
 use App\Services\YouTubeMusic\Client;
+use Closure;
 use Illuminate\Support\Facades\DB;
 
 final readonly class SyncPlaylistsFromYouTubeMusicAction
 {
     public function __construct(private Client $client) {}
 
-    public function handle(YouTubeMusicAccount $account): void
+    /**
+     * @param  Closure(int $synced, int $total, ?Playlist $playlist): void|null  $onProgress
+     *                                                                                        Called once with `(0, $total, null)` right after the playlist
+     *                                                                                        list is fetched, then once per playlist right after it is fully
+     *                                                                                        upserted (tracks included).
+     */
+    public function handle(YouTubeMusicAccount $account, ?Closure $onProgress = null): void
     {
         $playlistSummaries = $this->client->playlists($account->cookie);
+        $total = count($playlistSummaries);
 
-        DB::transaction(function () use ($account, $playlistSummaries): void {
-            foreach ($playlistSummaries as $summary) {
+        $onProgress?->__invoke(0, $total, null);
+
+        foreach ($playlistSummaries as $index => $summary) {
+            $playlist = DB::transaction(function () use ($account, $summary): Playlist {
                 $playlist = Playlist::updateOrCreate(
                     [
                         'youtube_music_account_id' => $account->id,
@@ -60,7 +70,11 @@ final readonly class SyncPlaylistsFromYouTubeMusicAction
                         'position' => $position,
                     ]);
                 }
-            }
-        });
+
+                return $playlist;
+            });
+
+            $onProgress?->__invoke($index + 1, $total, $playlist);
+        }
     }
 }
