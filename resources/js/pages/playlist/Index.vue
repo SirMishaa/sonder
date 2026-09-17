@@ -22,7 +22,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Playlists', href: PlaylistController.index() },
 ];
 
-const sync = props.activeSync ? reactive({ ...props.activeSync, visible: true }) : null;
+const sync = props.activeSync
+    ? reactive({ ...props.activeSync, visible: true })
+    : null;
 
 let unsubscribe: (() => void) | null = null;
 
@@ -31,21 +33,24 @@ onMounted(() => {
         return;
     }
 
-    unsubscribe = subscribeToPrivateChannel(`youtube-music-sync.${sync.id}`, (message) => {
-        if (message.event !== 'sync.updated') {
-            return;
-        }
+    unsubscribe = subscribeToPrivateChannel(
+        `youtube-music-sync.${sync.id}`,
+        (message) => {
+            if (message.event !== 'sync.updated') {
+                return;
+            }
 
-        const payload = message.payload as App.Data.YouTubeMusicSyncData;
-        Object.assign(sync, payload);
+            const payload = message.payload as App.Data.YouTubeMusicSyncData;
+            Object.assign(sync, payload);
 
-        if (payload.status === 'completed') {
-            sync.visible = false;
-            router.reload({ only: ['playlists', 'accountName'] });
-        } else if (payload.status === 'failed') {
-            sync.visible = false;
-        }
-    });
+            if (payload.status === 'completed') {
+                sync.visible = false;
+                router.reload({ only: ['playlists', 'accountName'] });
+            } else if (payload.status === 'failed') {
+                sync.visible = false;
+            }
+        },
+    );
 });
 
 onUnmounted(() => unsubscribe?.());
@@ -66,7 +71,9 @@ onUnmounted(() => unsubscribe?.());
                     class="flex items-center gap-2 rounded-full border bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground"
                 >
                     <LoaderCircle class="size-3.5 animate-spin" />
-                    Syncing… {{ sync.syncedPlaylists }}/{{ sync.totalPlaylists ?? '…' }}
+                    Syncing… {{ sync.syncedPlaylists }}/{{
+                        sync.totalPlaylists ?? '…'
+                    }}
                 </div>
                 <Button as-child variant="outline" size="sm">
                     <Link :href="YouTubeMusicConnectionController.create()">

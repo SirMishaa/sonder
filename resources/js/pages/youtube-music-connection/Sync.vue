@@ -35,28 +35,36 @@ onMounted(() => {
         return;
     }
 
-    unsubscribe = subscribeToPrivateChannel(`youtube-music-sync.${props.sync.id}`, (message) => {
-        if (message.event !== 'sync.updated') {
-            return;
-        }
+    unsubscribe = subscribeToPrivateChannel(
+        `youtube-music-sync.${props.sync.id}`,
+        (message) => {
+            if (message.event !== 'sync.updated') {
+                return;
+            }
 
-        const payload = message.payload as App.Data.YouTubeMusicSyncData;
+            const payload = message.payload as App.Data.YouTubeMusicSyncData;
 
-        if (payload.syncedPlaylists > state.syncedPlaylists && state.currentPlaylistTitle) {
-            completedTitles.value.push(state.currentPlaylistTitle);
-        }
+            if (
+                payload.syncedPlaylists > state.syncedPlaylists &&
+                state.currentPlaylistTitle
+            ) {
+                completedTitles.value.push(state.currentPlaylistTitle);
+            }
 
-        Object.assign(state, payload);
+            Object.assign(state, payload);
 
-        if (payload.status === 'completed') {
-            setTimeout(goToPlaylists, 600);
-        }
-    });
+            if (payload.status === 'completed') {
+                setTimeout(goToPlaylists, 600);
+            }
+        },
+    );
 });
 
 onUnmounted(() => unsubscribe?.());
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Syncing your library', href: '#' }];
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Syncing your library', href: '#' },
+];
 
 const progress = () =>
     state.totalPlaylists && state.totalPlaylists > 0
@@ -68,13 +76,20 @@ const progress = () =>
     <Head title="Syncing your library" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto flex w-full max-w-xl flex-col items-center gap-8 p-4 py-16 text-center">
+        <div
+            class="mx-auto flex w-full max-w-xl flex-col items-center gap-8 p-4 py-16 text-center"
+        >
             <template v-if="state.status === 'failed'">
                 <XCircle class="size-10 text-destructive" />
-                <Heading title="The sync failed" :description="state.errorMessage ?? undefined" />
+                <Heading
+                    title="The sync failed"
+                    :description="state.errorMessage ?? undefined"
+                />
                 <div class="flex items-center gap-3">
                     <Button as-child>
-                        <Link :href="YouTubeMusicConnectionController.create()">Reconnect</Link>
+                        <Link :href="YouTubeMusicConnectionController.create()"
+                            >Reconnect</Link
+                        >
                     </Button>
                     <Button as-child variant="outline">
                         <Link :href="PlaylistController.index()">Retry</Link>
@@ -89,14 +104,17 @@ const progress = () =>
                 />
 
                 <div class="w-full space-y-2">
-                    <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                        class="h-2 w-full overflow-hidden rounded-full bg-muted"
+                    >
                         <div
                             class="h-full rounded-full bg-primary transition-all duration-500 ease-out"
                             :style="{ width: `${progress()}%` }"
                         />
                     </div>
                     <p class="text-sm text-muted-foreground">
-                        {{ state.syncedPlaylists }} / {{ state.totalPlaylists ?? '…' }} playlists
+                        {{ state.syncedPlaylists }} /
+                        {{ state.totalPlaylists ?? '…' }} playlists
                     </p>
                 </div>
 
@@ -106,19 +124,35 @@ const progress = () =>
                     enter-to-class="opacity-100 translate-y-0"
                     mode="out-in"
                 >
-                    <p :key="state.currentPlaylistTitle ?? 'waiting'" class="text-sm font-medium">
-                        {{ state.currentPlaylistTitle ? `Syncing “${state.currentPlaylistTitle}”…` : 'Fetching your playlists…' }}
+                    <p
+                        :key="state.currentPlaylistTitle ?? 'waiting'"
+                        class="text-sm font-medium"
+                    >
+                        {{
+                            state.currentPlaylistTitle
+                                ? `Syncing “${state.currentPlaylistTitle}”…`
+                                : 'Fetching your playlists…'
+                        }}
                     </p>
                 </Transition>
 
-                <ul v-if="completedTitles.length > 0" class="w-full space-y-1.5 text-left text-sm text-muted-foreground">
+                <ul
+                    v-if="completedTitles.length > 0"
+                    class="w-full space-y-1.5 text-left text-sm text-muted-foreground"
+                >
                     <TransitionGroup
                         enter-active-class="transition duration-300 ease-out"
                         enter-from-class="opacity-0 -translate-x-1"
                         enter-to-class="opacity-100 translate-x-0"
                     >
-                        <li v-for="title in completedTitles" :key="title" class="flex items-center gap-2">
-                            <CheckCircle2 class="size-4 shrink-0 text-emerald-600" />
+                        <li
+                            v-for="title in completedTitles"
+                            :key="title"
+                            class="flex items-center gap-2"
+                        >
+                            <CheckCircle2
+                                class="size-4 shrink-0 text-emerald-600"
+                            />
                             <span class="truncate">{{ title }}</span>
                         </li>
                     </TransitionGroup>
@@ -127,4 +161,3 @@ const progress = () =>
         </div>
     </AppLayout>
 </template>
-</content>

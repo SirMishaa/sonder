@@ -49,9 +49,12 @@ export function subscribeToPrivateChannel(
 
             const topic = `${data.topic_prefix}channel/${encodeURIComponent(channelName)}`;
 
-            eventSource = new EventSource(`/.well-known/mercure?topic=${encodeURIComponent(topic)}`, {
-                withCredentials: true,
-            });
+            eventSource = new EventSource(
+                `/.well-known/mercure?topic=${encodeURIComponent(topic)}`,
+                {
+                    withCredentials: true,
+                },
+            );
 
             eventSource.onmessage = (event: MessageEvent<string>) => {
                 onMessage(JSON.parse(event.data) as MercureMessage);
