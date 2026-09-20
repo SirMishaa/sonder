@@ -27,15 +27,36 @@
 
 ### Task 1: Enable the Mercure broadcasting driver
 
+> **REVISED 2026-09-18** (post-Task-13 manual verification). The original
+> Step 3 below (FrankenPHP's built-in hub via `config('octane.mercure')`)
+> does **not work**: it embeds `dunglas/mercure v0.24.2`, a pre-1.0 hub that
+> only understands the legacy `mercure.subscribe`/`publish` JWT claim shape.
+> Laravel's `13.x-dev` Mercure broadcaster (merged 2026-09-10, targeting the
+> then-unreleased Mercure protocol 1.0) mints tokens with the RFC 9396
+> `authorization_details` claim exclusively — no fallback. The pre-1.0 hub
+> rejects every one of them with 401, both for subscribe and publish. No
+> released or `main`-branch FrankenPHP build bundles a newer hub as of this
+> writing (verified against the FrankenPHP repo's `go.mod`). Confirmed against
+> the PR author's own reference demo (`dunglas/laravel-mercure`, updated the
+> day Mercure 1.0 shipped): it runs a **separate** `dunglas/mercure:v1.0.0-alpha.3`
+> container rather than FrankenPHP's embedded hub. This plan does the same,
+> minus Docker (not used elsewhere in this project): a standalone `mercure`
+> binary run as one more local dev process / Cloud background process.
+> Steps 3 and 6 below are rewritten accordingly; Steps 1, 2, 4, 5 are
+> unchanged from the original implementation.
+
 **Files:**
 - Modify: `composer.json`
-- Modify: `config/octane.php`
+- Create: `Caddyfile.mercure`
+- Create: `scripts/install-mercure.sh`
+- Modify: `config/octane.php` (revert — no embedded hub)
 - Create: `config/broadcasting.php`
 - Modify: `.env`
 - Modify: `.env.example`
+- Modify: `.gitignore`
 
 **Interfaces:**
-- Produces: `BROADCAST_CONNECTION=mercure` app-wide; `broadcast()`/`Broadcast::channel()` become available for later tasks.
+- Produces: `BROADCAST_CONNECTION=mercure` app-wide; `broadcast()`/`Broadcast::channel()` become available for later tasks; a standalone Mercure 1.0 hub process listening on `MERCURE_URL`.
 
 - [ ] **Step 1: Pin `laravel/framework` to `13.x-dev` and require `symfony/mercure`**
 
@@ -62,7 +83,9 @@ return [
 
         'mercure' => [
             'driver' => 'mercure',
+            'url' => env('MERCURE_URL'),
             'secret' => env('MERCURE_JWT_SECRET'),
+            'cookie_name' => env('MERCURE_COOKIE_NAME'),
             'subscribe_expiration' => 15,
         ],
 
@@ -79,46 +102,97 @@ return [
 ];
 ```
 
-- [ ] **Step 3: Enable Octane's FrankenPHP Mercure hub**
+(`url` and `cookie_name` are required in this project — see the Task 5 ruling log for why `broadcasting.php` eagerly resolves at every app boot via `routes/channels.php`, and why the default `__Secure-`-prefixed cookie name breaks plain-HTTP local dev.)
 
-In `config/octane.php`, add a `'mercure'` key. Find the closing `];` of the file and add this key before it (alongside `'watch'`, `'garbage'`, etc.):
+- [ ] **Step 3 (REVISED): Run a standalone Mercure 1.0 hub instead of FrankenPHP's built-in one**
 
-```php
-    /*
-    |--------------------------------------------------------------------------
-    | Mercure Hub
-    |--------------------------------------------------------------------------
-    |
-    | FrankenPHP ships a built-in Mercure hub. Setting this key makes Octane's
-    | FrankenPHP server command render the matching `mercure { ... }` Caddy
-    | directive on every boot, in both local dev and on Laravel Cloud. The
-    | secret must match `broadcasting.connections.mercure.secret`, since the
-    | hub has to verify subscriber/publisher tokens Laravel signs.
-    |
-    */
+Do **not** add a `'mercure'` key to `config/octane.php`. Instead:
 
-    'mercure' => array_filter([
-        'publisher_jwt' => env('MERCURE_JWT_SECRET'),
-        'subscriber_jwt' => env('MERCURE_JWT_SECRET'),
-    ]),
+Create `scripts/install-mercure.sh` (downloads the pinned Mercure 1.0 release binary for the current OS/arch, mirroring how `laravel/octane`'s FrankenPHP binary is already gitignored and fetched separately from the repo):
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+VERSION="v1.0.0"
+OS="$(uname -s)"
+ARCH="$(uname -m)"
+
+case "$OS-$ARCH" in
+    Linux-x86_64) ASSET="mercure_Linux_x86_64.tar.gz" ;;
+    Linux-aarch64) ASSET="mercure_Linux_arm64.tar.gz" ;;
+    Darwin-x86_64) ASSET="mercure_Darwin_x86_64.tar.gz" ;;
+    Darwin-arm64) ASSET="mercure_Darwin_arm64.tar.gz" ;;
+    *) echo "Unsupported platform: $OS-$ARCH" >&2; exit 1 ;;
+esac
+
+URL="https://github.com/dunglas/mercure/releases/download/${VERSION}/${ASSET}"
+TMP_DIR="$(mktemp -d)"
+
+curl -fsSL "$URL" -o "$TMP_DIR/mercure.tar.gz"
+tar -xzf "$TMP_DIR/mercure.tar.gz" -C "$TMP_DIR" mercure
+mv "$TMP_DIR/mercure" ./mercure
+chmod +x ./mercure
+rm -rf "$TMP_DIR"
+
+echo "Installed mercure $($(pwd)/mercure version)"
 ```
+
+Create `Caddyfile.mercure` (a separate site block on its own port, so it never
+collides with the app's own Caddyfile/port):
+
+```caddyfile
+{
+	admin off
+}
+
+{$MERCURE_PUBLIC_URL} {
+	route {
+		mercure {
+			cookie_name {$MERCURE_COOKIE_NAME}
+			issuer {$MERCURE_JWT_ISSUER} {
+				subscriber {
+					jwt {$MERCURE_JWT_SECRET} HS256
+				}
+				publisher {
+					jwt {$MERCURE_JWT_SECRET} HS256
+				}
+			}
+			transport bolt {
+				path {$MERCURE_TRANSPORT_PATH}
+			}
+		}
+		respond 404
+	}
+}
+```
+
+Add `mercure:install` to `composer.json`'s `"scripts"` (`"mercure:install": "bash scripts/install-mercure.sh"`), and add the hub as one more process in the `devWithOctane` script's `concurrently` invocation (alongside `queue:listen`, `pail`, etc.):
+
+```
+"MERCURE_PUBLIC_URL=http://localhost:8004 MERCURE_JWT_ISSUER=http://localhost MERCURE_JWT_SECRET=$MERCURE_JWT_SECRET MERCURE_COOKIE_NAME=mercure_access_token MERCURE_TRANSPORT_PATH=storage/app/mercure.db ./mercure run --config Caddyfile.mercure"
+```
+
+(Read the real values from `.env` rather than hardcoding; adjust the exact
+env-var-forwarding mechanism to match how the other `concurrently` commands
+in this project already read `.env`, if any do.)
 
 - [ ] **Step 4: Add the env vars**
 
-In `.env.example`, change `BROADCAST_CONNECTION=log` to:
+In `.env.example`:
 
 ```
 BROADCAST_CONNECTION=mercure
+MERCURE_URL=http://localhost:8004/.well-known/mercure
 MERCURE_JWT_SECRET=
+MERCURE_COOKIE_NAME=mercure_access_token
 ```
 
-In `.env`, change `BROADCAST_CONNECTION=log` to `BROADCAST_CONNECTION=mercure` and add a real secret (32+ bytes):
+In `.env`, add a real secret (32+ bytes) and the matching URL:
 
 ```bash
 php -r "echo 'MERCURE_JWT_SECRET='.bin2hex(random_bytes(32)).PHP_EOL;" >> .env
 ```
-
-Then remove the now-duplicate `BROADCAST_CONNECTION=log` line and replace it with `BROADCAST_CONNECTION=mercure` in `.env`.
 
 - [ ] **Step 5: Verify nothing broke**
 
@@ -132,14 +206,26 @@ php artisan test --compact
 
 Expected: the full suite still passes (test env uses `BROADCAST_CONNECTION=null` from `phpunit.xml`, so this step only changes local/prod config).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6 (REVISED): Manually verify the standalone hub end-to-end, then commit**
 
 ```bash
-git add composer.json composer.lock config/octane.php config/broadcasting.php .env.example
-git commit -m "feat: enable the Mercure broadcasting driver via Octane's FrankenPHP hub"
+bash scripts/install-mercure.sh
+composer run devWithOctane
 ```
 
-(`.env` is gitignored — do not commit it.)
+In a second terminal, confirm a subscribe+publish round trip works (see
+Task 13's manual verification for the full browser-based check; a quick
+`curl`-based smoke test is enough here — mint a token via
+`POST /broadcasting/auth`, open an `EventSource`/curl stream against
+`MERCURE_URL` with that token, then dispatch any `ShouldBroadcastNow` event
+and confirm the payload arrives).
+
+```bash
+git add composer.json composer.lock config/broadcasting.php Caddyfile.mercure scripts/install-mercure.sh .env.example .gitignore
+git commit -m "feat: enable the Mercure broadcasting driver via a standalone Mercure 1.0 hub"
+```
+
+(`.env` and the `mercure` binary are gitignored — do not commit them.)
 
 ---
 
@@ -2129,21 +2215,41 @@ git commit -m "feat: show a non-blocking sync badge on the playlist index"
 
 ---
 
-### Task 13: Deploy — Cloud environment variables and manual verification
+### Task 13: Deploy — Cloud environment variables, background process, and manual verification
 
-**Files:** none (operational task).
+> **REVISED 2026-09-18** — see the Task 1 revision note. Because the hub is
+> now a standalone binary rather than something FrankenPHP boots
+> automatically, Cloud needs (a) the binary available in the deployed
+> container and (b) a managed background process running it, in addition to
+> the environment variables. Step 4 also uses `composer run devWithOctane`,
+> not `composer run dev` (plain `php artisan serve` has no Mercure hub to
+> talk to at all).
 
-- [ ] **Step 1: Set the production secret**
+**Files:** possibly `composer.json` (build command), if the project's Cloud build command isn't already `composer install && npm run build`.
 
-Using the `cloud` CLI, set a production-only secret (different from the local `.env` value) on the `sonder` app's `production` environment:
+- [ ] **Step 1: Set the production secret and Mercure URL**
+
+Using the `cloud` CLI, set production values (different `MERCURE_JWT_SECRET` from the local `.env` value) on the `sonder` app's `production` environment:
 
 ```bash
 cloud environment:variables production --app sonder
 ```
 
-(Follow the interactive prompt, or check `cloud environment:variables --help` for a non-interactive file-based alternative — this replaces all variables from a file, so fetch the existing ones first with `cloud environment:get production --app sonder --json --show-sensitive --fields environmentVariables` and add `MERCURE_JWT_SECRET` and `BROADCAST_CONNECTION=mercure` to that list before applying.)
+(Follow the interactive prompt, or check `cloud environment:variables --help` for a non-interactive file-based alternative — this replaces all variables from a file, so fetch the existing ones first with `cloud environment:get production --app sonder --json --show-sensitive --fields environmentVariables` and add `MERCURE_JWT_SECRET`, `MERCURE_URL` (pointing at the background process's internal address — confirm the exact host/port Cloud assigns a custom background process, since it may not be reachable on `localhost` the way it is in a single-process local dev setup), `MERCURE_COOKIE_NAME`, and `BROADCAST_CONNECTION=mercure` to that list before applying.)
 
-- [ ] **Step 2: Run PHP checks**
+- [ ] **Step 2: Make the `mercure` binary available in the build**
+
+Add `bash scripts/install-mercure.sh` to the Cloud build command (after `composer install`), so the binary is present in the deployed image before the background process tries to run it. Confirm the build environment matches `scripts/install-mercure.sh`'s supported `uname` cases (Cloud's build containers are Linux x86_64 as of this writing).
+
+- [ ] **Step 3: Create the Cloud background process**
+
+```bash
+cloud background-process:create <instance> --type=custom --command="./mercure run --config Caddyfile.mercure" -n
+```
+
+(Discover the correct `<instance>` and any additional required flags with `cloud background-process:create -h`; the app-side env vars from Step 1 must already be set so the command's `{$...}` placeholders in `Caddyfile.mercure` resolve.)
+
+- [ ] **Step 4: Run PHP checks**
 
 ```bash
 composer install
@@ -2153,21 +2259,24 @@ php artisan test --compact
 
 Expected: PASS.
 
-- [ ] **Step 3: Run frontend checks**
+- [ ] **Step 5: Run frontend checks**
 
 ```bash
-npm run test:types
-npm run test:lint
-npm run build
+bun run test:types
+bun run test:lint
+bun run build
 ```
 
 Expected: PASS.
 
-- [ ] **Step 4: Manually verify the full flow locally**
+- [ ] **Step 6: Manually verify the full flow locally**
 
 ```bash
-composer run dev
+bash scripts/install-mercure.sh   # if not already installed
+composer run devWithOctane
 ```
+
+(**Not** `composer run dev` — that runs plain `php artisan serve`, which has no Mercure hub to publish to or subscribe against.)
 
 Then, in a browser: disconnect any existing YouTube Music connection, reconnect with a real cookie, and confirm:
 - The page redirects to `/youtube-music/sync/{id}` immediately (no 20s freeze).
@@ -2175,15 +2284,16 @@ Then, in a browser: disconnect any existing YouTube Music connection, reconnect 
 - The page redirects to `/playlists` once complete.
 - Revisiting `/playlists` more than an hour later (or manually setting a `last_synced_at` in the past) shows the small "Syncing…" badge instead of blocking.
 
-- [ ] **Step 5: Deploy**
+- [ ] **Step 7: Deploy**
 
 ```bash
-cloud deploy --app sonder --environment production
+cloud deploy sonder production -n
+cloud deploy:monitor -n
 ```
 
-Confirm the deployment succeeds and the production Mercure hub comes up (check `cloud environment:logs production --app sonder` for the Caddy `mercure` directive being active, or repeat the manual verification from Step 4 against the production URL).
+Confirm the deployment succeeds, the background process from Step 3 is running (`cloud background-process:list <instance> -n` or equivalent), and repeat the manual verification from Step 6 against the production URL.
 
-- [ ] **Step 6: Commit any leftover changes**
+- [ ] **Step 8: Commit any leftover changes**
 
 ```bash
 git status

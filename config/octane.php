@@ -233,22 +233,4 @@ return [
 
     'state_file' => env('OCTANE_STATE_FILE', storage_path('logs/octane-server-state.json')),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Mercure Hub
-    |--------------------------------------------------------------------------
-    |
-    | FrankenPHP ships a built-in Mercure hub. Setting this key makes Octane's
-    | FrankenPHP server command render the matching `mercure { ... }` Caddy
-    | directive on every boot, in both local dev and on Laravel Cloud. The
-    | secret must match `broadcasting.connections.mercure.secret`, since the
-    | hub has to verify subscriber/publisher tokens Laravel signs.
-    |
-    */
-
-    'mercure' => array_filter([
-        'publisher_jwt' => env('MERCURE_JWT_SECRET'),
-        'subscriber_jwt' => env('MERCURE_JWT_SECRET'),
-    ]),
-
 ];

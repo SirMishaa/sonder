@@ -1,0 +1,31 @@
+{
+	admin off
+}
+
+# A standalone Mercure 1.0 hub, run as its own process (see
+# scripts/install-mercure.sh and the Task 1 revision note in
+# docs/superpowers/plans/2026-09-13-youtube-music-sync-job.md). Distinct
+# from the app's own Caddyfile/FrankenPHP process: this hub only ever
+# serves the Mercure protocol, on its own port.
+{$MERCURE_PUBLIC_URL} {
+	route {
+		mercure {
+			cookie_name {$MERCURE_COOKIE_NAME}
+
+			issuer {$MERCURE_JWT_ISSUER} {
+				subscriber {
+					jwt {$MERCURE_JWT_SECRET} HS256
+				}
+				publisher {
+					jwt {$MERCURE_JWT_SECRET} HS256
+				}
+			}
+
+			transport bolt {
+				path {$MERCURE_TRANSPORT_PATH}
+			}
+		}
+
+		respond 404
+	}
+}
