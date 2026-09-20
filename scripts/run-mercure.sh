@@ -28,5 +28,6 @@ export MERCURE_PUBLIC_URL="${MERCURE_URL%/.well-known/mercure}"
 export MERCURE_JWT_ISSUER="${APP_URL:-http://localhost}"
 export MERCURE_COOKIE_NAME="${MERCURE_COOKIE_NAME:-mercure_access_token}"
 export MERCURE_TRANSPORT_PATH="${MERCURE_TRANSPORT_PATH:-storage/app/mercure.db}"
+export MERCURE_CORS_ORIGIN="${MERCURE_CORS_ORIGIN:-http://localhost:8003}"
 
 exec ./mercure run --config Caddyfile.mercure

@@ -34,6 +34,7 @@
         "playwright": "^1.63.0",
         "typescript": "^6.0.3",
         "vite": "npm:@voidzero-dev/vite-plus-core@0.3.1",
+        "vite-plugin-vue-devtools": "^8.2.1",
         "vite-plus": "0.3.1",
         "vue-tsc": "^3.3.11"
     },

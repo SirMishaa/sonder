@@ -11,6 +11,7 @@
 	route {
 		mercure {
 			cookie_name {$MERCURE_COOKIE_NAME}
+			cors_origins {$MERCURE_CORS_ORIGIN}
 
 			issuer {$MERCURE_JWT_ISSUER} {
 				subscriber {

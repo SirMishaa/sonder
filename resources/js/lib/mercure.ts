@@ -47,14 +47,11 @@ export function subscribeToPrivateChannel(
                 return;
             }
 
-            const topic = `${data.topic_prefix}channel/${encodeURIComponent(channelName)}`;
+            const topic = `${data.topic_prefix}channel/${channelName}`;
+            const url = new URL(import.meta.env.VITE_MERCURE_URL as string);
+            url.searchParams.set('match', topic);
 
-            eventSource = new EventSource(
-                `/.well-known/mercure?topic=${encodeURIComponent(topic)}`,
-                {
-                    withCredentials: true,
-                },
-            );
+            eventSource = new EventSource(url, { withCredentials: true });
 
             eventSource.onmessage = (event: MessageEvent<string>) => {
                 onMessage(JSON.parse(event.data) as MercureMessage);

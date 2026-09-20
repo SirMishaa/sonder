@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import {defineConfig} from 'vite-plus';
+import vueDevTools from 'vite-plugin-vue-devtools'
 
 export default defineConfig({
     lint: {
@@ -68,6 +69,11 @@ export default defineConfig({
                     includeAbsolute: false,
                 },
             },
+        }),
+        vueDevTools({
+            launchEditor: 'phpstorm',
+            componentInspector: true,
+            appendTo: 'resources/js/app.ts',
         }),
     ],
 });
