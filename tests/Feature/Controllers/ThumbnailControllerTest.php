@@ -10,7 +10,7 @@ beforeEach(function (): void {
 });
 
 it('serves a thumbnail after downloading it', function (): void {
-    $imageUrl = 'https://example.com/image.jpg';
+    $imageUrl = 'https://i.ytimg.com/vi/abc/hqdefault.jpg';
     $hash = md5($imageUrl);
 
     Http::fake([
@@ -28,7 +28,7 @@ it('serves a thumbnail after downloading it', function (): void {
 });
 
 it('returns 404 when hash does not match URL', function (): void {
-    $imageUrl = 'https://example.com/image.jpg';
+    $imageUrl = 'https://i.ytimg.com/vi/abc/hqdefault.jpg';
     $wrongHash = 'wrong-hash';
 
     $response = $this->get(route('thumbnail.show', ['hash' => $wrongHash, 'url' => $imageUrl]));
@@ -43,7 +43,7 @@ it('returns 404 when URL is missing', function (): void {
 });
 
 it('returns 404 when download fails', function (): void {
-    $imageUrl = 'https://example.com/image.jpg';
+    $imageUrl = 'https://i.ytimg.com/vi/abc/hqdefault.jpg';
     $hash = md5($imageUrl);
 
     Http::fake([
@@ -53,4 +53,15 @@ it('returns 404 when download fails', function (): void {
     $response = $this->get(route('thumbnail.show', ['hash' => $hash, 'url' => $imageUrl]));
 
     $response->assertNotFound();
+});
+
+it('returns 404 for URLs outside the YouTube image hosts', function (): void {
+    $imageUrl = 'https://example.com/image.jpg';
+
+    Http::fake();
+
+    $response = $this->get(route('thumbnail.show', ['hash' => md5($imageUrl), 'url' => $imageUrl]));
+
+    $response->assertNotFound();
+    Http::assertNothingSent();
 });
