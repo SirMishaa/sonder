@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
-import { CheckCircle2, ExternalLink, Music4 } from 'lucide-vue-next';
+import {
+    CheckCircle2,
+    ExternalLink,
+    Music4,
+    TriangleAlert,
+} from 'lucide-vue-next';
 import PlaylistController from '@/actions/App/Http/Controllers/PlaylistController';
 import YouTubeMusicConnectionController from '@/actions/App/Http/Controllers/YouTubeMusicConnectionController';
 import Heading from '@/components/Heading.vue';
@@ -11,7 +16,11 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 
 type Props = {
-    account: { account_name: string; last_verified_at: string } | null;
+    account: {
+        account_name: string;
+        last_verified_at: string;
+        cookie_expired_at: string | null;
+    } | null;
 };
 
 defineProps<Props>();
@@ -21,10 +30,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const steps = [
-    'Open music.youtube.com in your browser and make sure you are signed in.',
+    'Open a private (incognito) window and sign in to music.youtube.com there.',
     'Open the developer tools and select the Network tab.',
     'Reload the page, then click any request sent to music.youtube.com.',
     'Under Request Headers, copy the entire value of the "cookie" header.',
+    'Close the private window without signing out.',
 ];
 </script>
 
@@ -40,18 +50,45 @@ const steps = [
 
             <div
                 v-if="account"
-                class="flex items-center gap-3 rounded-xl border border-emerald-600/30 bg-emerald-500/5 p-4"
+                class="flex items-center gap-3 rounded-xl border p-4"
+                :class="
+                    account.cookie_expired_at
+                        ? 'border-destructive/40 bg-destructive/5'
+                        : 'border-emerald-600/30 bg-emerald-500/5'
+                "
             >
-                <CheckCircle2 class="size-5 shrink-0 text-emerald-600" />
+                <TriangleAlert
+                    v-if="account.cookie_expired_at"
+                    class="size-5 shrink-0 text-destructive"
+                />
+                <CheckCircle2 v-else class="size-5 shrink-0 text-emerald-600" />
                 <div class="min-w-0 flex-1 text-sm">
                     <p class="font-medium">
-                        Connected as {{ account.account_name }}
+                        <template v-if="account.cookie_expired_at">
+                            The cookie for {{ account.account_name }} stopped
+                            working
+                        </template>
+                        <template v-else>
+                            Connected as {{ account.account_name }}
+                        </template>
                     </p>
                     <p class="text-muted-foreground">
-                        Last verified
-                        {{
-                            new Date(account.last_verified_at).toLocaleString()
-                        }}
+                        <template v-if="account.cookie_expired_at">
+                            Refused since
+                            {{
+                                new Date(
+                                    account.cookie_expired_at,
+                                ).toLocaleString()
+                            }}. Paste a fresh cookie below.
+                        </template>
+                        <template v-else>
+                            Last verified
+                            {{
+                                new Date(
+                                    account.last_verified_at,
+                                ).toLocaleString()
+                            }}
+                        </template>
                     </p>
                 </div>
                 <Button as-child variant="outline" size="sm">
@@ -69,6 +106,12 @@ const steps = [
                 >
                     <li v-for="step in steps" :key="step">{{ step }}</li>
                 </ol>
+                <p class="mt-3 text-sm text-muted-foreground">
+                    Why a private window: a browser that keeps using the same
+                    session keeps rotating its cookies, and Google soon rejects
+                    the copy you pasted. A session nobody uses anymore is left
+                    alone, so its cookie lasts much longer.
+                </p>
                 <a
                     href="https://music.youtube.com"
                     target="_blank"
@@ -99,9 +142,9 @@ const steps = [
                     />
                     <InputError :message="errors.cookie" />
                     <p class="text-xs text-muted-foreground">
-                        Stored encrypted, used only to read your library. It
-                        typically expires after a few weeks, at which point you
-                        will need to paste a fresh one.
+                        Stored encrypted, used only to read your library. Sonder
+                        checks it once a day and warns you as soon as YouTube
+                        Music stops accepting it.
                     </p>
                 </div>
 

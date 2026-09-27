@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
+use App\Models\YouTubeMusicAccount;
 use Illuminate\Http\Request;
 
 it('shares app name from config', function (): void {
@@ -90,4 +91,25 @@ it('includes parent shared data', function (): void {
 
     // Parent Inertia middleware shares 'errors' by default
     expect($shared)->toHaveKey('errors');
+});
+
+it('shares whether the user YouTube Music cookie expired', function (bool $expired): void {
+    $user = User::factory()->create();
+    YouTubeMusicAccount::factory()->for($user)->create(['cookie_expired_at' => $expired ? now() : null]);
+
+    $request = Request::create('/', 'GET');
+    $request->setUserResolver(fn () => $user);
+
+    $shared = (new HandleInertiaRequests())->share($request);
+
+    expect($shared['youtubeMusicCookieExpired']())->toBe($expired);
+})->with([
+    'expired' => true,
+    'working' => false,
+]);
+
+it('shares no expired cookie for a guest', function (): void {
+    $shared = (new HandleInertiaRequests())->share(Request::create('/', 'GET'));
+
+    expect($shared['youtubeMusicCookieExpired']())->toBeFalse();
 });

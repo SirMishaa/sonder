@@ -39,8 +39,7 @@ it('connects an account and starts a sync', function (): void {
             'cookie' => YouTubeMusicAccountFactory::cookie(),
         ]);
 
-    $account = $user->youTubeMusicAccount()->first();
-    expect($account)->not->toBeNull();
+    $account = $user->youTubeMusicAccount()->firstOrFail();
 
     $sync = YouTubeMusicSync::query()->where('youtube_music_account_id', $account->id)->firstOrFail();
 
@@ -136,4 +135,15 @@ it('keeps guests out', function (): void {
     $this->get(route('youtube-music-connection.create'))->assertRedirect(route('login'));
     $this->post(route('youtube-music-connection.store'))->assertRedirect(route('login'));
     $this->delete(route('youtube-music-connection.destroy'))->assertRedirect(route('login'));
+});
+
+it('clears the expired flag when a fresh cookie is pasted', function (): void {
+    $user = User::factory()->create();
+    $account = YouTubeMusicAccount::factory()->for($user)->expired()->create();
+
+    $this->actingAs($user)->post(route('youtube-music-connection.store'), [
+        'cookie' => YouTubeMusicAccountFactory::cookie(),
+    ]);
+
+    expect($account->refresh()->hasExpiredCookie())->toBeFalse();
 });

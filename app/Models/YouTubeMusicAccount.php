@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read string $cookie
  * @property-read string $account_name
  * @property-read CarbonInterface $last_verified_at
+ * @property-read CarbonInterface|null $cookie_expired_at
  * @property-read CarbonInterface $created_at
  * @property-read CarbonInterface $updated_at
  * @property-read User $user
@@ -44,6 +45,7 @@ final class YouTubeMusicAccount extends Model
             'cookie' => 'encrypted',
             'account_name' => 'string',
             'last_verified_at' => 'datetime',
+            'cookie_expired_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
@@ -63,5 +65,34 @@ final class YouTubeMusicAccount extends Model
     public function playlists(): HasMany
     {
         return $this->hasMany(Playlist::class, 'youtube_music_account_id');
+    }
+
+    public function hasExpiredCookie(): bool
+    {
+        return $this->cookie_expired_at !== null;
+    }
+
+    /**
+     * Records that YouTube Music just accepted the cookie.
+     */
+    public function markCookieWorking(): void
+    {
+        $this->forceFill([
+            'last_verified_at' => now(),
+            'cookie_expired_at' => null,
+        ])->save();
+    }
+
+    /**
+     * Records that YouTube Music refused the cookie, keeping the date of the
+     * first refusal rather than the latest one.
+     */
+    public function markCookieExpired(): void
+    {
+        if ($this->hasExpiredCookie()) {
+            return;
+        }
+
+        $this->forceFill(['cookie_expired_at' => now()])->save();
     }
 }

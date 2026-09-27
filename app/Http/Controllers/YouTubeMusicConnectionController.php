@@ -22,7 +22,7 @@ final readonly class YouTubeMusicConnectionController
     public function create(#[CurrentUser] User $user): Response
     {
         return Inertia::render('youtube-music-connection/Create', [
-            'account' => $user->youTubeMusicAccount()->first()?->only('account_name', 'last_verified_at'),
+            'account' => $user->youTubeMusicAccount()->first()?->only('account_name', 'last_verified_at', 'cookie_expired_at'),
         ]);
     }
 

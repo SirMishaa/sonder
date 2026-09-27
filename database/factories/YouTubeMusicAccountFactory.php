@@ -40,4 +40,14 @@ final class YouTubeMusicAccountFactory extends Factory
             'last_verified_at' => now(),
         ];
     }
+
+    /**
+     * An account whose cookie YouTube Music stopped accepting.
+     */
+    public function expired(): static
+    {
+        return $this->state(fn (): array => [
+            'cookie_expired_at' => now(),
+        ]);
+    }
 }

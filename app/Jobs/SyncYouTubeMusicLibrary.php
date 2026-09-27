@@ -72,6 +72,7 @@ final class SyncYouTubeMusicLibrary implements ShouldQueue
                 },
             );
         } catch (YouTubeMusicException $exception) {
+            $sync->youtubeMusicAccount->markCookieExpired();
             $sync->update([
                 'status' => YouTubeMusicSyncStatus::Failed,
                 'error_message' => $exception->getMessage(),
@@ -82,6 +83,7 @@ final class SyncYouTubeMusicLibrary implements ShouldQueue
             return;
         }
 
+        $sync->youtubeMusicAccount->markCookieWorking();
         $sync->update([
             'status' => YouTubeMusicSyncStatus::Completed,
             'finished_at' => now(),

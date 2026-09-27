@@ -31,6 +31,7 @@ final readonly class ConnectYouTubeMusicAccount
                 'cookie' => $cookie,
                 'account_name' => $account->name,
                 'last_verified_at' => now(),
+                'cookie_expired_at' => null,
             ],
         );
     }
