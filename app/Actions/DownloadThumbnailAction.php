@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
+/**
+ * Mirrors a remote thumbnail onto the application's default disk and returns
+ * its path. Which disk that is (local in development, the attached Cloud
+ * bucket in production) is decided by configuration, not by this action.
+ */
 final readonly class DownloadThumbnailAction
 {
     public function handle(string $url): ?string
@@ -21,7 +26,7 @@ final readonly class DownloadThumbnailAction
         $extension = $this->getExtension($url);
         $filename = "thumbnails/{$hash}.{$extension}";
 
-        if (Storage::disk('public')->exists($filename)) {
+        if (Storage::disk()->exists($filename)) {
             return $filename;
         }
 
@@ -34,7 +39,7 @@ final readonly class DownloadThumbnailAction
                 return null;
             }
 
-            Storage::disk('public')->put($filename, $response->body());
+            Storage::disk()->put($filename, $response->body());
 
             return $filename;
         } catch (Exception) {

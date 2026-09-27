@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
-    Storage::fake('public');
+    Storage::fake();
 });
 
 it('downloads and stores a thumbnail from a URL', function (): void {
@@ -20,9 +20,10 @@ it('downloads and stores a thumbnail from a URL', function (): void {
     $action = new DownloadThumbnailAction();
     $path = $action->handle($imageUrl);
 
-    expect($path)->not->toBeNull()
-        ->and(Storage::disk('public')->exists($path))->toBeTrue()
-        ->and(Storage::disk('public')->get($path))->toBe('fake-image-content');
+    $expectedPath = 'thumbnails/'.md5($imageUrl).'.jpg';
+
+    expect($path)->toBe($expectedPath)
+        ->and(Storage::disk()->get($expectedPath))->toBe('fake-image-content');
 });
 
 it('returns null for empty URL', function (): void {

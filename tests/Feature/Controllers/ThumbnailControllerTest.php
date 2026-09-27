@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
-    Storage::fake('public');
+    Storage::fake();
 });
 
 it('serves a thumbnail after downloading it', function (): void {
@@ -20,9 +20,11 @@ it('serves a thumbnail after downloading it', function (): void {
     $response = $this->get(route('thumbnail.show', ['hash' => $hash, 'url' => $imageUrl]));
 
     $response->assertSuccessful()
-        ->assertHeader('Content-Type', 'image/jpeg');
+        ->assertHeader('Content-Type', 'image/jpeg')
+        ->assertHeader('Cache-Control', 'immutable, max-age=31536000, public');
 
-    expect($response->content())->toBe('fake-image-content');
+    expect($response->streamedContent())->toBe('fake-image-content')
+        ->and(Storage::disk()->exists('thumbnails/'.$hash.'.jpg'))->toBeTrue();
 });
 
 it('returns 404 when hash does not match URL', function (): void {
