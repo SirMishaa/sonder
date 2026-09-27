@@ -10,38 +10,38 @@
     "license": "MIT",
     "require": {
         "php": "^8.5.0",
-        "inertiajs/inertia-laravel": "^3.3.4",
-        "laravel/fortify": "^1.39.0",
-        "laravel/framework": "13.x-dev",
-        "laravel/octane": "^2.19.1",
+        "inertiajs/inertia-laravel": "^3.4.0",
+        "laravel/fortify": "^1.40.0",
+        "laravel/framework": "^13.33.0",
+        "laravel/octane": "^2.20.0",
+        "laravel/reverb": ">=1.12",
         "laravel/wayfinder": "^0.1.21",
         "nunomaduro/essentials": "^1.2.0",
         "spatie/laravel-data": "^4.23",
         "spatie/laravel-typescript-transformer": "^3.3",
-        "symfony/mercure": "^0.8",
-        "web-token/jwt-library": "^4.1",
+        "web-token/jwt-library": "^4.2.3",
         "ytmusicapi/ytmusicapi": "^1.12.2"
     },
     "require-dev": {
         "driftingly/rector-laravel": "^2.6.2",
         "fakerphp/faker": "^1.24.1",
-        "larastan/larastan": "^3.12.0",
-        "laravel/boost": "^2.8.1",
+        "larastan/larastan": "^3.12.2",
+        "laravel/boost": "^2.10.0",
         "laravel/pail": "^1.2.7",
         "laravel/pao": "^1.1.5",
         "laravel/pint": "^1.32.1",
         "laravel/tinker": "^3.0.2",
         "mockery/mockery": "^1.6.15",
         "nunomaduro/collision": "^8.9.5",
-        "pestphp/pest": "^5.1.4",
+        "pestphp/pest": "^5.2.1",
         "pestphp/pest-plugin-agent": "^5.0",
         "pestphp/pest-plugin-browser": "^5.0.1",
-        "pestphp/pest-plugin-evals": "^5.0.3",
+        "pestphp/pest-plugin-evals": "^5.1.0",
         "pestphp/pest-plugin-laravel": "^5.0.1",
         "pestphp/pest-plugin-phpstan": "^5.2.1",
         "pestphp/pest-plugin-rector": "^5.0.4",
         "pestphp/pest-plugin-type-coverage": "^5.0.2",
-        "rector/rector": "^2.6.6",
+        "rector/rector": "^2.6.7",
         "roave/security-advisories": "dev-latest"
     },
     "autoload": {
@@ -68,14 +68,11 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#a7f3d0,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"php artisan typescript:transform --watch\" \"bun run dev\" --names=server,queue,logs,types,vite --kill-others"
+            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#a7f3d0,#fdba74,#fde047\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"php artisan typescript:transform --watch\" \"bun run dev\" \"php artisan reverb:start\" --names=server,queue,logs,types,vite,reverb --kill-others"
         ],
         "devWithOctane": [
             "Composer\\Config::disableProcessTimeout",
-            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#a7f3d0,#fdba74,#fde047\" \"php artisan octane:start --watch --server=frankenphp --port=8003 --caddyfile=Caddyfile\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"php artisan typescript:transform --watch\" \"bun run dev\" \"bash scripts/run-mercure.sh\" --names=server,queue,logs,types,vite,mercure --kill-others"
-        ],
-        "mercure:install": [
-            "bash scripts/install-mercure.sh"
+            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#a7f3d0,#fdba74,#fde047\" \"php artisan octane:start --watch --server=frankenphp --port=8003 --caddyfile=Caddyfile\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"php artisan typescript:transform --watch\" \"bun run dev\" \"php artisan reverb:start\" --names=server,queue,logs,types,vite,reverb --kill-others"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

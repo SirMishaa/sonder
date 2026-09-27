@@ -11,8 +11,8 @@ use Illuminate\Broadcasting\BroadcastManager;
  * routes/channels.php's authorization callback only ever gets exercised in
  * this suite: BROADCAST_CONNECTION=null in phpunit.xml means the null
  * broadcaster never even reaches it (retrieveUser()/verifyUserCanAccessChannel()
- * are Mercure/Pusher-driver concerns), so these tests force the real
- * "mercure" driver for the duration of each test.
+ * are Pusher/Reverb-driver concerns), so these tests force the real
+ * "reverb" driver for the duration of each test.
  *
  * Forcing the driver mid-test requires two steps, not one:
  *   1. forgetDrivers() drops the cached null-driver instance so the next
@@ -27,10 +27,14 @@ use Illuminate\Broadcasting\BroadcastManager;
  */
 beforeEach(function (): void {
     config([
-        'broadcasting.default' => 'mercure',
-        'broadcasting.connections.mercure.url' => 'http://localhost:8004/.well-known/mercure',
-        'broadcasting.connections.mercure.secret' => str_repeat('a', 32),
-        'broadcasting.connections.mercure.cookie_name' => 'mercure_access_token',
+        'broadcasting.default' => 'reverb',
+        'broadcasting.connections.reverb.key' => 'test-key',
+        'broadcasting.connections.reverb.secret' => 'test-secret',
+        'broadcasting.connections.reverb.app_id' => 'test-app',
+        'broadcasting.connections.reverb.options.host' => 'localhost',
+        'broadcasting.connections.reverb.options.port' => 8080,
+        'broadcasting.connections.reverb.options.scheme' => 'http',
+        'broadcasting.connections.reverb.options.useTLS' => false,
     ]);
 
     app(BroadcastManager::class)->forgetDrivers();
@@ -44,11 +48,11 @@ it('authorizes the sync owner to subscribe', function (): void {
     $sync = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')->create();
 
     $response = $this->actingAs($owner)->postJson('/broadcasting/auth', [
-        'channel_names' => ['private-youtube-music-sync.'.$sync->id],
+        'channel_name' => 'private-youtube-music-sync.'.$sync->id,
+        'socket_id' => '123.456',
     ]);
 
-    $response->assertOk();
-    expect($response->json('channel_names.0'))->not->toHaveKey('denied');
+    $response->assertOk()->assertJsonStructure(['auth']);
 });
 
 it('denies a user who does not own the sync', function (): void {
@@ -58,11 +62,11 @@ it('denies a user who does not own the sync', function (): void {
     $sync = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')->create();
 
     $response = $this->actingAs($intruder)->postJson('/broadcasting/auth', [
-        'channel_names' => ['private-youtube-music-sync.'.$sync->id],
+        'channel_name' => 'private-youtube-music-sync.'.$sync->id,
+        'socket_id' => '123.456',
     ]);
 
-    $response->assertOk();
-    expect($response->json('channel_names.0.denied'))->toBeTrue();
+    $response->assertForbidden();
 });
 
 it('denies a guest', function (): void {
@@ -70,9 +74,9 @@ it('denies a guest', function (): void {
     $sync = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')->create();
 
     $response = $this->postJson('/broadcasting/auth', [
-        'channel_names' => ['private-youtube-music-sync.'.$sync->id],
+        'channel_name' => 'private-youtube-music-sync.'.$sync->id,
+        'socket_id' => '123.456',
     ]);
 
-    $response->assertOk();
-    expect($response->json('channel_names.0.denied'))->toBeTrue();
+    $response->assertForbidden();
 });

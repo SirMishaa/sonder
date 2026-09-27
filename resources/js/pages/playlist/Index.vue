@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
+import { useEcho } from '@laravel/echo-vue';
 import { ListMusic, LoaderCircle, Settings2 } from 'lucide-vue-next';
-import { onMounted, onUnmounted, reactive } from 'vue';
+import { reactive } from 'vue';
 import PlaylistController from '@/actions/App/Http/Controllers/PlaylistController';
 import YouTubeMusicConnectionController from '@/actions/App/Http/Controllers/YouTubeMusicConnectionController';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { subscribeToPrivateChannel } from '@/lib/mercure';
 import type { BreadcrumbItem } from '@/types';
 
 type Props = {
@@ -26,21 +26,11 @@ const sync = props.activeSync
     ? reactive({ ...props.activeSync, visible: true })
     : null;
 
-let unsubscribe: (() => void) | null = null;
-
-onMounted(() => {
-    if (!sync) {
-        return;
-    }
-
-    unsubscribe = subscribeToPrivateChannel(
+if (sync) {
+    useEcho<App.Data.YouTubeMusicSyncData>(
         `youtube-music-sync.${sync.id}`,
-        (message) => {
-            if (message.event !== 'sync.updated') {
-                return;
-            }
-
-            const payload = message.payload as App.Data.YouTubeMusicSyncData;
+        '.sync.updated',
+        (payload) => {
             Object.assign(sync, payload);
 
             if (payload.status === 'completed') {
@@ -51,9 +41,7 @@ onMounted(() => {
             }
         },
     );
-});
-
-onUnmounted(() => unsubscribe?.());
+}
 </script>
 
 <template>

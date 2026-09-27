@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
+import { useEcho } from '@laravel/echo-vue';
 import { CheckCircle2, XCircle } from 'lucide-vue-next';
-import { onMounted, onUnmounted, reactive, ref } from 'vue';
+import { reactive, ref } from 'vue';
 import PlaylistController from '@/actions/App/Http/Controllers/PlaylistController';
 import YouTubeMusicConnectionController from '@/actions/App/Http/Controllers/YouTubeMusicConnectionController';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { subscribeToPrivateChannel } from '@/lib/mercure';
 import type { BreadcrumbItem } from '@/types';
 
 type Props = {
@@ -19,31 +19,17 @@ const props = defineProps<Props>();
 const state = reactive({ ...props.sync });
 const completedTitles = ref<string[]>([]);
 
-let unsubscribe: (() => void) | null = null;
-
 function goToPlaylists() {
     router.visit(PlaylistController.index().url);
 }
 
-onMounted(() => {
-    if (state.status === 'completed') {
-        goToPlaylists();
-        return;
-    }
-
-    if (state.status === 'failed') {
-        return;
-    }
-
-    unsubscribe = subscribeToPrivateChannel(
+if (state.status === 'completed') {
+    goToPlaylists();
+} else if (state.status !== 'failed') {
+    useEcho<App.Data.YouTubeMusicSyncData>(
         `youtube-music-sync.${props.sync.id}`,
-        (message) => {
-            if (message.event !== 'sync.updated') {
-                return;
-            }
-
-            const payload = message.payload as App.Data.YouTubeMusicSyncData;
-
+        '.sync.updated',
+        (payload) => {
             if (
                 payload.syncedPlaylists > state.syncedPlaylists &&
                 state.currentPlaylistTitle
@@ -58,9 +44,7 @@ onMounted(() => {
             }
         },
     );
-});
-
-onUnmounted(() => unsubscribe?.());
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Syncing your library', href: '#' },

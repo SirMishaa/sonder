@@ -32,5 +32,4 @@ Homestead.yaml
 **/caddy
 frankenphp
 frankenphp-worker.php
-/mercure
 .superpowers/
