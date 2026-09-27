@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Actions\StartYouTubeMusicSync;
 use App\Data\PlaylistData;
 use App\Data\PlaylistSummaryData;
+use App\Data\PlaylistSyncStateData;
 use App\Data\TrackData;
 use App\Data\YouTubeMusicSyncData;
 use App\Enums\YouTubeMusicSyncStatus;
@@ -34,7 +35,7 @@ final readonly class PlaylistController
             return to_route('youtube-music-connection.sync', $sync);
         }
 
-        $activeSync = $account->playlists()->max('last_synced_at') < now()->subHour()
+        $activeSync = $account->playlists()->max('last_checked_at') < now()->subHour()
             ? $startSync->handle($account)
             : YouTubeMusicSync::query()
                 ->where('youtube_music_account_id', $account->id)
@@ -48,7 +49,9 @@ final readonly class PlaylistController
         // refresh keeps the rendered sync state current in every environment.
         $activeSync?->refresh();
 
-        $playlists = $account->playlists()->get()->map(
+        $storedPlaylists = $account->playlists()->get();
+
+        $playlists = $storedPlaylists->map(
             fn (Playlist $playlist) => PlaylistSummaryData::from([
                 'id' => $playlist->youtube_playlist_id,
                 'title' => $playlist->title,
@@ -62,6 +65,11 @@ final readonly class PlaylistController
         return Inertia::render('playlist/Index', [
             'accountName' => $account->account_name,
             'playlists' => $playlists,
+            'removedPlaylistIds' => $storedPlaylists
+                ->whereNotNull('removed_at')
+                ->pluck('youtube_playlist_id')
+                ->values(),
+            'lastCheckedAt' => $storedPlaylists->max('last_checked_at')?->toIso8601String(),
             'activeSync' => $activeSync !== null ? YouTubeMusicSyncData::fromModel($activeSync) : null,
         ]);
     }
@@ -119,6 +127,7 @@ final readonly class PlaylistController
             'playlistId' => $playlistId,
             'summary' => $summary,
             'playlist' => $playlistData,
+            'syncState' => PlaylistSyncStateData::fromModel($playlist),
         ]);
     }
 }

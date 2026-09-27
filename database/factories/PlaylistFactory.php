@@ -22,7 +22,17 @@ final class PlaylistFactory extends Factory
             'youtube_music_account_id' => YouTubeMusicAccount::factory(),
             'youtube_playlist_id' => fake()->uuid(),
             'title' => fake()->words(3, true),
-            'last_synced_at' => now(),
+            'last_checked_at' => now(),
         ];
+    }
+
+    /**
+     * A playlist that no longer exists in the YouTube Music library.
+     */
+    public function removed(): static
+    {
+        return $this->state(fn (): array => [
+            'removed_at' => now(),
+        ]);
     }
 }

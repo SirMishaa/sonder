@@ -55,7 +55,7 @@ it('refreshes stale playlists in the background instead of blocking', function (
     $user = User::factory()->create();
     $account = YouTubeMusicAccount::factory()->for($user)->create();
     Playlist::factory()->for($account, 'youtubeMusicAccount')->create([
-        'last_synced_at' => now()->subDays(2),
+        'last_checked_at' => now()->subDays(2),
     ]);
     $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
     $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
@@ -132,4 +132,35 @@ it('sends a user with no connection away from a playlist', function (): void {
 it('keeps guests out', function (): void {
     $this->get(route('playlist.index'))->assertRedirect(route('login'));
     $this->get(route('playlist.show', 'PL1'))->assertRedirect(route('login'));
+});
+
+it('tells the index which playlists left the library and when it was last checked', function (): void {
+    $this->freezeSecond();
+    $user = User::factory()->create();
+    $account = YouTubeMusicAccount::factory()->for($user)->create();
+    Playlist::factory()->for($account, 'youtubeMusicAccount')->create(['youtube_playlist_id' => 'PL_KEPT']);
+    Playlist::factory()->for($account, 'youtubeMusicAccount')->removed()->create(['youtube_playlist_id' => 'PL_GONE']);
+
+    $response = $this->actingAs($user)->get(route('playlist.index'));
+
+    $response->assertInertia(fn ($page) => $page
+        ->where('removedPlaylistIds', ['PL_GONE'])
+        ->where('lastCheckedAt', now()->toIso8601String()));
+});
+
+it('renders the sync state of a playlist', function (): void {
+    $this->freezeSecond();
+    $user = User::factory()->create();
+    $account = YouTubeMusicAccount::factory()->for($user)->create();
+    Playlist::factory()->for($account, 'youtubeMusicAccount')->removed()->create([
+        'youtube_playlist_id' => 'PL1',
+        'last_changed_at' => now()->subDay(),
+    ]);
+
+    $response = $this->actingAs($user)->get(route('playlist.show', 'PL1'));
+
+    $response->assertInertia(fn ($page) => $page
+        ->where('syncState.lastCheckedAt', now()->toIso8601String())
+        ->where('syncState.lastChangedAt', now()->subDay()->toIso8601String())
+        ->where('syncState.removedAt', now()->toIso8601String()));
 });

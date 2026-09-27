@@ -9,27 +9,16 @@ use App\Data\PlaylistData;
 use Illuminate\Contracts\Cache\Repository;
 
 /**
- * Caches YouTube Music reads.
+ * Caches the YouTube Music account lookup.
  *
- * Loading a large playlist costs a chain of sequential "continuation"
- * requests, so it must not be repeated on every page view. Rather than expire
- * playlists on a timer and hope, the cache key embeds the track count: when
- * the playlist changes size the key changes with it and the old entry is
- * simply never read again. No explicit invalidation to write, and none to
- * forget.
- *
- * The count is unreliable (see YtmusicapiClient::trackCount), so when it is
- * unknown the key cannot detect change and a short TTL is used instead.
+ * Playlists are deliberately not cached: the library sync decides what to
+ * re-download by comparing fingerprints, and the manual refresh exists to
+ * bypass exactly that. A cache in front of either would hand them stale data
+ * and make them report a playlist as up to date when it is not.
  */
 final readonly class CachedClient implements Client
 {
     private const int ACCOUNT_TTL = 86400; // 24 hours
-
-    private const int PLAYLISTS_TTL = 3600; // 1 hour (instead of 5 minutes)
-
-    private const int PLAYLIST_TTL = 604800; // 7 days
-
-    private const int UNVERSIONED_PLAYLIST_TTL = 3600; // 1 hour (instead of 5 minutes)
 
     public function __construct(
         private Client $client,
@@ -47,18 +36,12 @@ final readonly class CachedClient implements Client
 
     public function playlists(string $cookie): array
     {
-        return $this->cache->remember(
-            $this->key($cookie, 'playlists'),
-            self::PLAYLISTS_TTL,
-            fn (): array => $this->client->playlists($cookie),
-        );
+        return $this->client->playlists($cookie);
     }
 
     public function playlist(string $cookie, string $playlistId, ?int $trackCount = null): PlaylistData
     {
-        return sprintf('playlist:%s:%s', $playlistId, $trackCount ?? 'unknown')
-                |> (fn ($x) => $this->key($cookie, $x))
-                |> (fn ($x) => $this->cache->remember($x, $trackCount === null ? self::UNVERSIONED_PLAYLIST_TTL : self::PLAYLIST_TTL, fn (): PlaylistData => $this->client->playlist($cookie, $playlistId, $trackCount)));
+        return $this->client->playlist($cookie, $playlistId, $trackCount);
     }
 
     /**

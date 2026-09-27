@@ -60,10 +60,14 @@ final class FakeYouTubeMusicClient implements Client
         );
     }
 
+    /**
+     * @param  array<int, TrackData>|null  $tracks
+     */
     public static function aPlaylist(
         string $id = 'PL_TEST',
         string $title = 'Deep Focus',
         int $trackCount = 1,
+        ?array $tracks = null,
     ): PlaylistData {
         return new PlaylistData(
             id: $id,
@@ -73,14 +77,14 @@ final class FakeYouTubeMusicClient implements Client
             duration: '48 minutes',
             thumbnailUrl: 'https://example.test/cover.jpg',
             author: 'Test Listener',
-            tracks: [self::aTrack()],
+            tracks: $tracks ?? [self::aTrack()],
         );
     }
 
-    public static function aTrack(string $title = 'Rendezvous'): TrackData
+    public static function aTrack(string $title = 'Rendezvous', ?string $videoId = 'xXp4GnC1Z3Q'): TrackData
     {
         return new TrackData(
-            videoId: 'xXp4GnC1Z3Q',
+            videoId: $videoId,
             title: $title,
             artists: 'Ludwig Göransson',
             album: 'The Mandalorian',

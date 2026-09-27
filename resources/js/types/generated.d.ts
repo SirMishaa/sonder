@@ -24,6 +24,11 @@ trackCount: number | null,
 thumbnailUrl: string | null,
 author: string | null,
 };
+export type PlaylistSyncStateData = {
+lastCheckedAt: string,
+lastChangedAt: string | null,
+removedAt: string | null,
+};
 export type TrackData = {
 videoId: string | null,
 title: string,

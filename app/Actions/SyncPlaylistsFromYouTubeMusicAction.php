@@ -4,77 +4,109 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Data\PlaylistSummaryData;
 use App\Models\Playlist;
 use App\Models\YouTubeMusicAccount;
 use App\Services\YouTubeMusic\Client;
 use Closure;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Checks the whole library against YouTube Music with a single listing
+ * request, and only downloads the tracks of playlists whose fingerprint moved.
+ *
+ * Playlists that disappeared from the library are flagged, never deleted: the
+ * user decides what to do with them.
+ */
 final readonly class SyncPlaylistsFromYouTubeMusicAction
 {
-    public function __construct(private Client $client) {}
+    public function __construct(
+        private Client $client,
+        private SyncPlaylistTracks $syncTracks,
+    ) {}
 
     /**
      * @param  Closure(int $synced, int $total, ?Playlist $playlist): void|null  $onProgress
      *                                                                                        Called once with `(0, $total, null)` right after the playlist
-     *                                                                                        list is fetched, then once per playlist right after it is fully
-     *                                                                                        upserted (tracks included).
+     *                                                                                        list is fetched, then once per playlist right after it is
+     *                                                                                        checked (and its tracks updated, when it changed).
      */
     public function handle(YouTubeMusicAccount $account, ?Closure $onProgress = null): void
     {
-        $playlistSummaries = $this->client->playlists($account->cookie);
-        $total = count($playlistSummaries);
+        $summaries = $this->client->playlists($account->cookie);
+        $total = count($summaries);
 
         $onProgress?->__invoke(0, $total, null);
 
-        foreach ($playlistSummaries as $index => $summary) {
-            $playlist = DB::transaction(function () use ($account, $summary): Playlist {
-                $playlist = Playlist::updateOrCreate(
-                    [
-                        'youtube_music_account_id' => $account->id,
-                        'youtube_playlist_id' => $summary->id,
-                    ],
-                    [
-                        'title' => $summary->title,
-                        'description' => $summary->description,
-                        'track_count' => $summary->trackCount,
-                        'thumbnail_url' => $summary->thumbnailUrl,
-                        'author' => $summary->author,
-                        'last_synced_at' => now(),
-                    ]
-                );
+        $stored = $account->playlists()->get()->keyBy('youtube_playlist_id');
 
-                $playlistData = $this->client->playlist(
-                    $account->cookie,
-                    $summary->id,
-                    $summary->trackCount
-                );
+        foreach ($summaries as $index => $summary) {
+            $playlist = $stored->get($summary->id) ?? new Playlist([
+                'youtube_music_account_id' => $account->id,
+                'youtube_playlist_id' => $summary->id,
+            ]);
 
-                $playlist->update([
-                    'duration' => $playlistData->duration,
-                ]);
-
-                $playlist->tracks()->delete();
-
-                foreach ($playlistData->tracks as $position => $track) {
-                    $playlist->tracks()->create([
-                        'youtube_video_id' => $track->videoId,
-                        'title' => $track->title,
-                        'artists' => $track->artists,
-                        'album' => $track->album,
-                        'duration' => $track->duration,
-                        'duration_seconds' => $track->durationSeconds,
-                        'thumbnail_url' => $track->thumbnailUrl,
-                        'is_explicit' => $track->isExplicit,
-                        'is_available' => $track->isAvailable,
-                        'position' => $position,
-                    ]);
-                }
-
-                return $playlist;
-            });
+            $this->syncPlaylist($account, $playlist, $summary);
 
             $onProgress?->__invoke($index + 1, $total, $playlist);
         }
+
+        $this->flagRemovedPlaylists($account, $summaries);
+    }
+
+    private function syncPlaylist(YouTubeMusicAccount $account, Playlist $playlist, PlaylistSummaryData $summary): void
+    {
+        $fingerprint = $summary->fingerprint();
+        $isUnchanged = $playlist->exists && $playlist->fingerprint === $fingerprint;
+
+        $playlist->fill([
+            'title' => $summary->title,
+            'description' => $summary->description,
+            'track_count' => $summary->trackCount,
+            'thumbnail_url' => $summary->thumbnailUrl,
+            'author' => $summary->author,
+            'fingerprint' => $fingerprint,
+            'last_checked_at' => now(),
+            'removed_at' => null,
+        ]);
+
+        if ($isUnchanged) {
+            $playlist->save();
+
+            return;
+        }
+
+        $detailsChanged = ! $playlist->exists
+            || $playlist->isDirty(['title', 'description', 'track_count', 'thumbnail_url', 'author']);
+
+        $playlistData = $this->client->playlist($account->cookie, $summary->id, $summary->trackCount);
+
+        DB::transaction(function () use ($playlist, $playlistData, $detailsChanged): void {
+            if ($detailsChanged) {
+                $playlist->last_changed_at = now();
+            }
+
+            $playlist->save();
+
+            $this->syncTracks->handle($playlist, $playlistData);
+        });
+    }
+
+    /**
+     * An empty listing is far more likely to be a YouTube hiccup than a user
+     * who deleted every playlist, so it never flags anything.
+     *
+     * @param  array<int, PlaylistSummaryData>  $summaries
+     */
+    private function flagRemovedPlaylists(YouTubeMusicAccount $account, array $summaries): void
+    {
+        if ($summaries === []) {
+            return;
+        }
+
+        $account->playlists()
+            ->whereNotIn('youtube_playlist_id', array_map(fn (PlaylistSummaryData $summary): string => $summary->id, $summaries))
+            ->whereNull('removed_at')
+            ->update(['removed_at' => now()]);
     }
 }

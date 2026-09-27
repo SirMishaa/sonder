@@ -26,11 +26,16 @@ final class Playlist extends Model
         'duration',
         'thumbnail_url',
         'author',
-        'last_synced_at',
+        'fingerprint',
+        'last_checked_at',
+        'last_changed_at',
+        'removed_at',
     ];
 
     protected $casts = [
-        'last_synced_at' => 'datetime',
+        'last_checked_at' => 'datetime',
+        'last_changed_at' => 'datetime',
+        'removed_at' => 'datetime',
     ];
 
     /**

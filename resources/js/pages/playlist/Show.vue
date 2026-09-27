@@ -1,7 +1,17 @@
 <script setup lang="ts">
-import { Deferred, Head, router } from '@inertiajs/vue3';
-import { ListMusic, Music2 } from 'lucide-vue-next';
+import { Deferred, Form, Head, router } from '@inertiajs/vue3';
+import {
+    ListMusic,
+    LoaderCircle,
+    Music2,
+    RefreshCw,
+    TriangleAlert,
+} from 'lucide-vue-next';
 import PlaylistController from '@/actions/App/Http/Controllers/PlaylistController';
+import PlaylistRefreshController from '@/actions/App/Http/Controllers/PlaylistRefreshController';
+import InputError from '@/components/InputError.vue';
+import SyncedAgo from '@/components/SyncedAgo.vue';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -11,6 +21,7 @@ type Props = {
     playlistId: string;
     summary: App.Data.PlaylistSummaryData | null;
     playlist?: App.Data.PlaylistData;
+    syncState: App.Data.PlaylistSyncStateData;
 };
 
 const props = defineProps<Props>();
@@ -30,6 +41,15 @@ const retry = () => router.reload({ only: ['playlist'] });
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="space-y-8 p-4">
+            <Alert v-if="syncState.removedAt" variant="destructive">
+                <TriangleAlert class="size-4" />
+                <AlertTitle>No longer in your YouTube Music library</AlertTitle>
+                <AlertDescription>
+                    This playlist was deleted or unfollowed on YouTube Music.
+                    Its tracks are kept here as they were last synced.
+                </AlertDescription>
+            </Alert>
+
             <header class="flex flex-col gap-5 sm:flex-row sm:items-end">
                 <div
                     class="aspect-square w-40 shrink-0 overflow-hidden rounded-xl border bg-muted"
@@ -72,7 +92,38 @@ const retry = () => router.reload({ only: ['playlist'] });
                             {{ summary.author }}
                         </template>
                     </p>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        <SyncedAgo
+                            :at="syncState.lastCheckedAt"
+                            label="Checked"
+                        />
+                        <SyncedAgo
+                            v-if="syncState.lastChangedAt"
+                            :at="syncState.lastChangedAt"
+                            label="Last changed"
+                        />
+                    </div>
                 </div>
+
+                <Form
+                    v-if="!syncState.removedAt"
+                    v-bind="PlaylistRefreshController.store.form(playlistId)"
+                    :options="{ preserveScroll: true }"
+                    class="flex flex-col items-start gap-1 sm:items-end"
+                    #default="{ errors, processing }"
+                >
+                    <Button
+                        type="submit"
+                        variant="outline"
+                        size="sm"
+                        :disabled="processing"
+                    >
+                        <LoaderCircle v-if="processing" class="animate-spin" />
+                        <RefreshCw v-else />
+                        {{ processing ? 'Refreshing…' : 'Refresh' }}
+                    </Button>
+                    <InputError :message="errors.refresh" />
+                </Form>
             </header>
 
             <Deferred data="playlist">

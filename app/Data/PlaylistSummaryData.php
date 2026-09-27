@@ -24,4 +24,22 @@ final class PlaylistSummaryData extends Data
         public ?string $thumbnailUrl,
         public ?string $author,
     ) {}
+
+    /**
+     * Identifies this version of the playlist as the library listing shows
+     * it. YouTube Music exposes no modification date, so a change in any of
+     * these fields is the only cheap signal that the tracks may have changed.
+     * Edits that leave all of them intact (a track swapped deep in the list)
+     * are invisible here, which is what the manual refresh is for.
+     */
+    public function fingerprint(): string
+    {
+        return hash('sha256', json_encode([
+            $this->title,
+            $this->description,
+            $this->trackCount,
+            $this->thumbnailUrl,
+            $this->author,
+        ], JSON_THROW_ON_ERROR));
+    }
 }

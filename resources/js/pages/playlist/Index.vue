@@ -2,10 +2,12 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { useEcho } from '@laravel/echo-vue';
 import { ListMusic, LoaderCircle, Settings2 } from 'lucide-vue-next';
-import { reactive } from 'vue';
+import { computed, reactive } from 'vue';
 import PlaylistController from '@/actions/App/Http/Controllers/PlaylistController';
 import YouTubeMusicConnectionController from '@/actions/App/Http/Controllers/YouTubeMusicConnectionController';
 import Heading from '@/components/Heading.vue';
+import SyncedAgo from '@/components/SyncedAgo.vue';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
@@ -13,6 +15,8 @@ import type { BreadcrumbItem } from '@/types';
 type Props = {
     accountName: string;
     playlists: App.Data.PlaylistSummaryData[];
+    removedPlaylistIds: string[];
+    lastCheckedAt: string | null;
     activeSync: App.Data.YouTubeMusicSyncData | null;
 };
 
@@ -21,6 +25,8 @@ const props = defineProps<Props>();
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Playlists', href: PlaylistController.index() },
 ];
+
+const removedPlaylistIds = computed(() => new Set(props.removedPlaylistIds));
 
 const sync = props.activeSync
     ? reactive({ ...props.activeSync, visible: true })
@@ -35,7 +41,14 @@ if (sync) {
 
             if (payload.status === 'completed') {
                 sync.visible = false;
-                router.reload({ only: ['playlists', 'accountName'] });
+                router.reload({
+                    only: [
+                        'playlists',
+                        'removedPlaylistIds',
+                        'lastCheckedAt',
+                        'accountName',
+                    ],
+                });
             } else if (payload.status === 'failed') {
                 sync.visible = false;
             }
@@ -50,10 +63,13 @@ if (sync) {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="space-y-6 p-4">
             <div class="flex items-end justify-between gap-4">
-                <Heading
-                    :title="`${playlists.length} playlists`"
-                    :description="`Signed in to YouTube Music as ${accountName}`"
-                />
+                <div class="space-y-1">
+                    <Heading
+                        :title="`${playlists.length} playlists`"
+                        :description="`Signed in to YouTube Music as ${accountName}`"
+                    />
+                    <SyncedAgo v-if="lastCheckedAt" :at="lastCheckedAt" />
+                </div>
                 <div
                     v-if="sync?.visible"
                     class="flex items-center gap-2 rounded-full border bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground"
@@ -95,7 +111,18 @@ if (sync) {
                 >
                     <div
                         class="relative aspect-square overflow-hidden rounded-lg border bg-muted"
+                        :class="{
+                            'border-destructive ring-2 ring-destructive/40':
+                                removedPlaylistIds.has(playlist.id),
+                        }"
                     >
+                        <Badge
+                            v-if="removedPlaylistIds.has(playlist.id)"
+                            variant="destructive"
+                            class="absolute top-2 left-2 z-10"
+                        >
+                            Removed from YouTube Music
+                        </Badge>
                         <img
                             v-if="playlist.thumbnailUrl"
                             :src="playlist.thumbnailUrl"
