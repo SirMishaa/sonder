@@ -36,3 +36,13 @@ export function formatDateTime(timestamp: string): string {
 export function formatNumber(value: number): string {
     return new Intl.NumberFormat(languageTag()).format(value);
 }
+
+/** "il y a 4 minutes" / "4 minutes ago" for a fixed offset in the past. */
+export function formatAgo(
+    amount: number,
+    unit: Intl.RelativeTimeFormatUnit,
+): string {
+    return new Intl.RelativeTimeFormat(languageTag(), {
+        numeric: 'auto',
+    }).format(-amount, unit);
+}

@@ -18,7 +18,7 @@ use App\Http\Controllers\UserTwoFactorAuthenticationController;
 use App\Http\Controllers\YouTubeMusicConnectionController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/dashboard')->name('home');
+Route::inertia('/', 'welcome/Index')->middleware('guest')->name('home');
 
 Route::get('thumbnails/{hash}', [ThumbnailController::class, 'show'])->name('thumbnail.show');
 

@@ -52,6 +52,14 @@ it('keeps guests out', function (): void {
     $this->get(route('dashboard'))->assertRedirect(route('login'));
 });
 
-it('sends the home page to discover', function (): void {
-    $this->get(route('home'))->assertRedirect('/dashboard');
+it('shows guests the landing page at the root', function (): void {
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page->component('welcome/Index'));
+});
+
+it('sends a signed-in user from the landing page to discover', function (): void {
+    $this->actingAs(User::factory()->create())
+        ->get(route('home'))
+        ->assertRedirectToRoute('dashboard');
 });
