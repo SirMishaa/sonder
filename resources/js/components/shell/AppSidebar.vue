@@ -131,7 +131,7 @@ useShortcuts({
     <aside
         class="material-sleeve flex min-h-0 flex-col overflow-hidden border-r border-line transition-[width] duration-[240ms] ease-out-quint"
         :class="collapsed ? 'w-[68px]' : 'w-[264px]'"
-        aria-label="Sidebar"
+        :aria-label="$t('Sidebar')"
     >
         <div class="relative isolate pb-3">
             <div class="sidetop-glow" aria-hidden="true" />
@@ -145,7 +145,7 @@ useShortcuts({
                 <Link
                     :href="DiscoverController.index()"
                     class="flex items-center gap-2.5 rounded-lg"
-                    aria-label="Sonder, go to Discover"
+                    :aria-label="$t('Sonder, go to Discover')"
                 >
                     <SonderMark
                         :spinning="player.state.playing"
@@ -158,9 +158,11 @@ useShortcuts({
                     class="grid size-7 place-items-center rounded-md text-faint transition-colors hover:bg-raised hover:text-paper"
                     :class="{ 'ml-auto': !collapsed }"
                     :aria-label="
-                        collapsed ? 'Expand sidebar' : 'Collapse sidebar'
+                        collapsed
+                            ? $t('Expand sidebar')
+                            : $t('Collapse sidebar')
                     "
-                    title="Toggle sidebar  ["
+                    :title="$t('Toggle sidebar  [')"
                     @click="collapsed = !collapsed"
                 >
                     <PanelLeftClose
@@ -178,12 +180,12 @@ useShortcuts({
                         ? 'w-[calc(100%-20px)] justify-center'
                         : 'w-[calc(100%-20px)] px-2.5'
                 "
-                title="Search  ⌘K"
+                :title="$t('Search  ⌘K')"
                 @click="palette.show"
             >
                 <Search class="size-4 shrink-0" />
                 <template v-if="!collapsed">
-                    <span>Search</span>
+                    <span>{{ $t('Search') }}</span>
                     <kbd class="keycap ml-auto">⌘K</kbd>
                 </template>
             </button>
@@ -191,7 +193,7 @@ useShortcuts({
             <nav
                 ref="navEl"
                 class="relative flex flex-col gap-0.5 px-2.5"
-                aria-label="Main"
+                :aria-label="$t('Main')"
             >
                 <span
                     class="nav-pill"
@@ -209,23 +211,24 @@ useShortcuts({
                     :data-active="isCurrentUrl(item.href)"
                     class="nav-item"
                     :class="{ 'justify-center px-0': collapsed }"
-                    :title="`${item.label}  ${item.key}`"
+                    :title="`${$t(item.label)}  ${item.key}`"
                 >
                     <component :is="item.icon" class="size-[18px] shrink-0" />
-                    <span v-if="!collapsed">{{ item.label }}</span>
+                    <span v-if="!collapsed">{{ $t(item.label) }}</span>
                 </Link>
                 <button
                     type="button"
                     class="nav-item"
                     :class="{ 'justify-center px-0': collapsed }"
-                    title="Stats are coming later"
-                    @click="toast('Stats are coming later.')"
+                    :title="$t('Stats are coming later')"
+                    @click="toast($t('Stats are coming later.'))"
                 >
                     <BarChart3 class="size-[18px] shrink-0" />
                     <template v-if="!collapsed">
-                        <span>Stats</span>
-                        <span class="ml-auto text-[11px] font-medium text-faint"
-                            >soon</span
+                        <span>{{ $t('Stats') }}</span>
+                        <span
+                            class="ml-auto text-[11px] font-medium text-faint"
+                            >{{ $t('soon') }}</span
                         >
                     </template>
                 </button>
@@ -237,7 +240,7 @@ useShortcuts({
             :class="collapsed ? 'justify-center pt-4 pb-2' : 'px-5 pt-4 pb-2'"
         >
             <template v-if="!collapsed">
-                <span>Playlists</span>
+                <span>{{ $t('Playlists') }}</span>
                 <span class="font-medium text-faint">{{
                     library?.playlists.length ?? 0
                 }}</span>
@@ -245,7 +248,7 @@ useShortcuts({
                     type="button"
                     class="ml-auto grid size-6 place-items-center rounded-md text-faint hover:bg-raised hover:text-paper"
                     :aria-label="
-                        filterOpen ? 'Clear filter' : 'Filter playlists'
+                        filterOpen ? $t('Clear filter') : $t('Filter playlists')
                     "
                     @click="toggleFilter"
                 >
@@ -261,7 +264,7 @@ useShortcuts({
                 ref="filterInput"
                 v-model="filter"
                 type="search"
-                placeholder="Filter playlists"
+                :placeholder="$t($t('Filter playlists'))"
                 class="w-full rounded-lg border border-line bg-ink px-2.5 py-1.5 text-sm text-paper placeholder:text-faint focus:border-amber/50 focus:outline-none"
                 @keydown.esc="toggleFilter"
             />
@@ -311,12 +314,12 @@ useShortcuts({
                     <span
                         v-else-if="playlist.isRemoved"
                         class="size-1.5 shrink-0 rounded-full bg-alarm"
-                        title="No longer in your YouTube Music library"
+                        :title="$t('No longer in your YouTube Music library')"
                     />
                     <span
                         v-else-if="changedRecently(playlist)"
                         class="size-1.5 shrink-0 rounded-full bg-amber"
-                        title="Changed in the last few days"
+                        :title="$t('Changed in the last few days')"
                     />
                 </template>
             </Link>
@@ -324,7 +327,7 @@ useShortcuts({
                 v-if="filter && playlists.length === 0"
                 class="px-2 py-3 text-sm text-faint"
             >
-                No playlist matches “{{ filter }}”.
+                {{ $t('No playlist matches “:query”.', { query: filter }) }}
             </p>
         </div>
 

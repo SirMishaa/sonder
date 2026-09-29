@@ -12,6 +12,7 @@
 /storage/pail
 /tests/Browser/Screenshots
 /tests/.pest
+/lang/php_*.json
 /vendor
 .DS_Store
 .env

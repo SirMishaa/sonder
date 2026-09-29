@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { router, usePage } from '@inertiajs/vue3';
-import { useTimeAgo } from '@vueuse/core';
 import { computed, reactive, watch } from 'vue';
 import SyncListener from '@/components/shell/SyncListener.vue';
+import { useRelativeTime } from '@/composables/useRelativeTime';
 
 const page = usePage();
 const library = computed(() => page.props.library);
@@ -19,7 +19,7 @@ watch(
     { immediate: true },
 );
 
-const checkedAgo = useTimeAgo(() => library.value?.lastCheckedAt ?? new Date());
+const checkedAgo = useRelativeTime(() => library.value?.lastCheckedAt);
 
 const syncing = computed(
     () =>
@@ -47,14 +47,18 @@ function onUpdate(sync: App.Data.YouTubeMusicSyncData): void {
             :class="syncing ? 'animate-pulse bg-amber' : 'bg-signal'"
         />
         <span v-if="syncing" class="truncate">
-            Syncing {{ live.sync?.syncedPlaylists ?? 0 }}
-            <template v-if="live.sync?.totalPlaylists">
-                of {{ live.sync.totalPlaylists }}</template
-            >…
+            {{
+                live.sync?.totalPlaylists
+                    ? $t('Syncing :done of :total…', {
+                          done: String(live.sync.syncedPlaylists),
+                          total: String(live.sync.totalPlaylists),
+                      })
+                    : $t('Syncing…')
+            }}
         </span>
-        <span v-else-if="library?.lastCheckedAt" class="truncate"
-            >Synced {{ checkedAgo }}</span
-        >
-        <span v-else class="truncate">Not synced yet</span>
+        <span v-else-if="library?.lastCheckedAt" class="truncate">{{
+            $t('Synced :ago', { ago: checkedAgo })
+        }}</span>
+        <span v-else class="truncate">{{ $t('Not synced yet') }}</span>
     </div>
 </template>

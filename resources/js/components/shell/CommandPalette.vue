@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { router, usePage } from '@inertiajs/vue3';
 import { useLocalStorage } from '@vueuse/core';
+import { trans, transChoice } from 'laravel-vue-i18n';
 import {
     Cable,
     ListMusic,
@@ -56,7 +57,7 @@ const items = computed<Item[]>(() => {
             group: 'Playlists',
             label: playlist.title,
             hint: playlist.trackCount
-                ? `${playlist.trackCount} tracks`
+                ? transChoice(':count track|:count tracks', playlist.trackCount)
                 : undefined,
             artwork: playlist.thumbnailUrl,
             run: () => router.visit(PlaylistController.show(playlist.id)),
@@ -75,7 +76,7 @@ const items = computed<Item[]>(() => {
         {
             id: 'go-discover',
             group: 'Go to',
-            label: 'Discover',
+            label: trans('Discover'),
             hint: 'G',
             icon: Sparkles,
             run: () => router.visit(DiscoverController.index()),
@@ -83,7 +84,7 @@ const items = computed<Item[]>(() => {
         {
             id: 'go-library',
             group: 'Go to',
-            label: 'Library',
+            label: trans('Library'),
             hint: 'L',
             icon: SquareLibrary,
             run: () => router.visit(PlaylistController.index()),
@@ -91,14 +92,14 @@ const items = computed<Item[]>(() => {
         {
             id: 'go-connection',
             group: 'Go to',
-            label: 'YouTube Music connection',
+            label: trans('YouTube Music connection'),
             icon: Cable,
             run: () => router.visit(YouTubeMusicConnectionController.create()),
         },
         {
             id: 'go-settings',
             group: 'Go to',
-            label: 'Settings',
+            label: trans('Settings'),
             icon: Settings,
             run: () => router.visit(UserProfileController.edit()),
         },
@@ -108,15 +109,17 @@ const items = computed<Item[]>(() => {
         {
             id: 'toggle-play',
             group: 'Actions',
-            label: player.state.playing ? 'Pause' : 'Play',
-            hint: 'Space',
+            label: player.state.playing ? trans('Pause') : trans('Play'),
+            hint: trans('Space'),
             icon: Pause,
             run: player.toggle,
         },
         {
             id: 'toggle-queue',
             group: 'Actions',
-            label: player.state.queueOpen ? 'Hide up next' : 'Show up next',
+            label: player.state.queueOpen
+                ? trans('Hide up next')
+                : trans('Show up next'),
             hint: 'Q',
             icon: ListMusic,
             run: player.toggleQueue,
@@ -124,7 +127,9 @@ const items = computed<Item[]>(() => {
         {
             id: 'toggle-sidebar',
             group: 'Actions',
-            label: collapsed.value ? 'Expand sidebar' : 'Collapse sidebar',
+            label: collapsed.value
+                ? trans('Expand sidebar')
+                : trans('Collapse sidebar'),
             hint: '[',
             icon: PanelLeft,
             run: () => (collapsed.value = !collapsed.value),
@@ -199,16 +204,19 @@ function run(item: Item | undefined): void {
                 @keydown.up.prevent="move(-1)"
                 @keydown.enter.prevent="run(items[selected])"
             >
-                <DialogTitle class="sr-only">Search Sonder</DialogTitle>
-                <DialogDescription class="sr-only"
-                    >Jump to a playlist, a queued track, a page or an
-                    action.</DialogDescription
-                >
+                <DialogTitle class="sr-only">{{
+                    $t('Search Sonder')
+                }}</DialogTitle>
+                <DialogDescription class="sr-only">{{
+                    $t(
+                        'Jump to a playlist, a queued track, a page or an action.',
+                    )
+                }}</DialogDescription>
                 <input
                     v-model="query"
                     class="w-full border-b border-line bg-transparent px-[18px] py-4 text-base text-paper placeholder:text-faint focus:outline-none"
-                    placeholder="Search playlists, tracks, actions…"
-                    aria-label="Search"
+                    :placeholder="$t('Search playlists, tracks, actions…')"
+                    :aria-label="$t('Search')"
                     autocomplete="off"
                 />
                 <div
@@ -220,7 +228,7 @@ function run(item: Item | undefined): void {
                         <p
                             class="px-2.5 pt-2 pb-1 text-xs font-bold text-faint"
                         >
-                            {{ group }}
+                            {{ $t(group) }}
                         </p>
                         <button
                             v-for="{ item, index } in entries"
@@ -267,7 +275,7 @@ function run(item: Item | undefined): void {
                         v-if="!items.length"
                         class="px-2.5 py-6 text-center text-sm text-faint"
                     >
-                        Nothing matches “{{ query }}”.
+                        {{ $t('Nothing matches “:query”.', { query }) }}
                     </p>
                 </div>
             </DialogContent>

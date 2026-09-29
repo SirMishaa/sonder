@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { trans } from 'laravel-vue-i18n';
 import { Plus, Sparkles, X } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import Artwork from '@/components/music/Artwork.vue';
@@ -76,12 +77,13 @@ function resolve(index: number, action: 'add' | 'skip'): void {
     if (action === 'add') {
         emit('add', suggestion.track);
         toast(
-            'Added ',
+            trans('Added :title to :playlist (preview only, not saved)', {
+                playlist: props.playlistTitle,
+            }),
             suggestion.track.title,
-            ` to ${props.playlistTitle} (preview only, not saved)`,
         );
     } else {
-        toast('Skipped ', suggestion.track.title);
+        toast(trans('Skipped :title'), suggestion.track.title);
     }
 }
 
@@ -107,21 +109,22 @@ useShortcuts({
 <template>
     <section
         class="suggest overflow-hidden rounded-xl border border-line"
-        aria-label="Suggestions"
+        :aria-label="$t('Suggestions')"
     >
         <header
             class="flex items-center gap-2.5 border-b border-line px-3.5 py-2.5"
         >
             <Sparkles class="size-[18px] text-amber" />
-            <h2 class="font-bold">Would fit this playlist</h2>
-            <span class="text-[12.5px] font-medium text-faint"
-                >{{ remaining }} never played</span
-            >
+            <h2 class="font-bold">{{ $t('Would fit this playlist') }}</h2>
+            <span class="text-[12.5px] font-medium text-faint">{{
+                $tChoice(':count never played|:count never played', remaining)
+            }}</span>
             <span
                 class="ml-auto hidden items-center gap-1.5 text-xs font-medium text-faint md:flex"
             >
-                <kbd class="keycap">J</kbd><kbd class="keycap">K</kbd> move
-                <kbd class="keycap">A</kbd> add <kbd class="keycap">X</kbd> skip
+                <kbd class="keycap">J</kbd><kbd class="keycap">K</kbd>
+                {{ $t('move') }} <kbd class="keycap">A</kbd> {{ $t('add') }}
+                <kbd class="keycap">X</kbd> {{ $t('skip') }}
             </span>
         </header>
 
@@ -148,7 +151,7 @@ useShortcuts({
                 class="flex flex-wrap items-center gap-1.5 text-[12.5px] font-medium text-faint"
             >
                 <template v-if="suggestion.near">
-                    near
+                    {{ $t('near') }}
                     <em class="font-semibold text-amber not-italic">{{
                         suggestion.near
                     }}</em>
@@ -182,13 +185,18 @@ useShortcuts({
         </div>
 
         <p v-if="!suggestions.length" class="px-3.5 py-4 text-sm text-faint">
-            All caught up. New suggestions arrive with the next sync.
+            {{
+                $t('All caught up. New suggestions arrive with the next sync.')
+            }}
         </p>
         <p
             class="border-t border-line/55 px-3.5 py-1.5 text-xs text-faint italic"
         >
-            Preview: tracks sampled from your library; genre tags will come from
-            Last.fm.
+            {{
+                $t(
+                    'Preview: tracks sampled from your library; genre tags will come from Last.fm.',
+                )
+            }}
         </p>
     </section>
 </template>

@@ -15,11 +15,14 @@ const { toasts } = useToast();
                 :key="toast.id"
                 class="rounded-[10px] border border-line bg-raised px-3.5 py-2 text-[13px] shadow-lg"
             >
-                {{ toast.text
-                }}<b v-if="toast.emphasis" class="font-semibold text-amber">{{
-                    toast.emphasis
-                }}</b
-                >{{ toast.after }}
+                <template
+                    v-for="(part, index) in toast.message.split(':title')"
+                    :key="index"
+                    ><b v-if="index > 0" class="font-semibold text-amber">{{
+                        toast.emphasis
+                    }}</b
+                    >{{ part }}</template
+                >
             </p>
         </TransitionGroup>
     </div>

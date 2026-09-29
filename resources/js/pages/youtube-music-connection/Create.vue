@@ -13,6 +13,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { formatDateTime } from '@/lib/i18n';
 import type { BreadcrumbItem } from '@/types';
 
 type Props = {
@@ -39,13 +40,17 @@ const steps = [
 </script>
 
 <template>
-    <Head title="Connect YouTube Music" />
+    <Head :title="$t('Connect YouTube Music')" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto w-full max-w-3xl space-y-8 p-4">
             <Heading
-                title="Connect YouTube Music"
-                description="Sonder reads your library through YouTube Music's private API. It needs your browser session to do that."
+                :title="$t('Connect YouTube Music')"
+                :description="
+                    $t(
+                        'Sonder reads your library through YouTube Music\'s private API. It needs your browser session to do that.',
+                    )
+                "
             />
 
             <div
@@ -65,28 +70,40 @@ const steps = [
                 <div class="min-w-0 flex-1 text-sm">
                     <p class="font-medium">
                         <template v-if="account.cookie_expired_at">
-                            The cookie for {{ account.account_name }} stopped
-                            working
+                            {{
+                                $t('The cookie for :account stopped working', {
+                                    account: account.account_name,
+                                })
+                            }}
                         </template>
                         <template v-else>
-                            Connected as {{ account.account_name }}
+                            {{
+                                $t('Connected as :account', {
+                                    account: account.account_name,
+                                })
+                            }}
                         </template>
                     </p>
                     <p class="text-muted-foreground">
                         <template v-if="account.cookie_expired_at">
-                            Refused since
                             {{
-                                new Date(
-                                    account.cookie_expired_at,
-                                ).toLocaleString()
-                            }}. Paste a fresh cookie below.
+                                $t(
+                                    'Refused since :date. Paste a fresh cookie below.',
+                                    {
+                                        date: formatDateTime(
+                                            account.cookie_expired_at,
+                                        ),
+                                    },
+                                )
+                            }}
                         </template>
                         <template v-else>
-                            Last verified
                             {{
-                                new Date(
-                                    account.last_verified_at,
-                                ).toLocaleString()
+                                $t('Last verified :date', {
+                                    date: formatDateTime(
+                                        account.last_verified_at,
+                                    ),
+                                })
                             }}
                         </template>
                     </p>
@@ -94,23 +111,26 @@ const steps = [
                 <Button as-child variant="outline" size="sm">
                     <Link :href="PlaylistController.index()">
                         <Music4 />
-                        Playlists
+                        {{ $t('Playlists') }}
                     </Link>
                 </Button>
             </div>
 
             <div class="rounded-xl border p-6">
-                <h2 class="text-sm font-medium">Where to find the cookie</h2>
+                <h2 class="text-sm font-medium">
+                    {{ $t('Where to find the cookie') }}
+                </h2>
                 <ol
                     class="mt-3 list-inside list-decimal space-y-1.5 text-sm text-muted-foreground"
                 >
                     <li v-for="step in steps" :key="step">{{ step }}</li>
                 </ol>
                 <p class="mt-3 text-sm text-muted-foreground">
-                    Why a private window: a browser that keeps using the same
-                    session keeps rotating its cookies, and Google soon rejects
-                    the copy you pasted. A session nobody uses anymore is left
-                    alone, so its cookie lasts much longer.
+                    {{
+                        $t(
+                            'Why a private window: a browser that keeps using the same session keeps rotating its cookies, and Google soon rejects the copy you pasted. A session nobody uses anymore is left alone, so its cookie lasts much longer.',
+                        )
+                    }}
                 </p>
                 <a
                     href="https://music.youtube.com"
@@ -118,7 +138,7 @@ const steps = [
                     rel="noreferrer noopener"
                     class="mt-4 inline-flex items-center gap-1.5 text-sm underline underline-offset-4"
                 >
-                    Open YouTube Music
+                    {{ $t('Open YouTube Music') }}
                     <ExternalLink class="size-3.5" />
                 </a>
             </div>
@@ -129,7 +149,7 @@ const steps = [
                 v-slot="{ errors, processing }"
             >
                 <div class="grid gap-2">
-                    <Label for="cookie">Cookie header</Label>
+                    <Label for="cookie">{{ $t('Cookie header') }}</Label>
                     <textarea
                         id="cookie"
                         name="cookie"
@@ -142,9 +162,11 @@ const steps = [
                     />
                     <InputError :message="errors.cookie" />
                     <p class="text-xs text-muted-foreground">
-                        Stored encrypted, used only to read your library. Sonder
-                        checks it once a day and warns you as soon as YouTube
-                        Music stops accepting it.
+                        {{
+                            $t(
+                                'Stored encrypted, used only to read your library. Sonder checks it once a day and warns you as soon as YouTube Music stops accepting it.',
+                            )
+                        }}
                     </p>
                 </div>
 
@@ -167,7 +189,7 @@ const steps = [
                             method="delete"
                             as="button"
                         >
-                            Disconnect
+                            {{ $t('Disconnect') }}
                         </Link>
                     </Button>
                 </div>

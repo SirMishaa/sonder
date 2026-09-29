@@ -21,16 +21,20 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
-        <Head title="Password settings" />
+        <Head :title="$t('Password settings')" />
 
-        <h1 class="sr-only">Password settings</h1>
+        <h1 class="sr-only">{{ $t('Password settings') }}</h1>
 
         <SettingsLayout>
             <div class="space-y-6">
                 <Heading
                     variant="small"
-                    title="Update password"
-                    description="Ensure your account is using a long, random password to stay secure"
+                    :title="$t('Update password')"
+                    :description="
+                        $t(
+                            'Ensure your account is using a long, random password to stay secure',
+                        )
+                    "
                 />
 
                 <Form
@@ -48,39 +52,41 @@ const breadcrumbs: BreadcrumbItem[] = [
                     v-slot="{ errors, processing, recentlySuccessful }"
                 >
                     <div class="grid gap-2">
-                        <Label for="current_password">Current password</Label>
+                        <Label for="current_password">{{
+                            $t('Current password')
+                        }}</Label>
                         <PasswordInput
                             id="current_password"
                             name="current_password"
                             class="mt-1 block w-full"
                             autocomplete="current-password"
-                            placeholder="Current password"
+                            :placeholder="$t('Current password')"
                         />
                         <InputError :message="errors.current_password" />
                     </div>
 
                     <div class="grid gap-2">
-                        <Label for="password">New password</Label>
+                        <Label for="password">{{ $t('New password') }}</Label>
                         <PasswordInput
                             id="password"
                             name="password"
                             class="mt-1 block w-full"
                             autocomplete="new-password"
-                            placeholder="New password"
+                            :placeholder="$t('New password')"
                         />
                         <InputError :message="errors.password" />
                     </div>
 
                     <div class="grid gap-2">
-                        <Label for="password_confirmation"
-                            >Confirm password</Label
-                        >
+                        <Label for="password_confirmation">{{
+                            $t('Confirm password')
+                        }}</Label>
                         <PasswordInput
                             id="password_confirmation"
                             name="password_confirmation"
                             class="mt-1 block w-full"
                             autocomplete="new-password"
-                            placeholder="Confirm password"
+                            :placeholder="$t('Confirm password')"
                         />
                         <InputError :message="errors.password_confirmation" />
                     </div>
@@ -90,7 +96,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                             :disabled="processing"
                             data-test="update-password-button"
                         >
-                            Save password
+                            {{ $t('Save password') }}
                         </Button>
 
                         <Transition
@@ -103,7 +109,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 v-show="recentlySuccessful"
                                 class="text-sm text-neutral-600"
                             >
-                                Saved.
+                                {{ $t('Saved.') }}
                             </p>
                         </Transition>
                     </div>

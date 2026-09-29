@@ -41,16 +41,18 @@ onUnmounted(() => {
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
-        <Head title="Two-Factor Authentication" />
+        <Head :title="$t('Two-Factor Authentication')" />
 
-        <h1 class="sr-only">Two-Factor Authentication Settings</h1>
+        <h1 class="sr-only">{{ $t('Two-Factor Authentication Settings') }}</h1>
 
         <SettingsLayout>
             <div v-if="canManageTwoFactor" class="space-y-6">
                 <Heading
                     variant="small"
-                    title="Two-factor authentication"
-                    description="Manage your two-factor authentication settings"
+                    :title="$t('Two-factor authentication')"
+                    :description="
+                        $t('Manage your two-factor authentication settings')
+                    "
                 />
 
                 <div
@@ -58,10 +60,11 @@ onUnmounted(() => {
                     class="flex flex-col items-start justify-start space-y-4"
                 >
                     <p class="text-sm text-muted-foreground">
-                        When you enable two-factor authentication, you will be
-                        prompted for a secure pin during login. This pin can be
-                        retrieved from a TOTP-supported application on your
-                        phone.
+                        {{
+                            $t(
+                                'When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be retrieved from a TOTP-supported application on your phone.',
+                            )
+                        }}
                     </p>
 
                     <div>
@@ -69,7 +72,7 @@ onUnmounted(() => {
                             v-if="hasSetupData"
                             @click="showSetupModal = true"
                         >
-                            <ShieldCheck />Continue setup
+                            <ShieldCheck />{{ $t('Continue setup') }}
                         </Button>
                         <Form
                             v-else
@@ -78,7 +81,7 @@ onUnmounted(() => {
                             #default="{ processing }"
                         >
                             <Button type="submit" :disabled="processing">
-                                Enable 2FA
+                                {{ $t('Enable 2FA') }}
                             </Button>
                         </Form>
                     </div>
@@ -89,9 +92,11 @@ onUnmounted(() => {
                     class="flex flex-col items-start justify-start space-y-4"
                 >
                     <p class="text-sm text-muted-foreground">
-                        You will be prompted for a secure, random pin during
-                        login, which you can retrieve from the TOTP-supported
-                        application on your phone.
+                        {{
+                            $t(
+                                'You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.',
+                            )
+                        }}
                     </p>
 
                     <div class="relative inline">
@@ -101,7 +106,7 @@ onUnmounted(() => {
                                 type="submit"
                                 :disabled="processing"
                             >
-                                Disable 2FA
+                                {{ $t('Disable 2FA') }}
                             </Button>
                         </Form>
                     </div>
