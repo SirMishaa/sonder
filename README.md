@@ -1,5 +1,9 @@
 # Sonder
 
+<p align="center">
+  <img src="docs/screenshots/landing.webp" alt="Sonder's landing page: a warm, dark listening room with a playlist playing Roads by Portishead" width="100%">
+</p>
+
 A self-hosted companion for YouTube Music, built to solve one problem: running
 out of new music to listen to while working.
 
@@ -12,6 +16,28 @@ Read [Status](#status) before assuming a feature works.
 
 ---
 
+## A look around
+
+<p align="center">
+  <img src="docs/screenshots/library.webp" alt="The library: every playlist with its track count and when it was last checked or changed" width="100%">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/discovery.webp" alt="Suggestions sorted from the keyboard: J and K to move, A to add, X to skip" width="100%">
+</p>
+
+<table>
+  <tr>
+    <td width="68%"><img src="docs/screenshots/terrain.webp" alt="Sync state and an expired cookie, shown plainly"></td>
+    <td width="32%"><img src="docs/screenshots/mobile.webp" alt="The landing page on a phone"></td>
+  </tr>
+</table>
+
+The design system behind it, "The Listening Room", is described in
+[`DESIGN.md`](DESIGN.md).
+
+---
+
 ## Status
 
 Sonder is a proof of concept. This is the whole of it:
@@ -21,14 +47,16 @@ Sonder is a proof of concept. This is the whole of it:
 | Connect a YouTube Music account | Working |
 | Browse your playlists | Working |
 | Open a playlist and see its tracks | Working |
-| Sync anything into a database | Not built |
-| Discover new music | Not built |
+| Sync the library into a database, in the background | Working |
+| French and English interface | Working |
+| Discover new music | Preview: suggestions are sampled from your own library |
 | Generate playlists | Not built |
 | Moods and themes | Not built |
-| Control your player | Not built |
+| Control your player | Preview: playback is simulated |
 
-Nothing is persisted except your credentials. Playlists and tracks are read live
-from YouTube Music and cached for minutes, not stored.
+Playlists and tracks are stored locally and kept fresh by a background sync,
+which compares a fingerprint of each playlist so unchanged ones are not
+downloaded again.
 
 ---
 
