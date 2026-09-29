@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Deferred, Head, router, usePage } from '@inertiajs/vue3';
-import { useTimeAgo } from '@vueuse/core';
+import { trans } from 'laravel-vue-i18n';
 import {
     History,
     LoaderCircle,
@@ -17,9 +17,11 @@ import SuggestionsBlock from '@/components/music/SuggestionsBlock.vue';
 import Waveform from '@/components/music/Waveform.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { usePlayer } from '@/composables/usePlayer';
+import { useRelativeTime } from '@/composables/useRelativeTime';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useToast } from '@/composables/useToast';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { formatDateTime } from '@/lib/i18n';
 
 defineOptions({ layout: AppLayout });
 
@@ -49,8 +51,8 @@ const source = computed(() => ({
     title: props.summary.title,
 }));
 
-const checkedAgo = useTimeAgo(() => props.syncState.lastCheckedAt);
-const changedAgo = useTimeAgo(
+const checkedAgo = useRelativeTime(() => props.syncState.lastCheckedAt);
+const changedAgo = useRelativeTime(
     () => props.syncState.lastChangedAt ?? props.syncState.lastCheckedAt,
 );
 
@@ -94,7 +96,7 @@ function refresh(): void {
         },
         onSuccess: () => {
             if (!refreshError.value) {
-                toast('Refreshed ', props.summary.title);
+                toast(trans('Refreshed :title'), props.summary.title);
             }
         },
     });
@@ -124,10 +126,15 @@ useShortcuts({ r: refresh });
                 class="mb-6"
             >
                 <TriangleAlert class="size-4" />
-                <AlertTitle>No longer in your YouTube Music library</AlertTitle>
+                <AlertTitle>{{
+                    $t('No longer in your YouTube Music library')
+                }}</AlertTitle>
                 <AlertDescription>
-                    This playlist was deleted or unfollowed on YouTube Music.
-                    Its tracks are kept here as they were last synced.
+                    {{
+                        $t(
+                            'This playlist was deleted or unfollowed on YouTube Music. Its tracks are kept here as they were last synced.',
+                        )
+                    }}
                 </AlertDescription>
             </Alert>
 
@@ -142,7 +149,7 @@ useShortcuts({ r: refresh });
                 />
                 <div class="min-w-0">
                     <p class="reveal text-[13px] font-bold text-amber">
-                        Playlist
+                        {{ $t('Playlist') }}
                     </p>
                     <h1
                         class="reveal mt-1.5 mb-3 text-[44px] leading-none font-extrabold tracking-[-0.04em] text-balance"
@@ -154,7 +161,12 @@ useShortcuts({ r: refresh });
                         class="reveal flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-dim"
                         style="--i: 2"
                     >
-                        <span>{{ playlist.trackCount }} tracks</span>
+                        <span>{{
+                            $tChoice(
+                                ':count track|:count tracks',
+                                playlist.trackCount ?? 0,
+                            )
+                        }}</span>
                         <template v-if="playlist.duration">
                             <i class="dot" /><span>{{
                                 playlist.duration
@@ -163,18 +175,16 @@ useShortcuts({ r: refresh });
                         <i class="dot" />
                         <span
                             class="inline-flex items-center gap-1.5"
-                            :title="
-                                new Date(
-                                    syncState.lastCheckedAt,
-                                ).toLocaleString()
-                            "
+                            :title="formatDateTime(syncState.lastCheckedAt)"
                         >
-                            <History class="size-3.5" />Checked {{ checkedAgo }}
+                            <History class="size-3.5" />{{
+                                $t('Checked :ago', { ago: checkedAgo })
+                            }}
                         </span>
                         <template v-if="syncState.lastChangedAt">
-                            <i class="dot" /><span
-                                >Changed {{ changedAgo }}</span
-                            >
+                            <i class="dot" /><span>{{
+                                $t('Changed :ago', { ago: changedAgo })
+                            }}</span>
                         </template>
                     </p>
                 </div>
@@ -204,7 +214,7 @@ useShortcuts({ r: refresh });
                             :disabled="!tracks.length"
                             @click="play()"
                         >
-                            <Play class="size-4 fill-current" />Play
+                            <Play class="size-4 fill-current" />{{ $t('Play') }}
                         </button>
                     </div>
                     <p v-if="refreshError" class="text-sm text-alarm">
@@ -233,17 +243,19 @@ useShortcuts({ r: refresh });
                 class="reveal track-table"
                 style="--i: 5"
                 role="table"
-                aria-label="Tracks"
+                :aria-label="$t('Tracks')"
             >
                 <div class="contents" role="row">
                     <span class="head justify-end" role="columnheader">#</span>
-                    <span class="head" role="columnheader">Title</span>
-                    <span class="head hidden md:flex" role="columnheader"
-                        >Album</span
-                    >
-                    <span class="head justify-end" role="columnheader"
-                        >Time</span
-                    >
+                    <span class="head" role="columnheader">{{
+                        $t('Title')
+                    }}</span>
+                    <span class="head hidden md:flex" role="columnheader">{{
+                        $t('Album')
+                    }}</span>
+                    <span class="head justify-end" role="columnheader">{{
+                        $t('Time')
+                    }}</span>
                 </div>
                 <div
                     v-for="(track, index) in tracks"
@@ -320,7 +332,7 @@ useShortcuts({ r: refresh });
                 class="flex flex-col items-center gap-2 rounded-xl border border-dashed border-line p-12 text-center"
             >
                 <Music2 class="size-8 text-faint" />
-                <p class="font-semibold">This playlist is empty</p>
+                <p class="font-semibold">{{ $t('This playlist is empty') }}</p>
             </div>
         </div>
     </div>

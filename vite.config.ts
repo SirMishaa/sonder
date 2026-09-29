@@ -2,6 +2,7 @@ import {wayfinder} from '@laravel/vite-plugin-wayfinder';
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
+import i18n from 'laravel-vue-i18n/vite';
 import {defineConfig} from 'vite-plus';
 import vueDevTools from 'vite-plugin-vue-devtools'
 
@@ -59,6 +60,7 @@ export default defineConfig({
             refresh: true,
         }),
         tailwindcss(),
+        i18n('lang'),
         wayfinder({
             formVariants: true,
         }),

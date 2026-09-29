@@ -80,6 +80,7 @@ errorMessage: string | null,
 };
 }
 namespace Enums {
+export type Locale = 'fr_BE' | 'en_US';
 export type YouTubeMusicSyncStatus = 'pending' | 'syncing' | 'completed' | 'failed';
 }
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
 import { useClipboard } from '@vueuse/core';
+import { trans } from 'laravel-vue-i18n';
 import { Check, Copy, ScanLine } from 'lucide-vue-next';
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
 import AlertError from '@/components/AlertError.vue';
@@ -43,26 +44,30 @@ const pinInputContainerRef = useTemplateRef('pinInputContainerRef');
 const modalConfig = computed<TwoFactorConfigContent>(() => {
     if (props.twoFactorEnabled) {
         return {
-            title: 'Two-factor authentication enabled',
-            description:
+            title: trans('Two-factor authentication enabled'),
+            description: trans(
                 'Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.',
-            buttonText: 'Close',
+            ),
+            buttonText: trans('Close'),
         };
     }
 
     if (showVerificationStep.value) {
         return {
-            title: 'Verify authentication code',
-            description: 'Enter the 6-digit code from your authenticator app',
-            buttonText: 'Continue',
+            title: trans('Verify authentication code'),
+            description: trans(
+                'Enter the 6-digit code from your authenticator app',
+            ),
+            buttonText: trans('Continue'),
         };
     }
 
     return {
-        title: 'Enable two-factor authentication',
-        description:
+        title: trans('Enable two-factor authentication'),
+        description: trans(
             'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app',
-        buttonText: 'Continue',
+        ),
+        buttonText: trans('Continue'),
     };
 });
 
@@ -189,9 +194,9 @@ watch(
                             <div
                                 class="absolute inset-0 top-1/2 h-px w-full bg-border"
                             />
-                            <span class="relative bg-card px-2 py-1"
-                                >or, enter the code manually</span
-                            >
+                            <span class="relative bg-card px-2 py-1">{{
+                                $t('or, enter the code manually')
+                            }}</span>
                         </div>
 
                         <div
@@ -271,14 +276,14 @@ watch(
                                     @click="showVerificationStep = false"
                                     :disabled="processing"
                                 >
-                                    Back
+                                    {{ $t('Back') }}
                                 </Button>
                                 <Button
                                     type="submit"
                                     class="w-auto flex-1"
                                     :disabled="processing || code.length < 6"
                                 >
-                                    Confirm
+                                    {{ $t('Confirm') }}
                                 </Button>
                             </div>
                         </div>

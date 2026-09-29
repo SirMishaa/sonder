@@ -25,7 +25,7 @@ function onVolume(event: Event): void {
     <div
         class="material-glass player grid items-center gap-5 overflow-hidden rounded-2xl px-3.5 py-2.5"
         role="region"
-        aria-label="Player"
+        :aria-label="$t('Player')"
     >
         <div class="flex min-w-0 items-center gap-3">
             <template v-if="player.current.value">
@@ -54,7 +54,7 @@ function onVolume(event: Event): void {
                     <ListMusic class="size-5 text-faint" />
                 </div>
                 <p class="min-w-0 text-[13px] text-dim">
-                    Pick a track in a playlist to start.
+                    {{ $t('Pick a track in a playlist to start.') }}
                 </p>
             </template>
         </div>
@@ -64,7 +64,7 @@ function onVolume(event: Event): void {
                 <button
                     type="button"
                     class="icon-button"
-                    aria-label="Previous  P"
+                    :aria-label="$t('Previous  P')"
                     :disabled="!player.current.value"
                     @click="player.previous"
                 >
@@ -73,7 +73,9 @@ function onVolume(event: Event): void {
                 <button
                     type="button"
                     class="play-button"
-                    :aria-label="player.state.playing ? 'Pause' : 'Play'"
+                    :aria-label="
+                        player.state.playing ? $t('Pause') : $t('Play')
+                    "
                     :disabled="!player.current.value"
                     @click="player.toggle"
                 >
@@ -86,7 +88,7 @@ function onVolume(event: Event): void {
                 <button
                     type="button"
                     class="icon-button"
-                    aria-label="Next  N"
+                    :aria-label="$t('Next  N')"
                     :disabled="!player.current.value"
                     @click="player.next"
                 >
@@ -103,7 +105,7 @@ function onVolume(event: Event): void {
                     :aria-valuenow="Math.round(player.progress.value * 100)"
                     aria-valuemin="0"
                     aria-valuemax="100"
-                    aria-label="Playback progress"
+                    :aria-label="$t('Playback progress')"
                 >
                     <i
                         class="progress block h-full origin-left"
@@ -121,14 +123,18 @@ function onVolume(event: Event): void {
         <div class="flex items-center justify-end gap-1.5">
             <span
                 class="mr-1 hidden text-xs font-medium text-faint xl:inline"
-                title="Playback is simulated until Sonder can control YouTube Music"
+                :title="
+                    $t(
+                        'Playback is simulated until Sonder can control YouTube Music',
+                    )
+                "
             >
-                Preview player
+                {{ $t('Preview player') }}
             </span>
             <button
                 type="button"
                 class="icon-button"
-                :aria-label="player.state.muted ? 'Unmute' : 'Mute'"
+                :aria-label="player.state.muted ? $t('Unmute') : $t('Mute')"
                 @click="player.toggleMute"
             >
                 <VolumeX v-if="volume === 0" class="size-[18px]" />
@@ -141,18 +147,18 @@ function onVolume(event: Event): void {
                 :value="volume"
                 class="volume"
                 :style="{ '--v': `${volume}%` }"
-                aria-label="Volume"
+                :aria-label="$t('Volume')"
                 @input="onVolume"
             />
             <button
                 type="button"
                 class="queue-button"
                 :class="{ 'is-on': player.state.queueOpen }"
-                title="Up next  Q"
+                :title="$t('Up next  Q')"
                 @click="player.toggleQueue"
             >
                 <ListMusic class="size-[18px]" />
-                Up next
+                {{ $t('Up next') }}
             </button>
         </div>
     </div>

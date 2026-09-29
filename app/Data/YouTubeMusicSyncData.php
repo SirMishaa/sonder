@@ -29,7 +29,22 @@ final class YouTubeMusicSyncData extends Data
             totalPlaylists: $sync->total_playlists,
             syncedPlaylists: $sync->synced_playlists,
             currentPlaylistTitle: $sync->current_playlist_title,
-            errorMessage: $sync->error_message,
+            errorMessage: self::translate($sync->error_message),
         );
+    }
+
+    /**
+     * Error messages are stored in English, as thrown, and translated when
+     * shown so a sync that failed before a language change reads correctly.
+     */
+    private static function translate(?string $message): ?string
+    {
+        if ($message === null) {
+            return null;
+        }
+
+        $translation = __($message);
+
+        return is_string($translation) ? $translation : $message;
     }
 }

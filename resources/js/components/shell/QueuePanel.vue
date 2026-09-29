@@ -12,11 +12,13 @@ const VISIBLE_UP_NEXT = 40;
     <aside
         class="material-glass queue min-h-0 overflow-hidden rounded-none border-y-0 border-r-0 transition-[width] duration-[240ms] ease-out-quint"
         :class="player.state.queueOpen ? 'w-[340px]' : 'w-0 border-l-0'"
-        aria-label="Queue"
+        :aria-label="$t('Queue')"
         :aria-hidden="!player.state.queueOpen"
     >
         <div class="h-full w-[340px] overflow-y-auto px-3 pt-4 pb-32">
-            <h2 class="px-2 pb-2.5 text-[13.5px] font-bold">Now playing</h2>
+            <h2 class="px-2 pb-2.5 text-[13.5px] font-bold">
+                {{ $t('Now playing') }}
+            </h2>
             <div
                 v-if="player.current.value"
                 class="mb-4 grid grid-cols-[64px_1fr] gap-3 rounded-[10px] bg-raised p-2"
@@ -35,18 +37,22 @@ const VISIBLE_UP_NEXT = 40;
                 </div>
             </div>
             <p v-else class="mb-4 px-2 text-sm text-faint">
-                Nothing is playing.
+                {{ $t('Nothing is playing.') }}
             </p>
 
             <h2
                 class="flex items-baseline gap-2 px-2 pb-2.5 text-[13.5px] font-bold"
             >
-                Up next
+                {{ $t('Up next') }}
                 <span
                     v-if="player.state.source"
                     class="truncate text-[12.5px] font-medium text-faint"
                 >
-                    from {{ player.state.source.title }}
+                    {{
+                        $t('from :source', {
+                            source: player.state.source.title,
+                        })
+                    }}
                 </span>
             </h2>
             <TrackMiniRow
@@ -63,7 +69,7 @@ const VISIBLE_UP_NEXT = 40;
                 v-if="player.current.value && player.upNext.value.length === 0"
                 class="px-2 text-sm text-faint"
             >
-                This is the last track.
+                {{ $t('This is the last track.') }}
             </p>
         </div>
     </aside>

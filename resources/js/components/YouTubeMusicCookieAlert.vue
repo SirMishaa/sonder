@@ -21,13 +21,21 @@ const isVisible = computed(
     <div v-if="isVisible" class="px-8 pt-6">
         <Alert variant="destructive">
             <CookieIcon class="size-4" />
-            <AlertTitle>Your YouTube Music cookie stopped working</AlertTitle>
+            <AlertTitle>{{
+                $t('Your YouTube Music cookie stopped working')
+            }}</AlertTitle>
             <AlertDescription class="flex flex-wrap items-center gap-3">
                 <span>
-                    Your library can't be synced until you paste a fresh one.
+                    {{
+                        $t(
+                            "Your library can't be synced until you paste a fresh one.",
+                        )
+                    }}
                 </span>
                 <Button as-child variant="outline" size="sm">
-                    <Link :href="connectionUrl">Update the cookie</Link>
+                    <Link :href="connectionUrl">{{
+                        $t('Update the cookie')
+                    }}</Link>
                 </Button>
             </AlertDescription>
         </Alert>

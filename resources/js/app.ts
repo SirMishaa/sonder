@@ -1,9 +1,12 @@
 import { createInertiaApp } from '@inertiajs/vue3';
 import { configureEcho } from '@laravel/echo-vue';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { i18nVue } from 'laravel-vue-i18n';
 import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
 import '../css/app.css';
+import { resolveLanguage } from '@/lib/i18n';
+import { ensureTemporal } from '@/lib/temporal';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -17,6 +20,8 @@ configureEcho({
     enabledTransports: ['ws', 'wss'],
 });
 
+await ensureTemporal();
+
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name) =>
@@ -27,6 +32,11 @@ void createInertiaApp({
     setup({ el, App, props, plugin }) {
         createApp({ render: () => h(App, props) })
             .use(plugin)
+            .use(i18nVue, {
+                lang: props.initialPage.props.locale,
+                fallbackLang: 'en_US',
+                resolve: resolveLanguage,
+            })
             .mount(el);
     },
     progress: {

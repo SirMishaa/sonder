@@ -19,21 +19,29 @@ const removedCount = computed(
 </script>
 
 <template>
-    <Head title="Library" />
+    <Head :title="$t('Library')" />
 
     <div class="max-w-[1480px] px-8 pt-8">
         <h1
             class="reveal text-[30px] leading-[1.1] font-extrabold tracking-[-0.03em]"
         >
-            Library
+            {{ $t('Library') }}
         </h1>
         <p class="reveal mt-1 mb-7 text-dim" style="--i: 1">
-            {{ playlists.length }} playlists, synced from YouTube Music as
-            {{ page.props.library?.accountName }}.
+            {{
+                $tChoice(
+                    ':count playlist, synced from YouTube Music as :account.|:count playlists, synced from YouTube Music as :account.',
+                    playlists.length,
+                    { account: page.props.library?.accountName ?? '' },
+                )
+            }}
             <template v-if="removedCount">
-                <span class="text-alarm"
-                    >{{ removedCount }} no longer in your library.</span
-                >
+                <span class="text-alarm">{{
+                    $tChoice(
+                        ':count no longer in your library.|:count no longer in your library.',
+                        removedCount,
+                    )
+                }}</span>
             </template>
         </p>
 
@@ -58,7 +66,7 @@ const removedCount = computed(
                         v-if="playlist.isRemoved"
                         class="absolute top-2 left-2 rounded-full bg-alarm px-2 py-0.5 text-[11px] font-semibold text-[oklch(0.98_0.01_80)]"
                     >
-                        Removed from YouTube Music
+                        {{ $t('Removed from YouTube Music') }}
                     </span>
                     <span
                         v-if="player.isPlayingFrom(playlist.id)"
@@ -76,8 +84,11 @@ const removedCount = computed(
                 <p class="text-[12.5px] font-medium text-faint">
                     {{
                         playlist.trackCount
-                            ? `${playlist.trackCount} tracks`
-                            : 'Auto playlist'
+                            ? $tChoice(
+                                  ':count track|:count tracks',
+                                  playlist.trackCount,
+                              )
+                            : $t('Auto playlist')
                     }}
                 </p>
             </Link>
@@ -87,7 +98,7 @@ const removedCount = computed(
             v-if="playlists.length === 0"
             class="rounded-xl border border-dashed border-line p-12 text-center text-dim"
         >
-            No playlists yet. The first sync fills this page.
+            {{ $t('No playlists yet. The first sync fills this page.') }}
         </p>
     </div>
 </template>

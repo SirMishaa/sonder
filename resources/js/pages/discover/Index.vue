@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Deferred, Head, Link, usePage } from '@inertiajs/vue3';
+import { trans } from 'laravel-vue-i18n';
 import { Play } from 'lucide-vue-next';
 import { computed } from 'vue';
 import PlaylistController from '@/actions/App/Http/Controllers/PlaylistController';
@@ -7,6 +8,7 @@ import Artwork from '@/components/music/Artwork.vue';
 import TrackMiniRow from '@/components/music/TrackMiniRow.vue';
 import { usePlayer } from '@/composables/usePlayer';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { languageTag, formatNumber } from '@/lib/i18n';
 
 defineOptions({ layout: AppLayout });
 
@@ -23,21 +25,25 @@ const player = usePlayer();
 const library = computed(() => page.props.library);
 
 const PARTS_OF_DAY = [
-    [5, 'morning'],
-    [12, 'afternoon'],
-    [18, 'evening'],
-    [23, 'night'],
+    [5, ':day morning'],
+    [12, ':day afternoon'],
+    [18, ':day evening'],
+    [23, ':day night'],
 ] as const;
 
+/** "Tuesday evening" / "Mardi soir", from the user's own clock. */
 const moment = computed(() => {
-    const now = new Date();
-    const hour = now.getHours();
-    const part =
-        [...PARTS_OF_DAY].reverse().find(([from]) => hour >= from)?.[1] ??
-        'night';
-    const day = now.toLocaleDateString('en', { weekday: 'long' });
+    const now = Temporal.Now.plainDateTimeISO();
+    const key =
+        [...PARTS_OF_DAY].reverse().find(([from]) => now.hour >= from)?.[1] ??
+        ':day night';
+    const sentence = trans(key, {
+        day: now.toLocaleString(languageTag(), { weekday: 'long' }),
+    });
 
-    return `${day} ${part}`;
+    return (
+        sentence.charAt(0).toLocaleUpperCase(languageTag()) + sentence.slice(1)
+    );
 });
 
 const trackTotal = computed(() =>
@@ -59,12 +65,15 @@ const recentPlaylists = computed(() =>
 );
 
 function playFind(find: App.Data.SampledTrackData): void {
-    player.playNext(find.track, { playlistId: null, title: 'Fresh finds' });
+    player.playNext(find.track, {
+        playlistId: null,
+        title: trans('Fresh finds'),
+    });
 }
 </script>
 
 <template>
-    <Head title="Discover" />
+    <Head :title="$t('Discover')" />
 
     <div
         class="grid max-w-[1480px] gap-10 px-8 pt-8 xl:grid-cols-[minmax(0,1fr)_320px]"
@@ -72,20 +81,29 @@ function playFind(find: App.Data.SampledTrackData): void {
     >
         <section class="min-w-0">
             <p class="reveal text-[13px] font-bold text-amber">
-                {{ moment
-                }}<template v-if="freshFinds?.length"
-                    >, {{ freshFinds.length }} new for you</template
-                >
+                {{
+                    freshFinds?.length
+                        ? $tChoice(
+                              ':moment, :count new for you|:moment, :count new for you',
+                              freshFinds.length,
+                              { moment },
+                          )
+                        : moment
+                }}
             </p>
             <h1
                 class="reveal mt-1.5 mb-1 text-[30px] leading-[1.1] font-extrabold tracking-[-0.03em]"
                 style="--i: 1"
             >
-                Fresh records, picked from what you already love.
+                {{ $t('Fresh records, picked from what you already love.') }}
             </h1>
             <p class="reveal text-dim" style="--i: 2">
-                Built from {{ library?.playlists.length ?? 0 }} playlists and
-                {{ trackTotal.toLocaleString() }} tracks.
+                {{
+                    $t('Built from :playlists playlists and :tracks tracks.', {
+                        playlists: formatNumber(library?.playlists.length ?? 0),
+                        tracks: formatNumber(trackTotal),
+                    })
+                }}
             </p>
 
             <Deferred data="freshFinds">
@@ -132,7 +150,7 @@ function playFind(find: App.Data.SampledTrackData): void {
                             {{ find.track.artists }}
                         </p>
                         <p class="mt-1 truncate text-[12.5px] text-faint">
-                            because of
+                            {{ $t('because of') }}
                             <em class="font-semibold text-amber not-italic">{{
                                 find.playlistTitle
                             }}</em>
@@ -144,7 +162,11 @@ function playFind(find: App.Data.SampledTrackData): void {
                 v-if="freshFinds === undefined || freshFinds.length"
                 class="mb-10 text-xs text-faint italic"
             >
-                Preview: sampled from your own library until discovery ships.
+                {{
+                    $t(
+                        'Preview: sampled from your own library until discovery ships.',
+                    )
+                }}
             </p>
             <div v-else class="mb-10" />
 
@@ -152,15 +174,15 @@ function playFind(find: App.Data.SampledTrackData): void {
                 class="reveal mb-3.5 flex items-baseline gap-2.5"
                 style="--i: 8"
             >
-                <h2 class="text-sm font-bold">Jump back in</h2>
-                <span class="text-[12.5px] font-medium text-faint"
-                    >recently changed</span
-                >
+                <h2 class="text-sm font-bold">{{ $t('Jump back in') }}</h2>
+                <span class="text-[12.5px] font-medium text-faint">{{
+                    $t('recently changed')
+                }}</span>
                 <Link
                     :href="PlaylistController.index()"
                     class="ml-auto text-[12.5px] font-semibold text-dim hover:text-paper"
                 >
-                    All playlists →
+                    {{ $t('All playlists →') }}
                 </Link>
             </div>
             <div
@@ -184,8 +206,11 @@ function playFind(find: App.Data.SampledTrackData): void {
                     <p class="text-[12.5px] font-medium text-faint">
                         {{
                             playlist.trackCount
-                                ? `${playlist.trackCount} tracks`
-                                : 'Auto playlist'
+                                ? $tChoice(
+                                      ':count track|:count tracks',
+                                      playlist.trackCount,
+                                  )
+                                : $t('Auto playlist')
                         }}
                     </p>
                 </Link>
@@ -200,7 +225,7 @@ function playFind(find: App.Data.SampledTrackData): void {
                 class="reveal mb-3.5 flex items-baseline gap-2.5"
                 style="--i: 3"
             >
-                <h2 class="text-sm font-bold">Up next</h2>
+                <h2 class="text-sm font-bold">{{ $t('Up next') }}</h2>
                 <span
                     v-if="player.state.source"
                     class="truncate text-[12.5px] font-medium text-faint"
@@ -218,11 +243,15 @@ function playFind(find: App.Data.SampledTrackData): void {
                 v-if="player.upNext.value.length === 0"
                 class="rounded-lg border border-dashed border-line px-4 py-5 text-sm text-faint"
             >
-                Nothing queued. Open a playlist and pick a track to start.
+                {{
+                    $t(
+                        'Nothing queued. Open a playlist and pick a track to start.',
+                    )
+                }}
             </p>
 
             <h2 class="reveal mt-8 mb-2 text-sm font-bold" style="--i: 10">
-                Your library
+                {{ $t('Your library') }}
             </h2>
             <Deferred data="stats">
                 <template #fallback>
@@ -237,21 +266,27 @@ function playFind(find: App.Data.SampledTrackData): void {
                 </template>
                 <dl v-if="stats">
                     <div class="stat">
-                        <dt>Tracks</dt>
-                        <dd>{{ stats.trackCount.toLocaleString() }}</dd>
+                        <dt>{{ $t('Tracks') }}</dt>
+                        <dd>{{ formatNumber(stats.trackCount) }}</dd>
                     </div>
                     <div class="stat">
-                        <dt>Artists</dt>
-                        <dd>{{ stats.artistCount.toLocaleString() }}</dd>
+                        <dt>{{ $t('Artists') }}</dt>
+                        <dd>{{ formatNumber(stats.artistCount) }}</dd>
                     </div>
                     <div class="stat">
-                        <dt>Hours of music</dt>
-                        <dd>{{ stats.totalHours }} h</dd>
+                        <dt>{{ $t('Hours of music') }}</dt>
+                        <dd>
+                            {{
+                                $t(':hours h', {
+                                    hours: formatNumber(stats.totalHours),
+                                })
+                            }}
+                        </dd>
                     </div>
                 </dl>
                 <template v-if="stats?.topArtists.length">
                     <h3 class="mt-5 mb-1.5 text-[12.5px] font-bold text-dim">
-                        Most collected artists
+                        {{ $t('Most collected artists') }}
                     </h3>
                     <ol>
                         <li

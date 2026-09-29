@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\Locale;
 use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -19,6 +20,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property-read string $id
  * @property-read string $name
  * @property-read string $email
+ * @property-read Locale|null $locale
  * @property-read CarbonInterface|null $email_verified_at
  * @property-read string $password
  * @property-read string|null $remember_token
@@ -60,6 +62,7 @@ final class User extends Authenticatable implements MustVerifyEmail
             'id' => 'string',
             'name' => 'string',
             'email' => 'string',
+            'locale' => Locale::class,
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'remember_token' => 'string',

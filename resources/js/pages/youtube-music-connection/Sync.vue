@@ -57,7 +57,7 @@ const progress = () =>
 </script>
 
 <template>
-    <Head title="Syncing your library" />
+    <Head :title="$t('Syncing your library')" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
@@ -66,25 +66,32 @@ const progress = () =>
             <template v-if="state.status === 'failed'">
                 <XCircle class="size-10 text-destructive" />
                 <Heading
-                    title="The sync failed"
+                    :title="$t('The sync failed')"
                     :description="state.errorMessage ?? undefined"
                 />
                 <div class="flex items-center gap-3">
                     <Button as-child>
-                        <Link :href="YouTubeMusicConnectionController.create()"
-                            >Reconnect</Link
+                        <Link
+                            :href="YouTubeMusicConnectionController.create()"
+                            >{{ $t('Reconnect') }}</Link
                         >
                     </Button>
                     <Button as-child variant="outline">
-                        <Link :href="PlaylistController.index()">Retry</Link>
+                        <Link :href="PlaylistController.index()">{{
+                            $t('Retry')
+                        }}</Link>
                     </Button>
                 </div>
             </template>
 
             <template v-else>
                 <Heading
-                    title="Syncing your library"
-                    description="This only takes a moment — we're reading your playlists straight from YouTube Music."
+                    :title="$t('Syncing your library')"
+                    :description="
+                        $t(
+                            'This only takes a moment — we\'re reading your playlists straight from YouTube Music.',
+                        )
+                    "
                 />
 
                 <div class="w-full space-y-2">
@@ -97,8 +104,12 @@ const progress = () =>
                         />
                     </div>
                     <p class="text-sm text-muted-foreground">
-                        {{ state.syncedPlaylists }} /
-                        {{ state.totalPlaylists ?? '…' }} playlists
+                        {{
+                            $t(':done / :total playlists', {
+                                done: String(state.syncedPlaylists),
+                                total: String(state.totalPlaylists ?? '…'),
+                            })
+                        }}
                     </p>
                 </div>
 
