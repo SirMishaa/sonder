@@ -7,6 +7,8 @@ use App\Models\Playlist;
 use App\Models\User;
 use App\Models\YouTubeMusicAccount;
 use App\Models\YouTubeMusicSync;
+use Illuminate\Support\Collection;
+use Inertia\Testing\AssertableInertia;
 use Tests\Support\FakeYouTubeMusicClient;
 
 it('lists the playlists of the connected account', function (): void {
@@ -26,12 +28,12 @@ it('lists the playlists of the connected account', function (): void {
     $response = $this->actingAs($user)->get(route('playlist.index'));
 
     $response->assertOk()
-        ->assertInertia(fn ($page) => $page
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('playlist/Index')
-            ->where('accountName', 'Mishaa')
-            ->where('activeSync', null)
-            ->has('playlists', 2)
-            ->where('playlists.0.title', 'Deep Focus'));
+            ->where('library.accountName', 'Mishaa')
+            ->where('library.activeSync', null)
+            ->has('library.playlists', 2)
+            ->where('library.playlists.0.title', 'Deep Focus'));
 });
 
 it('sends a user with no connection to the connection page', function (): void {
@@ -62,11 +64,11 @@ it('refreshes stale playlists in the background instead of blocking', function (
 
     $response = $this->actingAs($user)->get(route('playlist.index'));
 
-    $response->assertOk()
-        ->assertInertia(fn ($page) => $page
-            ->component('playlist/Index')
-            ->has('activeSync')
-            ->where('activeSync.status', 'completed'));
+    // The sync queue driver runs the job inline, so the sync has already
+    // finished by the time the page renders; what matters is that the page
+    // rendered instead of redirecting to the blocking sync screen.
+    $response->assertOk()->assertInertia(fn (AssertableInertia $page) => $page->component('playlist/Index'));
+    expect(YouTubeMusicSync::query()->sole()->status)->toBe(YouTubeMusicSyncStatus::Completed);
 });
 
 it('renders the playlist with tracks from the database', function (): void {
@@ -81,7 +83,7 @@ it('renders the playlist with tracks from the database', function (): void {
     $response = $this->actingAs($user)->get(route('playlist.show', 'PL1'));
 
     $response->assertOk()
-        ->assertInertia(fn ($page) => $page
+        ->assertInertia(fn (AssertableInertia $page) => $page
             ->component('playlist/Show')
             ->where('playlistId', 'PL1')
             ->where('summary.title', 'Deep Focus')
@@ -143,9 +145,9 @@ it('tells the index which playlists left the library and when it was last checke
 
     $response = $this->actingAs($user)->get(route('playlist.index'));
 
-    $response->assertInertia(fn ($page) => $page
-        ->where('removedPlaylistIds', ['PL_GONE'])
-        ->where('lastCheckedAt', now()->toIso8601String()));
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('library.playlists', fn (Collection $playlists): bool => $playlists->where('isRemoved', true)->pluck('id')->values()->all() === ['PL_GONE'])
+        ->where('library.lastCheckedAt', now()->toIso8601String()));
 });
 
 it('renders the sync state of a playlist', function (): void {
@@ -159,8 +161,26 @@ it('renders the sync state of a playlist', function (): void {
 
     $response = $this->actingAs($user)->get(route('playlist.show', 'PL1'));
 
-    $response->assertInertia(fn ($page) => $page
+    $response->assertInertia(fn (AssertableInertia $page) => $page
         ->where('syncState.lastCheckedAt', now()->toIso8601String())
         ->where('syncState.lastChangedAt', now()->subDay()->toIso8601String())
         ->where('syncState.removedAt', now()->toIso8601String()));
+});
+
+it('loads suggestions from the rest of the library after the page', function (): void {
+    $user = User::factory()->create();
+    $account = YouTubeMusicAccount::factory()->for($user)->create();
+    $current = Playlist::factory()->for($account, 'youtubeMusicAccount')->create(['youtube_playlist_id' => 'PL1']);
+    $other = Playlist::factory()->for($account, 'youtubeMusicAccount')->create();
+    $current->tracks()->create(['youtube_video_id' => 'VID_IN', 'title' => 'Already here', 'artists' => 'A', 'thumbnail_url' => 'https://i.ytimg.com/vi/VID_IN/0.jpg']);
+    $other->tracks()->create(['youtube_video_id' => 'VID_IN', 'title' => 'Already here', 'artists' => 'A', 'thumbnail_url' => 'https://i.ytimg.com/vi/VID_IN/0.jpg']);
+    $other->tracks()->create(['youtube_video_id' => 'VID_NEW', 'title' => 'New to it', 'artists' => 'B', 'thumbnail_url' => 'https://i.ytimg.com/vi/VID_NEW/0.jpg']);
+
+    $response = $this->actingAs($user)->get(route('playlist.show', 'PL1'));
+
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->missing('suggestionPool')
+        ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
+            ->has('suggestionPool', 1)
+            ->where('suggestionPool.0.track.videoId', 'VID_NEW')));
 });

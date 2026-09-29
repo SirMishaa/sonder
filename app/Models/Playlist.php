@@ -4,12 +4,28 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property string $id
+ * @property string $youtube_music_account_id
+ * @property string $youtube_playlist_id
+ * @property string $title
+ * @property string|null $description
+ * @property int|null $track_count
+ * @property string|null $duration
+ * @property string|null $thumbnail_url
+ * @property string|null $author
+ * @property string|null $fingerprint
+ * @property CarbonInterface $last_checked_at
+ * @property CarbonInterface|null $last_changed_at
+ * @property CarbonInterface|null $removed_at
+ */
 final class Playlist extends Model
 {
     /** @use HasFactory<\Database\Factories\PlaylistFactory> */

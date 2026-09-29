@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Data;
 
+use App\Models\Track;
 use Spatie\LaravelData\Data;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
@@ -21,4 +22,19 @@ final class TrackData extends Data
         public bool $isExplicit,
         public bool $isAvailable,
     ) {}
+
+    public static function fromModel(Track $track): self
+    {
+        return new self(
+            videoId: $track->youtube_video_id,
+            title: $track->title,
+            artists: $track->artists,
+            album: $track->album,
+            duration: $track->duration,
+            durationSeconds: $track->duration_seconds,
+            thumbnailUrl: $track->thumbnail_url,
+            isExplicit: $track->is_explicit,
+            isAvailable: $track->is_available,
+        );
+    }
 }

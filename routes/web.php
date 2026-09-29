@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistRefreshController;
 use App\Http\Controllers\SessionController;
@@ -15,14 +16,13 @@ use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\UserTwoFactorAuthenticationController;
 use App\Http\Controllers\YouTubeMusicConnectionController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', fn () => Inertia::render('Welcome'))->name('home');
+Route::redirect('/', '/dashboard')->name('home');
 
 Route::get('thumbnails/{hash}', [ThumbnailController::class, 'show'])->name('thumbnail.show');
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get('dashboard', fn () => Inertia::render('Dashboard'))->name('dashboard');
+    Route::get('dashboard', [DiscoverController::class, 'index'])->name('dashboard');
 
     // YouTube Music Connection...
     Route::get('youtube-music', [YouTubeMusicConnectionController::class, 'create'])
@@ -56,9 +56,6 @@ Route::middleware('auth')->group(function (): void {
     Route::put('settings/password', [UserPasswordController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('password.update');
-
-    // Appearance...
-    Route::get('settings/appearance', fn () => Inertia::render('appearance/Update'))->name('appearance.edit');
 
     // User Two-Factor Authentication...
     Route::get('settings/two-factor', [UserTwoFactorAuthenticationController::class, 'show'])

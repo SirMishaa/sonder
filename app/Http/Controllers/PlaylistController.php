@@ -4,16 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Actions\CheckLibraryFreshness;
+use App\Actions\SampleLibraryTracks;
 use App\Actions\StartYouTubeMusicSync;
 use App\Data\PlaylistData;
 use App\Data\PlaylistSummaryData;
 use App\Data\PlaylistSyncStateData;
 use App\Data\TrackData;
-use App\Data\YouTubeMusicSyncData;
-use App\Enums\YouTubeMusicSyncStatus;
-use App\Models\Playlist;
+use App\Models\Track;
 use App\Models\User;
-use App\Models\YouTubeMusicSync;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -21,8 +20,13 @@ use Inertia\Response;
 
 final readonly class PlaylistController
 {
-    public function index(#[CurrentUser] User $user, StartYouTubeMusicSync $startSync): Response|RedirectResponse
-    {
+    private const int SUGGESTIONS = 5;
+
+    public function index(
+        #[CurrentUser] User $user,
+        StartYouTubeMusicSync $startSync,
+        CheckLibraryFreshness $checkFreshness,
+    ): Response|RedirectResponse {
         $account = $user->youTubeMusicAccount()->first();
 
         if ($account === null) {
@@ -30,51 +34,15 @@ final readonly class PlaylistController
         }
 
         if ($account->playlists()->doesntExist()) {
-            $sync = $startSync->handle($account);
-
-            return to_route('youtube-music-connection.sync', $sync);
+            return to_route('youtube-music-connection.sync', $startSync->handle($account));
         }
 
-        $activeSync = $account->playlists()->max('last_checked_at') < now()->subHour()
-            ? $startSync->handle($account)
-            : YouTubeMusicSync::query()
-                ->where('youtube_music_account_id', $account->id)
-                ->whereIn('status', [YouTubeMusicSyncStatus::Pending, YouTubeMusicSyncStatus::Syncing])
-                ->latest('created_at')
-                ->first();
+        $checkFreshness->handle($account);
 
-        // `StartYouTubeMusicSync::handle()` returns the in-memory instance
-        // created before the job was dispatched. Under the sync queue driver
-        // the job runs inline and mutates the DB row immediately, so this
-        // refresh keeps the rendered sync state current in every environment.
-        $activeSync?->refresh();
-
-        $storedPlaylists = $account->playlists()->get();
-
-        $playlists = $storedPlaylists->map(
-            fn (Playlist $playlist) => PlaylistSummaryData::from([
-                'id' => $playlist->youtube_playlist_id,
-                'title' => $playlist->title,
-                'description' => $playlist->description,
-                'trackCount' => $playlist->track_count,
-                'thumbnailUrl' => $playlist->thumbnail_url,
-                'author' => $playlist->author,
-            ])
-        );
-
-        return Inertia::render('playlist/Index', [
-            'accountName' => $account->account_name,
-            'playlists' => $playlists,
-            'removedPlaylistIds' => $storedPlaylists
-                ->whereNotNull('removed_at')
-                ->pluck('youtube_playlist_id')
-                ->values(),
-            'lastCheckedAt' => $storedPlaylists->max('last_checked_at')?->toIso8601String(),
-            'activeSync' => $activeSync !== null ? YouTubeMusicSyncData::fromModel($activeSync) : null,
-        ]);
+        return Inertia::render('playlist/Index');
     }
 
-    public function show(string $playlistId, #[CurrentUser] User $user): Response|RedirectResponse
+    public function show(string $playlistId, #[CurrentUser] User $user, SampleLibraryTracks $sample): Response|RedirectResponse
     {
         $account = $user->youTubeMusicAccount()->first();
 
@@ -100,17 +68,7 @@ final readonly class PlaylistController
             'author' => $playlist->author,
         ]);
 
-        $tracks = $playlist->tracks->map(fn ($track) => TrackData::from([
-            'videoId' => $track->youtube_video_id,
-            'title' => $track->title,
-            'artists' => $track->artists,
-            'album' => $track->album,
-            'duration' => $track->duration,
-            'durationSeconds' => $track->duration_seconds,
-            'thumbnailUrl' => $track->thumbnail_url,
-            'isExplicit' => $track->is_explicit,
-            'isAvailable' => $track->is_available,
-        ]));
+        $tracks = $playlist->tracks->map(fn (Track $track): TrackData => TrackData::fromModel($track));
 
         $playlistData = PlaylistData::from([
             'id' => $playlist->youtube_playlist_id,
@@ -128,6 +86,7 @@ final readonly class PlaylistController
             'summary' => $summary,
             'playlist' => $playlistData,
             'syncState' => PlaylistSyncStateData::fromModel($playlist),
+            'suggestionPool' => Inertia::defer(fn () => $sample->handle($account, self::SUGGESTIONS, $playlist)),
         ]);
     }
 }
