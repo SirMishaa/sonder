@@ -1,32 +1,16 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"  @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="referrer" content="strict-origin-when-cross-origin">
+        <meta name="theme-color" content="#1b1612">
 
-        {{-- Inline script to detect system dark mode preference and apply it immediately --}}
-        <script>
-            (function() {
-                const appearance = '{{ $appearance ?? "system" }}';
-
-                if (appearance === 'system') {
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                    if (prefersDark) {
-                        document.documentElement.classList.add('dark');
-                    }
-                }
-            })();
-        </script>
-
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
+        {{-- Sonder is dark only; paint the page before the CSS loads. --}}
         <style>
             html {
-                background-color: oklch(1 0 0);
-            }
-
-            html.dark {
-                background-color: oklch(0.145 0 0);
+                background-color: oklch(0.165 0.012 60);
+                color-scheme: dark;
             }
         </style>
 
@@ -37,7 +21,7 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=hanken-grotesk:400,500,600,700,800|bricolage-grotesque:800&display=swap" rel="stylesheet" />
 
         @vite(['resources/js/app.ts', "resources/js/pages/{$page['component']}.vue"])
         @inertiaHead

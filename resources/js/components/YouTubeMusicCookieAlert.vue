@@ -18,7 +18,7 @@ const isVisible = computed(
 </script>
 
 <template>
-    <div v-if="isVisible" class="px-4 pt-4">
+    <div v-if="isVisible" class="px-8 pt-6">
         <Alert variant="destructive">
             <CookieIcon class="size-4" />
             <AlertTitle>Your YouTube Music cookie stopped working</AlertTitle>

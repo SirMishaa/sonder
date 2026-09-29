@@ -1,47 +1,128 @@
 <script setup lang="ts">
-import { Deferred, Form, Head, router } from '@inertiajs/vue3';
+import { Deferred, Head, router, usePage } from '@inertiajs/vue3';
+import { useTimeAgo } from '@vueuse/core';
 import {
-    ListMusic,
+    History,
     LoaderCircle,
     Music2,
+    Play,
     RefreshCw,
     TriangleAlert,
 } from 'lucide-vue-next';
-import PlaylistController from '@/actions/App/Http/Controllers/PlaylistController';
+import { computed, ref } from 'vue';
 import PlaylistRefreshController from '@/actions/App/Http/Controllers/PlaylistRefreshController';
-import InputError from '@/components/InputError.vue';
-import SyncedAgo from '@/components/SyncedAgo.vue';
+import Artwork from '@/components/music/Artwork.vue';
+import Equalizer from '@/components/music/Equalizer.vue';
+import SuggestionsBlock from '@/components/music/SuggestionsBlock.vue';
+import Waveform from '@/components/music/Waveform.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { usePlayer } from '@/composables/usePlayer';
+import { useShortcuts } from '@/composables/useShortcuts';
+import { useToast } from '@/composables/useToast';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem } from '@/types';
+
+defineOptions({ layout: AppLayout });
 
 type Props = {
     playlistId: string;
-    summary: App.Data.PlaylistSummaryData | null;
-    playlist?: App.Data.PlaylistData;
+    summary: App.Data.PlaylistSummaryData;
+    playlist: App.Data.PlaylistData;
     syncState: App.Data.PlaylistSyncStateData;
+    suggestionPool?: App.Data.SampledTrackData[];
 };
 
 const props = defineProps<Props>();
 
-const title = props.summary?.title ?? 'Playlist';
+const page = usePage();
+const player = usePlayer();
+const { toast } = useToast();
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Playlists', href: PlaylistController.index() },
-    { title, href: PlaylistController.show(props.playlistId) },
-];
+/** Tracks added from the suggestions block. Fixture: shown here only, never saved. */
+const previewAdditions = ref<App.Data.TrackData[]>([]);
 
-const retry = () => router.reload({ only: ['playlist'] });
+const tracks = computed(() => [
+    ...props.playlist.tracks,
+    ...previewAdditions.value,
+]);
+const source = computed(() => ({
+    playlistId: props.playlistId,
+    title: props.summary.title,
+}));
+
+const checkedAgo = useTimeAgo(() => props.syncState.lastCheckedAt);
+const changedAgo = useTimeAgo(
+    () => props.syncState.lastChangedAt ?? props.syncState.lastCheckedAt,
+);
+
+const isFromThisPlaylist = computed(() =>
+    player.isPlayingFrom(props.playlistId),
+);
+
+function isCurrent(index: number): boolean {
+    const current = player.current.value;
+    const track = tracks.value[index];
+
+    return (
+        isFromThisPlaylist.value &&
+        current !== null &&
+        track !== undefined &&
+        current.key === `${track.videoId ?? track.title}#${index}`
+    );
+}
+
+function play(index = 0): void {
+    player.playTracks(tracks.value, index, source.value);
+}
+
+const refreshing = ref(false);
+const refreshError = computed(
+    () => (page.props.errors as Record<string, string | undefined>).refresh,
+);
+
+function refresh(): void {
+    if (refreshing.value || props.syncState.removedAt) {
+        return;
+    }
+
+    router.visit(PlaylistRefreshController.store(props.playlistId), {
+        preserveScroll: true,
+        onStart: () => {
+            refreshing.value = true;
+        },
+        onFinish: () => {
+            refreshing.value = false;
+        },
+        onSuccess: () => {
+            if (!refreshError.value) {
+                toast('Refreshed ', props.summary.title);
+            }
+        },
+    });
+}
+
+useShortcuts({ r: refresh });
 </script>
 
 <template>
-    <Head :title="title" />
+    <Head :title="summary.title" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-8 p-4">
-            <Alert v-if="syncState.removedAt" variant="destructive">
+    <div class="relative">
+        <div class="ambient" aria-hidden="true">
+            <div
+                :style="{
+                    backgroundImage: summary.thumbnailUrl
+                        ? `url('${summary.thumbnailUrl}')`
+                        : undefined,
+                }"
+            />
+        </div>
+
+        <div class="relative max-w-[1480px] px-8 pt-8">
+            <Alert
+                v-if="syncState.removedAt"
+                variant="destructive"
+                class="mb-6"
+            >
                 <TriangleAlert class="size-4" />
                 <AlertTitle>No longer in your YouTube Music library</AlertTitle>
                 <AlertDescription>
@@ -50,188 +131,360 @@ const retry = () => router.reload({ only: ['playlist'] });
                 </AlertDescription>
             </Alert>
 
-            <header class="flex flex-col gap-5 sm:flex-row sm:items-end">
-                <div
-                    class="aspect-square w-40 shrink-0 overflow-hidden rounded-xl border bg-muted"
-                >
-                    <img
-                        v-if="summary?.thumbnailUrl"
-                        :src="summary.thumbnailUrl"
-                        :alt="title"
-                        class="size-full object-cover"
-                    />
-                    <div
-                        v-else
-                        class="flex size-full items-center justify-center"
-                    >
-                        <ListMusic class="size-10 text-muted-foreground" />
-                    </div>
-                </div>
-
-                <div class="min-w-0 flex-1 space-y-1">
-                    <p
-                        class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-                    >
+            <header
+                class="mb-6 grid items-end gap-6 md:grid-cols-[188px_minmax(0,1fr)_auto]"
+            >
+                <Artwork
+                    :src="summary.thumbnailUrl"
+                    :alt="summary.title"
+                    class="cover size-[188px] rounded-[10px]"
+                    eager
+                />
+                <div class="min-w-0">
+                    <p class="reveal text-[13px] font-bold text-amber">
                         Playlist
                     </p>
-                    <h1 class="truncate text-3xl font-semibold">{{ title }}</h1>
+                    <h1
+                        class="reveal mt-1.5 mb-3 text-[44px] leading-none font-extrabold tracking-[-0.04em] text-balance"
+                        style="--i: 1"
+                    >
+                        {{ summary.title }}
+                    </h1>
                     <p
-                        v-if="summary?.description"
-                        class="line-clamp-2 text-sm text-muted-foreground"
+                        class="reveal flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] font-medium text-dim"
+                        style="--i: 2"
                     >
-                        {{ summary.description }}
-                    </p>
-                    <p class="text-sm text-muted-foreground">
-                        <template v-if="playlist?.trackCount">
-                            {{ playlist.trackCount }} tracks
-                            <template v-if="playlist.duration">
-                                · {{ playlist.duration }}
-                            </template>
+                        <span>{{ playlist.trackCount }} tracks</span>
+                        <template v-if="playlist.duration">
+                            <i class="dot" /><span>{{
+                                playlist.duration
+                            }}</span>
                         </template>
-                        <template v-else-if="summary?.author">
-                            {{ summary.author }}
+                        <i class="dot" />
+                        <span
+                            class="inline-flex items-center gap-1.5"
+                            :title="
+                                new Date(
+                                    syncState.lastCheckedAt,
+                                ).toLocaleString()
+                            "
+                        >
+                            <History class="size-3.5" />Checked {{ checkedAgo }}
+                        </span>
+                        <template v-if="syncState.lastChangedAt">
+                            <i class="dot" /><span
+                                >Changed {{ changedAgo }}</span
+                            >
                         </template>
                     </p>
-                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <SyncedAgo
-                            :at="syncState.lastCheckedAt"
-                            label="Checked"
-                        />
-                        <SyncedAgo
-                            v-if="syncState.lastChangedAt"
-                            :at="syncState.lastChangedAt"
-                            label="Last changed"
-                        />
-                    </div>
                 </div>
-
-                <Form
-                    v-if="!syncState.removedAt"
-                    v-bind="PlaylistRefreshController.store.form(playlistId)"
-                    :options="{ preserveScroll: true }"
-                    class="flex flex-col items-start gap-1 sm:items-end"
-                    #default="{ errors, processing }"
+                <div
+                    class="reveal flex flex-col items-start gap-1.5 md:items-end"
+                    style="--i: 3"
                 >
-                    <Button
-                        type="submit"
-                        variant="outline"
-                        size="sm"
-                        :disabled="processing"
-                    >
-                        <LoaderCircle v-if="processing" class="animate-spin" />
-                        <RefreshCw v-else />
-                        {{ processing ? 'Refreshing…' : 'Refresh' }}
-                    </Button>
-                    <InputError :message="errors.refresh" />
-                </Form>
+                    <div class="flex gap-2">
+                        <button
+                            v-if="!syncState.removedAt"
+                            type="button"
+                            class="button"
+                            :disabled="refreshing"
+                            @click="refresh"
+                        >
+                            <LoaderCircle
+                                v-if="refreshing"
+                                class="size-4 animate-spin"
+                            />
+                            <RefreshCw v-else class="size-4" />
+                            {{ refreshing ? 'Refreshing…' : 'Refresh' }}
+                            <kbd v-if="!refreshing" class="keycap">R</kbd>
+                        </button>
+                        <button
+                            type="button"
+                            class="button accent-fill border-transparent"
+                            :disabled="!tracks.length"
+                            @click="play()"
+                        >
+                            <Play class="size-4 fill-current" />Play
+                        </button>
+                    </div>
+                    <p v-if="refreshError" class="text-sm text-alarm">
+                        {{ refreshError }}
+                    </p>
+                </div>
             </header>
 
-            <Deferred data="playlist">
+            <Deferred data="suggestionPool">
                 <template #fallback>
-                    <div class="space-y-1">
-                        <div
-                            v-for="row in 12"
-                            :key="row"
-                            class="flex animate-pulse items-center gap-3 rounded-lg px-3 py-2"
-                        >
-                            <Skeleton class="size-10 shrink-0 rounded" />
-                            <div class="min-w-0 flex-1 space-y-1.5">
-                                <Skeleton class="h-3.5 w-1/3" />
-                                <Skeleton class="h-3 w-1/5" />
-                            </div>
-                            <Skeleton class="h-3 w-10 shrink-0" />
-                        </div>
-                    </div>
+                    <div class="skeleton mb-6 h-[250px] rounded-xl" />
                 </template>
+                <SuggestionsBlock
+                    v-if="suggestionPool?.length && !syncState.removedAt"
+                    class="reveal mb-6"
+                    style="--i: 4"
+                    :pool="suggestionPool"
+                    :playlist-tracks="playlist.tracks"
+                    :playlist-title="summary.title"
+                    @add="(track) => previewAdditions.push(track)"
+                />
+            </Deferred>
 
-                <template #rescue="{ reloading }">
-                    <div
-                        class="flex flex-col items-center gap-3 rounded-xl border border-dashed p-12 text-center"
+            <div
+                v-if="tracks.length"
+                class="reveal track-table"
+                style="--i: 5"
+                role="table"
+                aria-label="Tracks"
+            >
+                <div class="contents" role="row">
+                    <span class="head justify-end" role="columnheader">#</span>
+                    <span class="head" role="columnheader">Title</span>
+                    <span class="head hidden md:flex" role="columnheader"
+                        >Album</span
                     >
-                        <Music2 class="size-8 text-muted-foreground" />
-                        <div>
-                            <p class="font-medium">Could not load the tracks</p>
-                            <p class="text-sm text-muted-foreground">
-                                YouTube Music refused the request, or the stored
-                                cookie has expired.
-                            </p>
-                        </div>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            :disabled="reloading"
-                            @click="retry"
-                        >
-                            {{ reloading ? 'Retrying…' : 'Retry' }}
-                        </Button>
-                    </div>
-                </template>
-
+                    <span class="head justify-end" role="columnheader"
+                        >Time</span
+                    >
+                </div>
                 <div
-                    v-if="playlist && playlist.tracks.length > 0"
-                    class="space-y-0.5"
+                    v-for="(track, index) in tracks"
+                    :key="`${track.videoId ?? track.title}-${index}`"
+                    class="track"
+                    :class="{
+                        'is-current': isCurrent(index),
+                        'is-unavailable': !track.isAvailable,
+                        'is-added': index >= playlist.tracks.length,
+                    }"
+                    role="row"
+                    :tabindex="track.isAvailable ? 0 : -1"
+                    @click="track.isAvailable && play(index)"
+                    @keydown.enter="track.isAvailable && play(index)"
                 >
-                    <div
-                        v-for="(track, position) in playlist.tracks"
-                        :key="`${track.videoId ?? 'unavailable'}-${position}`"
-                        class="group flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/60"
-                        :class="{ 'opacity-40': !track.isAvailable }"
+                    <span
+                        class="cell justify-end text-[12.5px] font-medium text-faint"
+                        role="cell"
                     >
-                        <span
-                            class="w-6 shrink-0 text-right font-mono text-xs text-muted-foreground tabular-nums"
-                        >
-                            {{ position + 1 }}
-                        </span>
-
-                        <div
-                            class="size-10 shrink-0 overflow-hidden rounded border bg-muted"
-                        >
-                            <img
-                                v-if="track.thumbnailUrl"
-                                :src="track.thumbnailUrl"
-                                :alt="track.title"
-                                loading="lazy"
-                                class="size-full object-cover"
+                        <Equalizer
+                            v-if="isCurrent(index)"
+                            :playing="player.state.playing"
+                        />
+                        <template v-else>
+                            <span class="number">{{ index + 1 }}</span>
+                            <Play
+                                v-if="track.isAvailable"
+                                class="hover-play size-3.5 fill-current text-amber"
                             />
-                        </div>
-
-                        <div class="min-w-0 flex-1">
-                            <p class="truncate text-sm font-medium">
+                        </template>
+                    </span>
+                    <span class="cell gap-2.5" role="cell">
+                        <Artwork
+                            :src="track.thumbnailUrl"
+                            class="size-8 shrink-0 rounded"
+                        />
+                        <span class="min-w-0">
+                            <span class="title block truncate font-semibold">
                                 {{ track.title }}
                                 <span
                                     v-if="track.isExplicit"
-                                    class="ml-1 rounded bg-muted px-1 text-[10px] font-semibold text-muted-foreground"
+                                    class="ml-1 rounded bg-raised px-1 text-[10px] font-semibold text-dim"
+                                    >E</span
                                 >
-                                    E
-                                </span>
-                            </p>
-                            <p class="truncate text-xs text-muted-foreground">
-                                {{ track.artists }}
-                            </p>
-                        </div>
-
-                        <p
-                            class="hidden min-w-0 flex-1 truncate text-xs text-muted-foreground md:block"
-                        >
-                            {{ track.album }}
-                        </p>
-
-                        <span
-                            class="shrink-0 font-mono text-xs text-muted-foreground tabular-nums"
-                        >
-                            {{ track.duration }}
+                            </span>
+                            <span
+                                class="block truncate text-[12.5px] text-dim"
+                                >{{ track.artists }}</span
+                            >
                         </span>
-                    </div>
+                    </span>
+                    <span
+                        class="cell relative hidden text-dim md:flex"
+                        role="cell"
+                    >
+                        <Waveform
+                            v-if="isCurrent(index)"
+                            :seed="track.title"
+                            :playing="player.state.playing"
+                            class="absolute inset-x-0 inset-y-2"
+                        />
+                        <span class="relative truncate">{{ track.album }}</span>
+                    </span>
+                    <span
+                        class="cell justify-end text-[12.5px] font-medium text-faint"
+                        role="cell"
+                        >{{ track.duration }}</span
+                    >
                 </div>
+            </div>
 
-                <div
-                    v-else
-                    class="flex flex-col items-center gap-2 rounded-xl border border-dashed p-12 text-center"
-                >
-                    <Music2 class="size-8 text-muted-foreground" />
-                    <p class="font-medium">This playlist is empty</p>
-                </div>
-            </Deferred>
+            <div
+                v-else
+                class="flex flex-col items-center gap-2 rounded-xl border border-dashed border-line p-12 text-center"
+            >
+                <Music2 class="size-8 text-faint" />
+                <p class="font-semibold">This playlist is empty</p>
+            </div>
         </div>
-    </AppLayout>
+    </div>
 </template>
+
+<style scoped>
+.ambient {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 520px;
+    overflow: hidden;
+    pointer-events: none;
+    mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
+}
+
+.ambient div {
+    position: absolute;
+    inset: -60px;
+    background-size: cover;
+    background-position: center;
+    filter: blur(70px) saturate(1.35);
+    opacity: 0.42;
+    animation: fade-in 900ms var(--ease-out-quint) both;
+}
+
+.ambient::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        oklch(0.165 0.012 60 / 0.15),
+        oklch(0.165 0.012 60 / 0.7) 55%,
+        transparent 100%
+    );
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+.cover {
+    box-shadow:
+        0 34px 60px -28px oklch(0 0 0 / 0.95),
+        0 0 0 1px oklch(1 0 0 / 0.08);
+}
+
+.dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--color-faint);
+}
+
+.button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 9px;
+    border: 1px solid var(--color-line);
+    background: oklch(0.19 0.013 60 / 0.8);
+    font-weight: 600;
+    transition:
+        border-color 140ms,
+        filter 140ms,
+        transform 140ms;
+}
+
+.button:hover:not(:disabled) {
+    border-color: oklch(0.38 0.014 60);
+}
+
+.button.accent-fill {
+    background: var(--accent-grad-d);
+    color: var(--color-amber-ink);
+}
+
+.button.accent-fill:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.button:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.button:disabled {
+    opacity: 0.6;
+}
+
+.track-table {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1.4fr) 64px;
+}
+
+@media (min-width: 768px) {
+    .track-table {
+        grid-template-columns: 36px minmax(0, 1.4fr) minmax(0, 1fr) 64px;
+    }
+}
+
+.head {
+    display: flex;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--color-line);
+    color: var(--color-faint);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.track {
+    display: contents;
+    cursor: pointer;
+}
+
+.cell {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 7px 10px;
+    border-bottom: 1px solid oklch(0.285 0.012 60 / 0.55);
+    transition: background 140ms;
+}
+
+.track:hover .cell,
+.track:focus-visible .cell {
+    background: var(--color-hover);
+}
+
+.track:focus-visible {
+    outline: none;
+}
+
+.hover-play {
+    display: none;
+}
+
+.track:not(.is-unavailable):hover .number {
+    display: none;
+}
+
+.track:hover .hover-play {
+    display: block;
+}
+
+.track.is-current .cell {
+    background: oklch(0.8 0.15 68 / 0.05);
+}
+
+.track.is-current .title {
+    color: var(--color-amber);
+}
+
+.track.is-unavailable {
+    cursor: default;
+}
+
+.track.is-unavailable .cell {
+    opacity: 0.4;
+}
+
+.track.is-added .cell {
+    animation: flash-amber 1.6s var(--ease-out-quint);
+}
+</style>

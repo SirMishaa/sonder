@@ -1,159 +1,117 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { useEcho } from '@laravel/echo-vue';
-import { ListMusic, LoaderCircle, Settings2 } from 'lucide-vue-next';
-import { computed, reactive } from 'vue';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import PlaylistController from '@/actions/App/Http/Controllers/PlaylistController';
-import YouTubeMusicConnectionController from '@/actions/App/Http/Controllers/YouTubeMusicConnectionController';
-import Heading from '@/components/Heading.vue';
-import SyncedAgo from '@/components/SyncedAgo.vue';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import Artwork from '@/components/music/Artwork.vue';
+import Equalizer from '@/components/music/Equalizer.vue';
+import { usePlayer } from '@/composables/usePlayer';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem } from '@/types';
 
-type Props = {
-    accountName: string;
-    playlists: App.Data.PlaylistSummaryData[];
-    removedPlaylistIds: string[];
-    lastCheckedAt: string | null;
-    activeSync: App.Data.YouTubeMusicSyncData | null;
-};
+defineOptions({ layout: AppLayout });
 
-const props = defineProps<Props>();
+const page = usePage();
+const player = usePlayer();
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Playlists', href: PlaylistController.index() },
-];
-
-const removedPlaylistIds = computed(() => new Set(props.removedPlaylistIds));
-
-const sync = props.activeSync
-    ? reactive({ ...props.activeSync, visible: true })
-    : null;
-
-if (sync) {
-    useEcho<App.Data.YouTubeMusicSyncData>(
-        `youtube-music-sync.${sync.id}`,
-        '.sync.updated',
-        (payload) => {
-            Object.assign(sync, payload);
-
-            if (payload.status === 'completed') {
-                sync.visible = false;
-                router.reload({
-                    only: [
-                        'playlists',
-                        'removedPlaylistIds',
-                        'lastCheckedAt',
-                        'accountName',
-                    ],
-                });
-            } else if (payload.status === 'failed') {
-                sync.visible = false;
-            }
-        },
-    );
-}
+const playlists = computed(() => page.props.library?.playlists ?? []);
+const removedCount = computed(
+    () => playlists.value.filter((playlist) => playlist.isRemoved).length,
+);
 </script>
 
 <template>
-    <Head title="Playlists" />
+    <Head title="Library" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-6 p-4">
-            <div class="flex items-end justify-between gap-4">
-                <div class="space-y-1">
-                    <Heading
-                        :title="`${playlists.length} playlists`"
-                        :description="`Signed in to YouTube Music as ${accountName}`"
+    <div class="max-w-[1480px] px-8 pt-8">
+        <h1
+            class="reveal text-[30px] leading-[1.1] font-extrabold tracking-[-0.03em]"
+        >
+            Library
+        </h1>
+        <p class="reveal mt-1 mb-7 text-dim" style="--i: 1">
+            {{ playlists.length }} playlists, synced from YouTube Music as
+            {{ page.props.library?.accountName }}.
+            <template v-if="removedCount">
+                <span class="text-alarm"
+                    >{{ removedCount }} no longer in your library.</span
+                >
+            </template>
+        </p>
+
+        <div
+            class="grid grid-cols-[repeat(auto-fill,minmax(168px,1fr))] gap-x-4 gap-y-7"
+        >
+            <Link
+                v-for="(playlist, index) in playlists"
+                :key="playlist.id"
+                :href="PlaylistController.show(playlist.id)"
+                class="card reveal min-w-0"
+                :style="{ '--i': Math.min(index, 16) + 2 }"
+            >
+                <div class="relative">
+                    <Artwork
+                        :src="playlist.thumbnailUrl"
+                        :alt="playlist.title"
+                        class="aspect-square rounded-md"
+                        :class="playlist.isRemoved ? 'removed' : 'shadow-card'"
                     />
-                    <SyncedAgo v-if="lastCheckedAt" :at="lastCheckedAt" />
-                </div>
-                <div
-                    v-if="sync?.visible"
-                    class="flex items-center gap-2 rounded-full border bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground"
-                >
-                    <LoaderCircle class="size-3.5 animate-spin" />
-                    Syncing… {{ sync.syncedPlaylists }}/{{
-                        sync.totalPlaylists ?? '…'
-                    }}
-                </div>
-                <Button as-child variant="outline" size="sm">
-                    <Link :href="YouTubeMusicConnectionController.create()">
-                        <Settings2 />
-                        Connection
-                    </Link>
-                </Button>
-            </div>
-
-            <div
-                v-if="playlists.length === 0"
-                class="flex flex-col items-center gap-2 rounded-xl border border-dashed p-12 text-center"
-            >
-                <ListMusic class="size-8 text-muted-foreground" />
-                <p class="font-medium">No playlists found</p>
-                <p class="max-w-sm text-sm text-muted-foreground">
-                    Either this account has no playlists, or YouTube Music
-                    refused the request. Try reconnecting.
-                </p>
-            </div>
-
-            <div
-                v-else
-                class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-            >
-                <Link
-                    v-for="playlist in playlists"
-                    :key="playlist.id"
-                    :href="PlaylistController.show(playlist.id)"
-                    class="group flex flex-col gap-2 rounded-xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                >
-                    <div
-                        class="relative aspect-square overflow-hidden rounded-lg border bg-muted"
-                        :class="{
-                            'border-destructive ring-2 ring-destructive/40':
-                                removedPlaylistIds.has(playlist.id),
-                        }"
+                    <span
+                        v-if="playlist.isRemoved"
+                        class="absolute top-2 left-2 rounded-full bg-alarm px-2 py-0.5 text-[11px] font-semibold text-[oklch(0.98_0.01_80)]"
                     >
-                        <Badge
-                            v-if="removedPlaylistIds.has(playlist.id)"
-                            variant="destructive"
-                            class="absolute top-2 left-2 z-10"
-                        >
-                            Removed from YouTube Music
-                        </Badge>
-                        <img
-                            v-if="playlist.thumbnailUrl"
-                            :src="playlist.thumbnailUrl"
-                            :alt="playlist.title"
-                            loading="lazy"
-                            class="size-full object-cover transition duration-300 group-hover:scale-105"
-                        />
-                        <div
-                            v-else
-                            class="flex size-full items-center justify-center"
-                        >
-                            <ListMusic class="size-8 text-muted-foreground" />
-                        </div>
-                    </div>
-
-                    <div class="min-w-0">
-                        <p class="truncate text-sm font-medium">
-                            {{ playlist.title }}
-                        </p>
-                        <p class="truncate text-xs text-muted-foreground">
-                            <template v-if="playlist.trackCount">
-                                {{ playlist.trackCount }} tracks
-                            </template>
-                            <template v-else-if="playlist.author">
-                                {{ playlist.author }}
-                            </template>
-                            <template v-else>Playlist</template>
-                        </p>
-                    </div>
-                </Link>
-            </div>
+                        Removed from YouTube Music
+                    </span>
+                    <span
+                        v-if="player.isPlayingFrom(playlist.id)"
+                        class="absolute right-2 bottom-2 grid size-8 place-items-center rounded-full bg-[oklch(0.17_0.013_60/0.8)] backdrop-blur"
+                    >
+                        <Equalizer :playing="player.state.playing" />
+                    </span>
+                </div>
+                <p
+                    class="mt-2.5 truncate text-sm font-semibold"
+                    :class="{ 'text-amber': player.isPlayingFrom(playlist.id) }"
+                >
+                    {{ playlist.title }}
+                </p>
+                <p class="text-[12.5px] font-medium text-faint">
+                    {{
+                        playlist.trackCount
+                            ? `${playlist.trackCount} tracks`
+                            : 'Auto playlist'
+                    }}
+                </p>
+            </Link>
         </div>
-    </AppLayout>
+
+        <p
+            v-if="playlists.length === 0"
+            class="rounded-xl border border-dashed border-line p-12 text-center text-dim"
+        >
+            No playlists yet. The first sync fills this page.
+        </p>
+    </div>
 </template>
+
+<style scoped>
+.shadow-card {
+    box-shadow:
+        0 18px 30px -20px oklch(0 0 0 / 0.8),
+        inset 0 0 0 1px oklch(1 0 0 / 0.06);
+}
+
+.removed {
+    box-shadow:
+        0 0 0 1px var(--color-alarm),
+        0 0 0 4px oklch(0.66 0.18 28 / 0.3);
+}
+
+.card :deep(img) {
+    transition:
+        opacity 420ms var(--ease-out-quint),
+        transform 420ms var(--ease-out-quint);
+}
+
+.card:hover :deep(img) {
+    transform: scale(1.045);
+}
+</style>

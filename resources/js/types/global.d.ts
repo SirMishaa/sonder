@@ -20,6 +20,7 @@ declare module '@inertiajs/core' {
             auth: Auth;
             sidebarOpen: boolean;
             youtubeMusicCookieExpired: boolean;
+            library: App.Data.LibraryData | null;
             [key: string]: unknown;
         };
     }
