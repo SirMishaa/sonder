@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Actions\SyncPlaylistsFromYouTubeMusicAction;
+use App\Exceptions\YouTubeMusicException;
 use App\Models\Playlist;
 use App\Models\YouTubeMusicAccount;
 use Tests\Support\FakeYouTubeMusicClient;
@@ -132,12 +133,13 @@ it('clears the flag when a removed playlist comes back', function (): void {
     expect($playlist->refresh()->removed_at)->toBeNull();
 });
 
-it('never flags anything when YouTube Music returns an empty library', function (): void {
+it('treats an empty library as a signed-out cookie and flags nothing', function (): void {
     $account = YouTubeMusicAccount::factory()->create();
     $playlist = Playlist::factory()->for($account, 'youtubeMusicAccount')->create();
     $this->fakeYouTubeMusic()->playlists = [];
 
-    resolve(SyncPlaylistsFromYouTubeMusicAction::class)->handle($account);
+    expect(fn () => resolve(SyncPlaylistsFromYouTubeMusicAction::class)->handle($account))
+        ->toThrow(YouTubeMusicException::class, 'no longer recognises this cookie');
 
     expect($playlist->refresh()->removed_at)->toBeNull();
 });

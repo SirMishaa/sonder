@@ -344,6 +344,7 @@
     "Skipped :title": ":title passé",
     "Solve": "Résoudre",
     "Something went wrong.": "Une erreur est survenue.",
+    "Sonder is pacing its calls to YouTube Music. Try again in :seconds seconds.": "Sonder espace ses appels à YouTube Music. Réessayez dans :seconds secondes.",
     "Sonder reads your library through YouTube Music's private API. It needs your browser session to do that.": "Sonder lit votre bibliothèque via l'API privée de YouTube Music. Il a besoin pour cela de votre session de navigateur.",
     "Sonder, go to Discover": "Sonder, aller à Découvrir",
     "soon": "bientôt",
@@ -387,6 +388,7 @@
     "The response is not a streamed response.": "La réponse n'est pas une réponse diffusée.",
     "The response is not a view.": "La réponse n'est pas une vue.",
     "The sync failed": "La synchronisation a échoué",
+    "The sync stopped before it could finish.": "La synchronisation s'est arrêtée avant la fin.",
     "This action is unauthorized.": "Cette action n'est pas autorisée.",
     "This is a secure area of the application. Please confirm your password before continuing.": "Cette zone de l'application est sécurisée. Veuillez confirmer votre mot de passe avant de continuer.",
     "This is the last track.": "C'est le dernier titre.",
@@ -461,6 +463,7 @@
     "Your YouTube Music cookie stopped working": "Votre cookie YouTube Music ne fonctionne plus",
     "YouTube Music connection": "Connexion YouTube Music",
     "YouTube Music could not be reached, or it returned something this application could not read. This usually means the stored cookie has expired.": "YouTube Music est injoignable ou a renvoyé une réponse illisible pour l'application. Cela signifie généralement que le cookie enregistré a expiré.",
+    "YouTube Music no longer recognises this cookie as signed in. Paste a fresh cookie to sync again.": "YouTube Music ne reconnaît plus ce cookie comme connecté. Collez un nouveau cookie pour synchroniser à nouveau.",
     "YouTube Music refused the request. The stored cookie may have expired.": "YouTube Music a refusé la requête. Le cookie enregistré a peut-être expiré.",
     "YouTube Music rejected this cookie. Make sure you are signed in, and copy the header again.": "YouTube Music a refusé ce cookie. Vérifiez que vous êtes connecté, puis copiez à nouveau l'en-tête."
 }

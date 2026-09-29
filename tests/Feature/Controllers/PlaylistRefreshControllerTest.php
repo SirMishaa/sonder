@@ -72,3 +72,17 @@ it('sends guests to the login page', function (): void {
 
     $response->assertRedirectToRoute('login');
 });
+
+it('tells the user to wait when the call budget is spent', function (): void {
+    $user = User::factory()->create();
+    $account = YouTubeMusicAccount::factory()->for($user)->create();
+    $playlist = Playlist::factory()->for($account, 'youtubeMusicAccount')->create();
+    $this->fakeYouTubeMusic()->rateLimitedFor = 42;
+
+    $response = $this->actingAs($user)
+        ->fromRoute('playlist.show', $playlist->youtube_playlist_id)
+        ->post(route('playlist-refresh.store', $playlist->youtube_playlist_id));
+
+    $response->assertSessionHasErrors(['refresh' => 'Sonder is pacing its calls to YouTube Music. Try again in 42 seconds.']);
+    expect($account->refresh()->hasExpiredCookie())->toBeFalse();
+});

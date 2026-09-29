@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions;
 
 use App\Exceptions\YouTubeMusicException;
+use App\Exceptions\YouTubeMusicRateLimitedException;
 use App\Models\User;
 use App\Models\YouTubeMusicAccount;
 use App\Services\YouTubeMusic\Client;
@@ -20,6 +21,7 @@ final readonly class ConnectYouTubeMusicAccount
      * connection time is far kinder than failing on every later page.
      *
      * @throws YouTubeMusicException
+     * @throws YouTubeMusicRateLimitedException
      */
     public function handle(User $user, #[SensitiveParameter] string $cookie): YouTubeMusicAccount
     {

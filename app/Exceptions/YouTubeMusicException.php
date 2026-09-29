@@ -18,6 +18,15 @@ final class YouTubeMusicException extends RuntimeException
         );
     }
 
+    /**
+     * A signed-in library always lists at least "Liked Music", so an empty
+     * one means YouTube Music served the session as signed out.
+     */
+    public static function signedOut(): self
+    {
+        return new self('YouTube Music no longer recognises this cookie as signed in. Paste a fresh cookie to sync again.');
+    }
+
     public static function unexpectedPayload(string $expected): self
     {
         return new self(

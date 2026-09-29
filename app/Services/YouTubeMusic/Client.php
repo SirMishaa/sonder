@@ -8,6 +8,7 @@ use App\Data\AccountData;
 use App\Data\PlaylistData;
 use App\Data\PlaylistSummaryData;
 use App\Exceptions\YouTubeMusicException;
+use App\Exceptions\YouTubeMusicRateLimitedException;
 
 /**
  * A read-only view of a YouTube Music account.
@@ -21,6 +22,7 @@ interface Client
 {
     /**
      * @throws YouTubeMusicException
+     * @throws YouTubeMusicRateLimitedException
      */
     public function account(string $cookie): AccountData;
 
@@ -28,11 +30,13 @@ interface Client
      * @return array<int, PlaylistSummaryData>
      *
      * @throws YouTubeMusicException
+     * @throws YouTubeMusicRateLimitedException
      */
     public function playlists(string $cookie): array;
 
     /**
      * @throws YouTubeMusicException
+     * @throws YouTubeMusicRateLimitedException
      */
     public function playlist(string $cookie, string $playlistId, ?int $trackCount = null): PlaylistData;
 }

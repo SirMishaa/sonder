@@ -23,7 +23,9 @@ final readonly class VerifyYouTubeMusicCookie
     public function handle(YouTubeMusicAccount $account): bool
     {
         try {
-            $this->client->playlists($account->cookie);
+            if ($this->client->playlists($account->cookie) === []) {
+                throw YouTubeMusicException::signedOut();
+            }
         } catch (YouTubeMusicException) {
             $account->markCookieExpired();
 

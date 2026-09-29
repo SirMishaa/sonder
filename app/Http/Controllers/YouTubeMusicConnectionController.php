@@ -9,6 +9,7 @@ use App\Actions\DisconnectYouTubeMusicAccount;
 use App\Actions\StartYouTubeMusicSync;
 use App\Data\YouTubeMusicSyncData;
 use App\Exceptions\YouTubeMusicException;
+use App\Exceptions\YouTubeMusicRateLimitedException;
 use App\Http\Requests\CreateYouTubeMusicConnectionRequest;
 use App\Models\User;
 use App\Models\YouTubeMusicSync;
@@ -34,6 +35,8 @@ final readonly class YouTubeMusicConnectionController
     ): RedirectResponse {
         try {
             $account = $action->handle($user, $request->string('cookie')->value());
+        } catch (YouTubeMusicRateLimitedException $exception) {
+            return back()->withErrors(['cookie' => __('Sonder is pacing its calls to YouTube Music. Try again in :seconds seconds.', ['seconds' => $exception->retryAfter])]);
         } catch (YouTubeMusicException) {
             return back()->withErrors([
                 'cookie' => __('YouTube Music rejected this cookie. Make sure you are signed in, and copy the header again.'),

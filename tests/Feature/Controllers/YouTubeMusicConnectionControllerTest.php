@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\YouTubeMusicAccount;
 use App\Models\YouTubeMusicSync;
 use Database\Factories\YouTubeMusicAccountFactory;
+use Tests\Support\FakeYouTubeMusicClient;
 
 it('renders the connection page', function (): void {
     $response = $this->actingAs(User::factory()->create())
@@ -140,6 +141,8 @@ it('keeps guests out', function (): void {
 it('clears the expired flag when a fresh cookie is pasted', function (): void {
     $user = User::factory()->create();
     $account = YouTubeMusicAccount::factory()->for($user)->expired()->create();
+    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
+    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
 
     $this->actingAs($user)->post(route('youtube-music-connection.store'), [
         'cookie' => YouTubeMusicAccountFactory::cookie(),

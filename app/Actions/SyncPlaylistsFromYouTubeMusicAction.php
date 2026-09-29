@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Actions;
 
 use App\Data\PlaylistSummaryData;
+use App\Exceptions\YouTubeMusicException;
+use App\Exceptions\YouTubeMusicRateLimitedException;
 use App\Models\Playlist;
 use App\Models\YouTubeMusicAccount;
 use App\Services\YouTubeMusic\Client;
@@ -30,10 +32,18 @@ final readonly class SyncPlaylistsFromYouTubeMusicAction
      *                                                                                        Called once with `(0, $total, null)` right after the playlist
      *                                                                                        list is fetched, then once per playlist right after it is
      *                                                                                        checked (and its tracks updated, when it changed).
+     *
+     * @throws YouTubeMusicException When YouTube Music is unreachable or serves the session as signed out (an empty library).
+     * @throws YouTubeMusicRateLimitedException When Sonder's own call budget is spent; retry after `retryAfter` seconds.
      */
     public function handle(YouTubeMusicAccount $account, ?Closure $onProgress = null): void
     {
         $summaries = $this->client->playlists($account->cookie);
+
+        if ($summaries === []) {
+            throw YouTubeMusicException::signedOut();
+        }
+
         $total = count($summaries);
 
         $onProgress?->__invoke(0, $total, null);
@@ -93,17 +103,10 @@ final readonly class SyncPlaylistsFromYouTubeMusicAction
     }
 
     /**
-     * An empty listing is far more likely to be a YouTube hiccup than a user
-     * who deleted every playlist, so it never flags anything.
-     *
-     * @param  array<int, PlaylistSummaryData>  $summaries
+     * @param  non-empty-array<int, PlaylistSummaryData>  $summaries
      */
     private function flagRemovedPlaylists(YouTubeMusicAccount $account, array $summaries): void
     {
-        if ($summaries === []) {
-            return;
-        }
-
         $account->playlists()
             ->whereNotIn('youtube_playlist_id', array_map(fn (PlaylistSummaryData $summary): string => $summary->id, $summaries))
             ->whereNull('removed_at')

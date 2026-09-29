@@ -9,6 +9,7 @@ use App\Data\PlaylistData;
 use App\Data\PlaylistSummaryData;
 use App\Data\TrackData;
 use App\Exceptions\YouTubeMusicException;
+use App\Exceptions\YouTubeMusicRateLimitedException;
 use App\Services\YouTubeMusic\Client;
 use RuntimeException;
 
@@ -23,6 +24,9 @@ use RuntimeException;
 final class FakeYouTubeMusicClient implements Client
 {
     public bool $shouldFail = false;
+
+    /** Seconds until the next call is allowed; null when calls go through. */
+    public ?int $rateLimitedFor = null;
 
     public ?AccountData $account = null;
 
@@ -138,6 +142,10 @@ final class FakeYouTubeMusicClient implements Client
 
         if ($this->shouldFail) {
             throw YouTubeMusicException::unreachable(new RuntimeException('Faked failure.'));
+        }
+
+        if ($this->rateLimitedFor !== null) {
+            throw new YouTubeMusicRateLimitedException($this->rateLimitedFor);
         }
     }
 }

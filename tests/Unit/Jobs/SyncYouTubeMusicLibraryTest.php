@@ -76,9 +76,37 @@ it('clears the cookie flag once a sync succeeds', function (): void {
     Event::fake([YouTubeMusicSyncUpdated::class]);
     $account = YouTubeMusicAccount::factory()->expired()->create();
     $sync = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')->create();
+    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
+    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
 
     (new SyncYouTubeMusicLibrary($sync->id, $account->id))
         ->handle(resolve(SyncPlaylistsFromYouTubeMusicAction::class));
 
     expect($account->refresh()->hasExpiredCookie())->toBeFalse();
+});
+
+it('releases itself when the call budget is spent, without flagging the cookie', function (): void {
+    Event::fake([YouTubeMusicSyncUpdated::class]);
+    $account = YouTubeMusicAccount::factory()->create();
+    $sync = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')->create();
+    $this->fakeYouTubeMusic()->rateLimitedFor = 42;
+
+    $job = (new SyncYouTubeMusicLibrary($sync->id, $account->id))->withFakeQueueInteractions();
+    $job->handle(resolve(SyncPlaylistsFromYouTubeMusicAction::class));
+
+    $job->assertReleased(delay: 42);
+    expect($sync->refresh()->status)->not->toBe(YouTubeMusicSyncStatus::Failed)
+        ->and($account->refresh()->hasExpiredCookie())->toBeFalse();
+});
+
+it('fails a sync left running when the job gives up', function (): void {
+    Event::fake([YouTubeMusicSyncUpdated::class]);
+    $account = YouTubeMusicAccount::factory()->create();
+    $sync = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')
+        ->create(['status' => YouTubeMusicSyncStatus::Syncing]);
+
+    (new SyncYouTubeMusicLibrary($sync->id, $account->id))->failed(new RuntimeException('Timed out.'));
+
+    expect($sync->refresh()->status)->toBe(YouTubeMusicSyncStatus::Failed)
+        ->and($sync->finished_at)->not->toBeNull();
 });
