@@ -23,7 +23,7 @@ final readonly class PlaylistRefreshController
 
         if ($playlist->removed_at !== null) {
             return back()->withErrors([
-                'refresh' => 'This playlist is no longer in your YouTube Music library.',
+                'refresh' => __('This playlist is no longer in your YouTube Music library.'),
             ]);
         }
 
@@ -31,7 +31,7 @@ final readonly class PlaylistRefreshController
             $refresh->handle($playlist);
         } catch (YouTubeMusicException) {
             return back()->withErrors([
-                'refresh' => 'YouTube Music refused the request. The stored cookie may have expired.',
+                'refresh' => __('YouTube Music refused the request. The stored cookie may have expired.'),
             ]);
         }
 

@@ -36,7 +36,7 @@ final readonly class YouTubeMusicConnectionController
             $account = $action->handle($user, $request->string('cookie')->value());
         } catch (YouTubeMusicException) {
             return back()->withErrors([
-                'cookie' => 'YouTube Music rejected this cookie. Make sure you are signed in, and copy the header again.',
+                'cookie' => __('YouTube Music rejected this cookie. Make sure you are signed in, and copy the header again.'),
             ]);
         }
 
