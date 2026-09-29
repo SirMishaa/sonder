@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sonder · wordmarks</title>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Unbounded:wght@600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root { --bg: oklch(0.165 0.012 60); --side: oklch(0.182 0.013 60); --line: oklch(0.285 0.012 60); --text: oklch(0.94 0.012 80); --muted: oklch(0.72 0.018 70); --amber: oklch(0.80 0.15 68); }
+* { box-sizing: border-box; margin: 0; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 'Hanken Grotesk', system-ui; padding: 40px; }
+h1 { font-size: 20px; font-weight: 800; margin-bottom: 24px; }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.opt { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.side { background: var(--side); padding: 18px 16px; border-bottom: 1px solid var(--line); height: 96px; display: flex; align-items: center; }
+.big { padding: 34px 20px; display: flex; align-items: center; justify-content: center; gap: 16px; min-height: 150px; }
+.info { padding: 14px 18px 18px; }
+.info h2 { font-size: 15px; font-weight: 700; }
+.info p { color: var(--muted); font-size: 13.5px; }
+.lock { display: flex; align-items: center; gap: 11px; }
+.logo { width: 40px; height: 40px; flex: none; }
+.big .logo { width: 64px; height: 64px; }
+.ring { transform-origin: 24px 24px; animation: orbit 14s linear infinite; }
+.r2 { animation-duration: 22s; animation-direction: reverse; }
+@keyframes orbit { to { rotate: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .ring { animation: none; } }
+
+/* 0: current */
+.w0 { font: 800 21px 'Hanken Grotesk'; letter-spacing: -0.035em; }
+/* 1: Bricolage display */
+.w1 { font: 800 26px/1 'Bricolage Grotesque'; font-variation-settings: 'opsz' 96; letter-spacing: -0.028em; }
+.big .w1 { font-size: 46px; }
+/* 2: ring o */
+.w2 { font: 800 25px/1 'Bricolage Grotesque'; font-variation-settings: 'opsz' 96; letter-spacing: -0.02em; display: inline-flex; align-items: baseline; }
+.w2 svg { width: 0.6em; height: 0.6em; margin: 0 0.02em 0 0.03em; align-self: baseline; transform: translateY(0.07em); }
+.big .w2 { font-size: 46px; }
+/* 3: Unbounded */
+.w3 { font: 700 21px/1 'Unbounded'; letter-spacing: -0.04em; }
+.w3 b { color: var(--amber); font-weight: 700; }
+.big .w3 { font-size: 36px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <linearGradient id="amb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="oklch(0.84 0.14 75)"/><stop offset="1" stop-color="oklch(0.66 0.17 48)"/></linearGradient>
+  <symbol id="mk" viewBox="0 0 48 48"><circle cx="24" cy="24" r="5" fill="url(#amb)"/><g class="ring" style="transform:rotate(-35deg)"><circle cx="24" cy="24" r="11.5" fill="none" stroke="url(#amb)" stroke-width="3.2" stroke-dasharray="46 26" stroke-linecap="round"/></g><g class="ring r2" style="transform:rotate(20deg)"><circle cx="24" cy="24" r="19" fill="none" stroke="url(#amb)" stroke-width="3.2" stroke-dasharray="30 12 52 25" stroke-linecap="round" opacity="0.5"/></g></symbol>
+  <symbol id="o" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.3" fill="url(#amb)"/><circle cx="12" cy="12" r="9.4" fill="none" stroke="url(#amb)" stroke-width="3.6"/></symbol>
+</defs></svg>
+<h1>Sonder · wordmark options (in the sidebar, then large)</h1>
+<div class="grid">
+  <section class="opt"><div class="side"><div class="lock"><svg class="logo"><use href="#mk"/></svg><span class="w0">sonder</span></div></div>
+    <div class="big"><svg class="logo"><use href="#mk"/></svg><span class="w0" style="font-size:40px">sonder</span></div>
+    <div class="info"><h2>0 · Current</h2><p>For reference: the UI font in bold. Correct, but it says nothing.</p></div></section>
+  <section class="opt"><div class="side"><div class="lock"><svg class="logo"><use href="#mk"/></svg><span class="w1">sonder</span></div></div>
+    <div class="big"><svg class="logo"><use href="#mk"/></svg><span class="w1">sonder</span></div>
+    <div class="info"><h2>1 · Display cut</h2><p>Bricolage Grotesque at its display size: ink traps, tight spacing, a hand-made edge next to a precise mark.</p></div></section>
+  <section class="opt"><div class="side"><div class="lock"><svg class="logo"><use href="#mk"/></svg><span class="w2">s<svg><use href="#o"/></svg>nder</span></div></div>
+    <div class="big"><svg class="logo"><use href="#mk"/></svg><span class="w2">s<svg><use href="#o"/></svg>nder</span></div>
+    <div class="info"><h2>2 · Ripple o</h2><p>Same display cut, the o becomes a small ripple echoing the mark. Ties name and logo together; can even stand alone without the mark.</p></div></section>
+  <section class="opt"><div class="side"><div class="lock"><svg class="logo"><use href="#mk"/></svg><span class="w3">sonder<b>.</b></span></div></div>
+    <div class="big"><svg class="logo"><use href="#mk"/></svg><span class="w3">sonder<b>.</b></span></div>
+    <div class="info"><h2>3 · Wide geometric</h2><p>Unbounded: wide, round, confident, with an amber full stop. The loudest option.</p></div></section>
+</div>
+</body>
+</html>

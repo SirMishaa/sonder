@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sonder · logo options</title>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root { --bg: oklch(0.165 0.012 60); --panel: oklch(0.19 0.013 60); --line: oklch(0.285 0.012 60); --text: oklch(0.94 0.012 80); --muted: oklch(0.72 0.018 70); --amber: oklch(0.80 0.15 68); --amber-deep: oklch(0.62 0.16 50); }
+* { box-sizing: border-box; margin: 0; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 'Hanken Grotesk', system-ui; padding: 48px; }
+h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 28px; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.opt { border: 1px solid var(--line); border-radius: 16px; background: var(--panel); padding: 28px; display: flex; flex-direction: column; gap: 22px; }
+.big { height: 180px; display: grid; place-items: center; border-radius: 12px; background: var(--bg); }
+.big svg { width: 120px; height: 120px; }
+.lockup { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; letter-spacing: -0.03em; }
+.lockup svg { width: 30px; height: 30px; }
+.sizes { display: flex; align-items: end; gap: 18px; }
+.sizes svg:nth-child(1) { width: 16px; height: 16px; }
+.sizes svg:nth-child(2) { width: 24px; height: 24px; }
+.sizes svg:nth-child(3) { width: 40px; height: 40px; }
+.light { background: oklch(0.96 0.01 80); padding: 10px 14px; border-radius: 10px; color: oklch(0.2 0.02 60); }
+h2 { font-size: 16px; font-weight: 700; }
+p { color: var(--muted); font-size: 14px; }
+.spin { animation: spin 9s linear infinite; transform-origin: 50% 50%; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="amb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="oklch(0.84 0.14 75)"/><stop offset="1" stop-color="oklch(0.66 0.17 48)"/></linearGradient>
+    <!-- A: Ripple, a drop and the rings it sends out -->
+    <symbol id="sonar" viewBox="0 0 48 48">
+      <circle cx="24" cy="24" r="5" fill="url(#amb)"/>
+      <circle cx="24" cy="24" r="11.5" fill="none" stroke="url(#amb)" stroke-width="3.2" stroke-dasharray="46 26" stroke-linecap="round" transform="rotate(-35 24 24)"/>
+      <circle cx="24" cy="24" r="19" fill="none" stroke="url(#amb)" stroke-width="3.2" stroke-dasharray="30 12 52 25" stroke-linecap="round" opacity="0.5" transform="rotate(20 24 24)"/>
+    </symbol>
+    <!-- B: Groove, a record whose groove draws a geometric S -->
+    <symbol id="groove" viewBox="0 0 48 48">
+      <circle cx="24" cy="24" r="23" fill="oklch(0.14 0.01 60)"/>
+      <circle cx="24" cy="24" r="22.5" fill="none" stroke="oklch(0.32 0.012 60)"/>
+      <circle cx="24" cy="24" r="19" fill="none" stroke="oklch(0.24 0.012 60)"/>
+      <path d="M30.8 16.2A8.2 8.2 0 1 0 24 24a8.2 8.2 0 1 1-6.8 7.8" fill="none" stroke="url(#amb)" stroke-width="4.6" stroke-linecap="round"/>
+    </symbol>
+    <!-- C: Tile, the same S on an amber app tile -->
+    <symbol id="fold" viewBox="0 0 48 48">
+      <rect width="48" height="48" rx="13" fill="url(#amb)"/>
+      <path d="M30.8 16.2A8.2 8.2 0 1 0 24 24a8.2 8.2 0 1 1-6.8 7.8" fill="none" stroke="oklch(0.2 0.03 55)" stroke-width="4.8" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<h1>Sonder · three marks</h1>
+<div class="grid">
+  <section class="opt">
+    <div class="big"><svg class="spin"><use href="#sonar"/></svg></div>
+    <div class="lockup"><svg><use href="#sonar"/></svg>sonder</div>
+    <div class="sizes"><svg><use href="#sonar"/></svg><svg><use href="#sonar"/></svg><svg><use href="#sonar"/></svg></div>
+    <div><h2>A · Ripple</h2><p>A drop and the rings it sends out: one track you love, spreading into new ones. Abstract and calm; the broken rings can turn slowly while music plays.</p></div>
+  </section>
+  <section class="opt">
+    <div class="big"><svg class="spin"><use href="#groove"/></svg></div>
+    <div class="lockup"><svg><use href="#groove"/></svg>sonder</div>
+    <div class="sizes"><svg><use href="#groove"/></svg><svg><use href="#groove"/></svg><svg><use href="#groove"/></svg></div>
+    <div><h2>B · Groove</h2><p>A record whose groove draws a geometric S. The most "music" of the three, and it can spin while something plays.</p></div>
+  </section>
+  <section class="opt">
+    <div class="big"><svg><use href="#fold"/></svg></div>
+    <div class="lockup"><svg><use href="#fold"/></svg>sonder</div>
+    <div class="sizes"><svg><use href="#fold"/></svg><svg><use href="#fold"/></svg><svg><use href="#fold"/></svg></div>
+    <div><h2>C · Tile</h2><p>The same S on an amber tile: the app-icon and favicon form of B. Strongest at 16px.</p></div>
+  </section>
+</div>
+</body>
+</html>
