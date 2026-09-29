@@ -214,6 +214,11 @@ const REPOSITORY = 'https://github.com/SirMishaa/sonder';
             <SonderWordmark class="!text-[18px] opacity-80" />
             <p>
                 {{ $t('Not affiliated with YouTube or Google.') }}
+                <Link
+                    href="/design-system"
+                    class="ml-2 font-semibold text-dim hover:text-paper"
+                    >{{ $t('Design system') }}</Link
+                >
                 <a
                     :href="REPOSITORY"
                     class="ml-2 font-semibold text-dim hover:text-paper"
