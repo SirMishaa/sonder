@@ -35,7 +35,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="player-host" aria-hidden="true" tabindex="-1">
+    <div class="player-host" aria-hidden="true" inert>
         <div ref="mount" />
     </div>
 </template>

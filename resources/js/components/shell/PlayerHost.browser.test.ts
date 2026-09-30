@@ -39,6 +39,7 @@ it('keeps the iframe host in the page, invisible and out of reach', async () => 
     const box = wrapper.getBoundingClientRect();
 
     expect(wrapper.getAttribute('aria-hidden')).toBe('true');
+    expect(wrapper.inert).toBe(true);
     expect(style.display).not.toBe('none');
     expect(style.visibility).not.toBe('hidden');
     expect(style.opacity).toBe('0');

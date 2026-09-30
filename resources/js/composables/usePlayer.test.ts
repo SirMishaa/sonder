@@ -105,7 +105,11 @@ describe('usePlayer', () => {
         second.player.handlePageHide();
 
         const third = setup({ storage });
-        expect(third.transport.loads.at(-1)).toEqual({ videoId: 'a', startAt: 42, autoplay: false });
+        expect(third.transport.loads.at(-1)).toEqual({
+            videoId: 'a',
+            startAt: 42,
+            autoplay: false,
+        });
     });
 
     it('keeps the saved position when the page closes before the player is ready', () => {
@@ -118,7 +122,11 @@ describe('usePlayer', () => {
         setup({ storage, ready: false }).player.handlePageHide();
 
         const third = setup({ storage });
-        expect(third.transport.loads.at(-1)).toEqual({ videoId: 'a', startAt: 42, autoplay: false });
+        expect(third.transport.loads.at(-1)).toEqual({
+            videoId: 'a',
+            startAt: 42,
+            autoplay: false,
+        });
     });
 
     it('records nothing for tracks changed before the player is ready', () => {
@@ -137,7 +145,11 @@ describe('usePlayer', () => {
 
         player.playTracks([track('a'), track('b')], 0, SOURCE);
         player.next();
-        player.playNext(track('z'), { playlistId: null, title: 'Fresh finds' }, 'suggestion');
+        player.playNext(
+            track('z'),
+            { playlistId: null, title: 'Fresh finds' },
+            'suggestion',
+        );
 
         expect(sent).toHaveLength(0);
         expect(player.current.value?.videoId).toBe('z');
@@ -153,10 +165,18 @@ describe('usePlayer', () => {
 
         expect(player.state.ready).toBe(false);
         expect(player.state.playing).toBe(false);
-        expect(sent[0]).toMatchObject({ youtube_video_id: 'a', end_reason: 'abandoned', listened_seconds: 12 });
+        expect(sent[0]).toMatchObject({
+            youtube_video_id: 'a',
+            end_reason: 'abandoned',
+            listened_seconds: 12,
+        });
 
         replacement.becomeReady();
-        expect(replacement.loads.at(-1)).toEqual({ videoId: 'a', startAt: 12, autoplay: false });
+        expect(replacement.loads.at(-1)).toEqual({
+            videoId: 'a',
+            startAt: 12,
+            autoplay: false,
+        });
     });
 
     it('loads the chosen track and plays it', () => {

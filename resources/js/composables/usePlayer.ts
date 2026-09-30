@@ -292,7 +292,10 @@ export function createPlayer(deps: PlayerDeps) {
 
         state.actualVideoId = transport.videoId();
 
-        if (!positionTrusted || state.actualVideoId !== current.value?.videoId) {
+        if (
+            !positionTrusted ||
+            state.actualVideoId !== current.value?.videoId
+        ) {
             return;
         }
 
