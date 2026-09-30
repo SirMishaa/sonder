@@ -65,10 +65,14 @@ const recentPlaylists = computed(() =>
 );
 
 function playFind(find: App.Data.SampledTrackData): void {
-    player.playNext(find.track, {
-        playlistId: null,
-        title: trans('Fresh finds'),
-    });
+    player.playNext(
+        find.track,
+        {
+            playlistId: null,
+            title: trans('Fresh finds'),
+        },
+        'suggestion',
+    );
 }
 </script>
 

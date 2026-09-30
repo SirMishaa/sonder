@@ -1,13 +1,22 @@
-import { computed, reactive, watch } from 'vue';
+import { trans } from 'laravel-vue-i18n';
+import { computed, getCurrentInstance, inject, reactive, watch } from 'vue';
+import type { InjectionKey } from 'vue';
+import { useToast } from '@/composables/useToast';
+import { createListenSender } from '@/lib/player/listenSender';
+import type { ListenSender } from '@/lib/player/listenSender';
+import {
+    finishListen,
+    markSeek,
+    recordProgress,
+    startListen,
+} from '@/lib/player/listenTracker';
+import type { Listen } from '@/lib/player/listenTracker';
+import type { PlaybackState, PlayerTransport } from '@/lib/player/transport';
 
 /**
- * Front-end playback fixture.
- *
- * Sonder cannot control YouTube Music playback yet. Until it can, this store
- * plays the real tracks the pages already loaded (queue, next / previous,
- * progress, volume) so the interface can be built and felt for real. Nothing
- * here talks to YouTube Music; swapping it for a real transport should only
- * mean replacing this module.
+ * The player store: queue, current track and listening history, driving a
+ * PlayerTransport (the hidden YouTube iframe in the app, a fake in tests).
+ * Components reach it through usePlayer(); tests build one with createPlayer().
  */
 
 export type QueueTrack = {
@@ -19,6 +28,7 @@ export type QueueTrack = {
     duration: string | null;
     durationSeconds: number;
     thumbnailUrl: string | null;
+    playlistId: string | null;
 };
 
 export type QueueSource = {
@@ -26,34 +36,47 @@ export type QueueSource = {
     title: string;
 };
 
+export type DebugEntry = {
+    at: number;
+    kind: 'load' | 'state' | 'error' | 'send' | 'info';
+    message: string;
+};
+
+export type PlayerDeps = {
+    sender: ListenSender;
+    storage?: Pick<Storage, 'getItem' | 'setItem'> | null;
+    now?: () => number;
+    notify?: (message: string) => void;
+};
+
 type PlayerState = {
     queue: QueueTrack[];
     index: number;
     playing: boolean;
     elapsed: number;
+    duration: number;
     volume: number;
     muted: boolean;
     source: QueueSource | null;
+    origin: App.Enums.ListenOrigin;
     queueOpen: boolean;
+    ready: boolean;
+    unavailable: boolean;
+    actualVideoId: string | null;
 };
 
+type PersistedState = Pick<
+    PlayerState,
+    'queue' | 'index' | 'elapsed' | 'volume' | 'muted' | 'source' | 'origin' | 'queueOpen'
+>;
+
 const STORAGE_KEY = 'sonder.player.v1';
-const TICK_MS = 250;
+const POLL_MS = 250;
+const RESTART_THRESHOLD_SECONDS = 3;
 const FALLBACK_SECONDS = 210;
 const MAX_STORED_TRACKS = 300;
-
-const state = reactive<PlayerState>({
-    queue: [],
-    index: -1,
-    playing: false,
-    elapsed: 0,
-    volume: 70,
-    muted: false,
-    source: null,
-    queueOpen: false,
-});
-
-let booted = false;
+const MAX_DEBUG_ENTRIES = 200;
+const AD_DURATION_TOLERANCE_SECONDS = 5;
 
 function secondsOf(track: App.Data.TrackData): number {
     if (track.durationSeconds) {
@@ -72,6 +95,7 @@ function secondsOf(track: App.Data.TrackData): number {
 export function toQueueTrack(
     track: App.Data.TrackData,
     position: number,
+    playlistId: string | null = null,
 ): QueueTrack {
     return {
         key: `${track.videoId ?? track.title}#${position}`,
@@ -82,64 +106,455 @@ export function toQueueTrack(
         duration: track.duration,
         durationSeconds: secondsOf(track),
         thumbnailUrl: track.thumbnailUrl,
+        playlistId,
     };
 }
 
-function persist(): void {
-    try {
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({
-                queue: state.queue.slice(0, MAX_STORED_TRACKS),
-                index: state.index,
-                elapsed: Math.floor(state.elapsed),
-                volume: state.volume,
-                muted: state.muted,
-                source: state.source,
-                queueOpen: state.queueOpen,
-            }),
-        );
-    } catch {
-        // Storage can be unavailable (private mode, quota); playback still works.
-    }
-}
+export function createPlayer(deps: PlayerDeps) {
+    const now = deps.now ?? (() => Date.now());
+    const notify = deps.notify ?? (() => undefined);
 
-function restore(): void {
-    try {
-        const saved = JSON.parse(
-            localStorage.getItem(STORAGE_KEY) ?? 'null',
-        ) as Partial<PlayerState> | null;
+    const state = reactive<PlayerState>({
+        queue: [],
+        index: -1,
+        playing: false,
+        elapsed: 0,
+        duration: 0,
+        volume: 70,
+        muted: false,
+        source: null,
+        origin: 'playlist',
+        queueOpen: false,
+        ready: false,
+        unavailable: false,
+        actualVideoId: null,
+    });
+    const debug = reactive<{ entries: DebugEntry[] }>({ entries: [] });
 
-        if (saved && Array.isArray(saved.queue)) {
-            Object.assign(state, saved, { playing: false });
+    let transport: PlayerTransport | null = null;
+    let listen: Listen | null = null;
+    let poll: ReturnType<typeof setInterval> | null = null;
+
+    const current = computed<QueueTrack | null>(
+        () => state.queue[state.index] ?? null,
+    );
+    const totalSeconds = computed(() =>
+        state.duration > 0 ? state.duration : (current.value?.durationSeconds ?? 0),
+    );
+    const progress = computed(() =>
+        totalSeconds.value > 0 ? Math.min(1, state.elapsed / totalSeconds.value) : 0,
+    );
+    const upNext = computed(() => state.queue.slice(state.index + 1));
+    const diagnostics = computed(() => {
+        const expectedVideoId = current.value?.videoId ?? null;
+        const storedDuration = current.value?.duration
+            ? current.value.durationSeconds
+            : null;
+        const isOtherVideo =
+            state.actualVideoId !== null &&
+            expectedVideoId !== null &&
+            state.actualVideoId !== expectedVideoId;
+        const isDurationOff =
+            state.duration > 0 &&
+            storedDuration !== null &&
+            Math.abs(state.duration - storedDuration) > AD_DURATION_TOLERANCE_SECONDS;
+
+        return {
+            expectedVideoId,
+            actualVideoId: state.actualVideoId,
+            playerDuration: state.duration,
+            storedDuration,
+            isLikelyAd: state.playing && (isOtherVideo || isDurationOff),
+        };
+    });
+
+    function log(kind: DebugEntry['kind'], message: string): void {
+        debug.entries.push({ at: now(), kind, message });
+
+        if (debug.entries.length > MAX_DEBUG_ENTRIES) {
+            debug.entries.splice(0, debug.entries.length - MAX_DEBUG_ENTRIES);
         }
-    } catch {
-        // A corrupt entry simply starts an empty player.
-    }
-}
-
-function boot(): void {
-    if (booted || typeof window === 'undefined') {
-        return;
     }
 
-    booted = true;
-    restore();
-
-    window.setInterval(() => {
-        const track = state.queue[state.index];
-
-        if (!state.playing || !track) {
+    function persist(): void {
+        if (!deps.storage) {
             return;
         }
 
-        state.elapsed += TICK_MS / 1000;
+        const saved: PersistedState = {
+            queue: state.queue.slice(0, MAX_STORED_TRACKS),
+            index: state.index,
+            elapsed: Math.floor(state.elapsed),
+            volume: state.volume,
+            muted: state.muted,
+            source: state.source,
+            origin: state.origin,
+            queueOpen: state.queueOpen,
+        };
 
-        if (state.elapsed >= track.durationSeconds) {
-            next();
+        try {
+            deps.storage.setItem(STORAGE_KEY, JSON.stringify(saved));
+        } catch {
+            // Storage can be unavailable (private mode, quota); playback still works.
         }
-    }, TICK_MS);
+    }
 
+    function restore(): void {
+        if (!deps.storage) {
+            return;
+        }
+
+        try {
+            const saved = JSON.parse(
+                deps.storage.getItem(STORAGE_KEY) ?? 'null',
+            ) as Partial<PersistedState> | null;
+
+            if (!saved || !Array.isArray(saved.queue)) {
+                return;
+            }
+
+            state.queue = saved.queue;
+            state.index = saved.index ?? -1;
+            state.elapsed = saved.elapsed ?? 0;
+            state.volume = saved.volume ?? state.volume;
+            state.muted = saved.muted ?? state.muted;
+            state.source = saved.source ?? null;
+            state.origin = saved.origin ?? state.origin;
+            state.queueOpen = saved.queueOpen ?? false;
+        } catch {
+            // A corrupt entry simply starts an empty player.
+        }
+    }
+
+    function durationOrNull(): number | null {
+        return state.duration > 0 ? state.duration : null;
+    }
+
+    function beginListen(origin: App.Enums.ListenOrigin): void {
+        const track = current.value;
+
+        if (!track?.videoId) {
+            return;
+        }
+
+        listen = startListen(
+            {
+                videoId: track.videoId,
+                title: track.title,
+                artists: track.artists,
+                // Tracks restored from an older stored queue have no playlistId.
+                playlistId: track.playlistId ?? null,
+                origin,
+            },
+            now(),
+        );
+    }
+
+    function endListen(reason: App.Enums.ListenEndReason): void {
+        if (!listen) {
+            return;
+        }
+
+        const payload = finishListen(listen, reason, now(), durationOrNull());
+        listen = null;
+        log('send', `${payload.end_reason} ${payload.youtube_video_id} after ${payload.listened_seconds}s`);
+
+        void deps.sender.send(payload).then((recorded) => {
+            if (!recorded) {
+                log('error', `listen ${payload.id} was not recorded`);
+            }
+        });
+    }
+
+    function sample(): void {
+        if (!transport) {
+            return;
+        }
+
+        const position = transport.currentTime();
+        const duration = transport.duration();
+
+        state.elapsed = position;
+        state.actualVideoId = transport.videoId();
+
+        if (duration > 0) {
+            state.duration = duration;
+        }
+
+        if (listen) {
+            recordProgress(listen, position, state.playing, now());
+        }
+    }
+
+    function startPolling(): void {
+        if (poll === null) {
+            poll = setInterval(sample, POLL_MS);
+        }
+    }
+
+    function stopPolling(): void {
+        if (poll !== null) {
+            clearInterval(poll);
+            poll = null;
+        }
+    }
+
+    function stopAtEnd(): void {
+        stopPolling();
+        // Pause first: the "paused" event samples the position, which must
+        // not overwrite the reset below.
+        transport?.pause();
+        state.playing = false;
+        state.elapsed = 0;
+    }
+
+    function loadIndex(index: number, origin: App.Enums.ListenOrigin): void {
+        state.index = index;
+        state.elapsed = 0;
+        state.duration = 0;
+        state.origin = origin;
+
+        const track = current.value;
+
+        if (!track) {
+            return;
+        }
+
+        if (!track.videoId) {
+            log('error', `${track.title} has no video id, skipping it`);
+            advance();
+
+            return;
+        }
+
+        log('load', `${track.videoId} ${track.title} (${origin})`);
+        beginListen(origin);
+
+        if (transport && state.ready) {
+            transport.load(track.videoId, { startAt: 0, autoplay: true });
+        }
+    }
+
+    function advance(): void {
+        if (state.index + 1 < state.queue.length) {
+            loadIndex(state.index + 1, 'autoplay');
+        } else {
+            stopAtEnd();
+        }
+    }
+
+    function onState(playback: PlaybackState): void {
+        log('state', playback);
+
+        if (playback === 'playing') {
+            state.playing = true;
+
+            if (!listen) {
+                beginListen(state.origin);
+            }
+
+            sample();
+            startPolling();
+
+            return;
+        }
+
+        if (playback === 'buffering') {
+            return;
+        }
+
+        sample();
+        stopPolling();
+        state.playing = false;
+
+        if (playback === 'ended') {
+            endListen('ended');
+            advance();
+        }
+    }
+
+    function onError(code: number): void {
+        log('error', `YouTube error ${code} on ${current.value?.videoId ?? 'nothing'}`);
+
+        if (!listen) {
+            beginListen(state.origin);
+        }
+
+        stopPolling();
+        state.playing = false;
+        endListen('error');
+        notify("This track can't be played here, skipping it.");
+        advance();
+    }
+
+    function attachTransport(next: PlayerTransport): void {
+        transport = next;
+
+        next.on('ready', () => {
+            state.ready = true;
+            log('info', 'player ready');
+            next.setVolume(state.volume);
+            next.setMuted(state.muted);
+
+            const track = current.value;
+
+            if (track?.videoId) {
+                next.load(track.videoId, {
+                    startAt: Math.floor(state.elapsed),
+                    autoplay: false,
+                });
+            }
+        });
+        next.on('unavailable', () => {
+            state.unavailable = true;
+            log('error', 'the YouTube player could not load');
+            notify('Player unavailable');
+        });
+        next.on('state', onState);
+        next.on('error', onError);
+        next.on('autoplayBlocked', () => {
+            stopPolling();
+            state.playing = false;
+            log('info', 'autoplay blocked by the browser');
+        });
+    }
+
+    function playTracks(
+        tracks: App.Data.TrackData[],
+        startAt: number,
+        source: QueueSource,
+        origin: App.Enums.ListenOrigin = 'playlist',
+    ): void {
+        const playable = tracks
+            .map((track, position) => ({ track, position }))
+            .filter(({ track }) => track.isAvailable);
+
+        if (playable.length === 0) {
+            return;
+        }
+
+        const start = Math.max(
+            0,
+            playable.findIndex(({ position }) => position === startAt),
+        );
+
+        endListen('replaced');
+        state.queue = playable.map(({ track, position }) =>
+            toQueueTrack(track, position, source.playlistId),
+        );
+        state.source = source;
+        loadIndex(start, origin);
+    }
+
+    function playNext(
+        track: App.Data.TrackData,
+        source: QueueSource,
+        origin: App.Enums.ListenOrigin,
+    ): void {
+        const item = toQueueTrack(track, Date.now(), source.playlistId);
+
+        if (state.index < 0) {
+            state.queue = [item];
+            state.source = source;
+            loadIndex(0, origin);
+
+            return;
+        }
+
+        endListen('picked');
+        state.queue.splice(state.index + 1, 0, item);
+        loadIndex(state.index + 1, origin);
+    }
+
+    function jumpTo(index: number): void {
+        if (index < 0 || index >= state.queue.length) {
+            return;
+        }
+
+        endListen('jumped');
+        loadIndex(index, 'queue');
+    }
+
+    function next(): void {
+        if (!current.value) {
+            return;
+        }
+
+        endListen('skipped');
+
+        if (state.index + 1 < state.queue.length) {
+            loadIndex(state.index + 1, 'queue');
+        } else {
+            stopAtEnd();
+        }
+    }
+
+    function seek(seconds: number): void {
+        if (!transport || !state.ready) {
+            return;
+        }
+
+        const target = Math.max(0, seconds);
+        transport.seek(target);
+        state.elapsed = target;
+
+        if (listen) {
+            markSeek(listen, target, now());
+        }
+    }
+
+    function previous(): void {
+        if (!current.value) {
+            return;
+        }
+
+        if (state.elapsed > RESTART_THRESHOLD_SECONDS || state.index <= 0) {
+            seek(0);
+
+            return;
+        }
+
+        endListen('previous');
+        loadIndex(state.index - 1, 'queue');
+    }
+
+    function toggle(): void {
+        if (!current.value || !transport || !state.ready) {
+            return;
+        }
+
+        if (state.playing) {
+            transport.pause();
+        } else {
+            transport.play();
+        }
+    }
+
+    function setVolume(volume: number): void {
+        state.volume = Math.max(0, Math.min(100, volume));
+        state.muted = state.volume === 0;
+        transport?.setVolume(state.volume);
+        transport?.setMuted(state.muted);
+    }
+
+    function toggleMute(): void {
+        state.muted = !state.muted;
+        transport?.setMuted(state.muted);
+    }
+
+    function handlePageHide(): void {
+        sample();
+
+        if (listen) {
+            const payload = finishListen(listen, 'abandoned', now(), durationOrNull());
+            listen = null;
+            deps.sender.sendOnUnload(payload);
+        }
+
+        persist();
+    }
+
+    restore();
     watch(
         () => [
             state.queue,
@@ -147,121 +562,80 @@ function boot(): void {
             state.volume,
             state.muted,
             state.source,
+            state.origin,
             state.queueOpen,
         ],
         persist,
         { deep: true },
     );
 
-    window.addEventListener('pagehide', persist);
-}
-
-function jumpTo(index: number): void {
-    if (index < 0 || index >= state.queue.length) {
-        return;
-    }
-
-    state.index = index;
-    state.elapsed = 0;
-    state.playing = true;
-}
-
-function next(): void {
-    if (state.index + 1 < state.queue.length) {
-        jumpTo(state.index + 1);
-    } else {
-        state.playing = false;
-        state.elapsed = 0;
-    }
-}
-
-function previous(): void {
-    if (state.elapsed > 3 || state.index <= 0) {
-        state.elapsed = 0;
-
-        return;
-    }
-
-    jumpTo(state.index - 1);
-}
-
-function playTracks(
-    tracks: App.Data.TrackData[],
-    startAt: number,
-    source: QueueSource,
-): void {
-    const playable = tracks
-        .map((track, position) => ({ track, position }))
-        .filter(({ track }) => track.isAvailable);
-
-    const start = Math.max(
-        0,
-        playable.findIndex(({ position }) => position === startAt),
-    );
-
-    state.queue = playable.map(({ track, position }) =>
-        toQueueTrack(track, position),
-    );
-    state.source = source;
-    jumpTo(start);
-}
-
-function playNext(track: App.Data.TrackData, source: QueueSource): void {
-    const item = toQueueTrack(track, Date.now());
-
-    if (state.index < 0) {
-        state.queue = [item];
-        state.source = source;
-        jumpTo(0);
-
-        return;
-    }
-
-    state.queue.splice(state.index + 1, 0, item);
-    jumpTo(state.index + 1);
-}
-
-export function usePlayer() {
-    boot();
-
-    const current = computed<QueueTrack | null>(
-        () => state.queue[state.index] ?? null,
-    );
-    const progress = computed(() =>
-        current.value
-            ? Math.min(1, state.elapsed / current.value.durationSeconds)
-            : 0,
-    );
-    const upNext = computed(() => state.queue.slice(state.index + 1));
-
     return {
         state,
+        debug,
         current,
         progress,
+        totalSeconds,
         upNext,
+        diagnostics,
+        attachTransport,
         playTracks,
         playNext,
         jumpTo,
         next,
         previous,
-        toggle: () => {
-            if (current.value) {
-                state.playing = !state.playing;
-            }
-        },
-        setVolume: (volume: number) => {
-            state.volume = Math.max(0, Math.min(100, volume));
-            state.muted = state.volume === 0;
-        },
-        toggleMute: () => {
-            state.muted = !state.muted;
-        },
+        toggle,
+        seek,
+        setVolume,
+        toggleMute,
         toggleQueue: () => {
             state.queueOpen = !state.queueOpen;
         },
+        handlePageHide,
         isPlayingFrom: (playlistId: string) =>
             state.source?.playlistId === playlistId && current.value !== null,
     };
+}
+
+export type Player = ReturnType<typeof createPlayer>;
+
+export const playerKey: InjectionKey<Player> = Symbol('player');
+
+let defaultPlayer: Player | null = null;
+
+function browserStorage(): Storage | null {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    try {
+        return window.localStorage;
+    } catch {
+        return null;
+    }
+}
+
+function getDefaultPlayer(): Player {
+    if (defaultPlayer === null) {
+        const { toast } = useToast();
+
+        defaultPlayer = createPlayer({
+            sender: createListenSender(),
+            storage: browserStorage(),
+            notify: (message) => toast(trans(message)),
+        });
+    }
+
+    return defaultPlayer;
+}
+
+/**
+ * The app-wide player. A component tree can provide its own under
+ * `playerKey` (component tests do).
+ */
+export function usePlayer(): Player {
+    const provided = getCurrentInstance() ? inject(playerKey, null) : null;
+
+    return provided ?? getDefaultPlayer();
 }
 
 export function formatSeconds(seconds: number): string {

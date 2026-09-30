@@ -73,7 +73,7 @@ function isCurrent(index: number): boolean {
 }
 
 function play(index = 0): void {
-    player.playTracks(tracks.value, index, source.value);
+    player.playTracks(tracks.value, index, source.value, 'playlist');
 }
 
 const refreshing = ref(false);
