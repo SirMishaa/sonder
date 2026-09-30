@@ -343,9 +343,11 @@ export function createPlayer(deps: PlayerDeps) {
         }
 
         log('load', `${track.videoId} ${track.title} (${origin})`);
-        beginListen(origin);
 
+        // Only a track actually handed to a ready player becomes a listen;
+        // otherwise (still loading, blocked script) it is cued once ready.
         if (transport && state.ready) {
+            beginListen(origin);
             transport.load(track.videoId, { startAt: 0, autoplay: true });
         }
     }

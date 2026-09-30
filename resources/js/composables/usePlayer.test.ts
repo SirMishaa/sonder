@@ -93,6 +93,28 @@ afterEach(() => {
 });
 
 describe('usePlayer', () => {
+    it('records nothing for tracks changed before the player is ready', () => {
+        const { player, sent } = setup({ ready: false });
+
+        player.playTracks([track('a'), track('b'), track('c')], 0, SOURCE);
+        player.next();
+        player.jumpTo(2);
+
+        expect(sent).toHaveLength(0);
+    });
+
+    it('records nothing when YouTube could not load', () => {
+        const { player, transport, sent } = setup({ ready: false });
+        transport.becomeUnavailable();
+
+        player.playTracks([track('a'), track('b')], 0, SOURCE);
+        player.next();
+        player.playNext(track('z'), { playlistId: null, title: 'Fresh finds' }, 'suggestion');
+
+        expect(sent).toHaveLength(0);
+        expect(player.current.value?.videoId).toBe('z');
+    });
+
     it('starts over cleanly when a new transport replaces the old one', () => {
         const { player, transport, sent } = setup();
         player.playTracks([track('a')], 0, SOURCE);
