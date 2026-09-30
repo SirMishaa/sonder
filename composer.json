@@ -10,7 +10,9 @@
     "license": "MIT",
     "require": {
         "php": "^8.5.0",
+        "cweagans/composer-patches": "^2.0",
         "inertiajs/inertia-laravel": "^3.4.0",
+        "keepsuit/laravel-opentelemetry": "^2.2.5",
         "laravel/fortify": "^1.40.0",
         "laravel/framework": "^13.33.0",
         "laravel/octane": "^2.20.0",
@@ -123,6 +125,11 @@
     "extra": {
         "laravel": {
             "dont-discover": []
+        },
+        "patches": {
+            "keepsuit/laravel-opentelemetry": {
+                "Drop empty-datapoint metrics before OTLP export (Grafana Cloud/Mimir rejects the whole batch otherwise, e.g. the SDK's own otel.sdk.* self-diagnostics counters)": "patches/keepsuit-laravel-opentelemetry-drop-empty-metrics.patch"
+            }
         }
     },
     "config": {
@@ -131,7 +138,8 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "cweagans/composer-patches": true
         }
     },
     "minimum-stability": "dev",

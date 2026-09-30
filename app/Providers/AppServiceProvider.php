@@ -15,6 +15,8 @@ use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use OpenTelemetry\API\Logs\LoggerInterface as OpenTelemetryLoggerInterface;
+use OpenTelemetry\API\Logs\NoopLogger;
 
 final class AppServiceProvider extends ServiceProvider
 {
@@ -28,6 +30,8 @@ final class AppServiceProvider extends ServiceProvider
         ));
 
         Gate::define('viewInertiaDevTools', fn (User $user): bool => $user->email === 'mishaa.pro@proton.me');
+
+        $this->registerOpenTelemetryLoggerFallback();
     }
 
     public function boot(): void
@@ -40,5 +44,25 @@ final class AppServiceProvider extends ServiceProvider
             Limit::perMinute(30)->by('youtube-music:minute:'.$account),
             Limit::perHour(500)->by('youtube-music:hour:'.$account),
         ]);
+    }
+
+    /**
+     * Keep the otlp log channel usable before the OpenTelemetry package boots.
+     *
+     * keepsuit/laravel-opentelemetry declares the `otlp` channel in
+     * packageRegistered() but only binds its LoggerInterface in packageBooted().
+     * Any log written in between (a provider logging from register(), an
+     * exception during boot) dies with "Target [LoggerInterface] is not
+     * instantiable", masking the original error and breaking package:discover
+     * in the production build. The package overrides this binding once it boots,
+     * so the real logger always wins.
+     */
+    private function registerOpenTelemetryLoggerFallback(): void
+    {
+        if ($this->app->bound(OpenTelemetryLoggerInterface::class)) {
+            return;
+        }
+
+        $this->app->singleton(OpenTelemetryLoggerInterface::class, fn (): NoopLogger => NoopLogger::getInstance());
     }
 }

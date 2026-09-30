@@ -1,0 +1,17 @@
+--- a/src/LaravelOpenTelemetryServiceProvider.php
++++ b/src/LaravelOpenTelemetryServiceProvider.php
+@@ -239,6 +239,14 @@
+             true => new NoopMetricExporter,
+             false => $this->buildMetricsExporter(),
+         };
++
++        // sonder patch: Grafana Cloud (Mimir) rejects the whole OTLP metrics batch when
++        // any metric has zero data points, which the SDK's own self-diagnostics
++        // counters (otel.sdk.processor.*, otel.sdk.exporter.*) always start as.
++        if ($metricsExporter instanceof \OpenTelemetry\SDK\Metrics\PushMetricExporterInterface) {
++            $metricsExporter = new \App\Services\OpenTelemetry\DropEmptyMetricsExporter($metricsExporter);
++        }
++
+         $this->app->singleton(MetricExporterInterface::class, fn () => $metricsExporter);
+         $metricsReader = new ExportingReader($metricsExporter);
+         $this->app->singleton(MetricReaderInterface::class, fn () => $metricsReader);

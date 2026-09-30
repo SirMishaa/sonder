@@ -39,5 +39,7 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- <server>, not <env>: PHPUnit casts "true" to a bool and putenv()s it as "1", which the OpenTelemetry SDK reads as false. -->
+        <server name="OTEL_SDK_DISABLED" value="true"/>
     </php>
 </phpunit>
