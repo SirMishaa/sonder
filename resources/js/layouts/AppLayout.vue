@@ -5,6 +5,7 @@ import PlaylistController from '@/actions/App/Http/Controllers/PlaylistControlle
 import AppSidebar from '@/components/shell/AppSidebar.vue';
 import CommandPalette from '@/components/shell/CommandPalette.vue';
 import PlayerBar from '@/components/shell/PlayerBar.vue';
+import PlayerHost from '@/components/shell/PlayerHost.vue';
 import QueuePanel from '@/components/shell/QueuePanel.vue';
 import ToastHost from '@/components/shell/ToastHost.vue';
 import YouTubeMusicCookieAlert from '@/components/YouTubeMusicCookieAlert.vue';
@@ -55,5 +56,6 @@ useShortcuts({
 
         <QueuePanel />
         <CommandPalette />
+        <PlayerHost />
     </div>
 </template>
