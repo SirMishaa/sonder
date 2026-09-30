@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import Artwork from '@/components/music/Artwork.vue';
 import TrackMiniRow from '@/components/music/TrackMiniRow.vue';
+import PlayerDebugPanel from '@/components/shell/PlayerDebugPanel.vue';
 import { usePlayer } from '@/composables/usePlayer';
 
 const player = usePlayer();
 
 const VISIBLE_UP_NEXT = 40;
+
+const debugOpen = ref(false);
 </script>
 
 <template>
@@ -71,6 +75,15 @@ const VISIBLE_UP_NEXT = 40;
             >
                 {{ $t('This is the last track.') }}
             </p>
+            <button
+                type="button"
+                class="mt-6 px-2 text-xs text-faint transition-colors hover:text-dim"
+                :aria-expanded="debugOpen"
+                @click="debugOpen = !debugOpen"
+            >
+                {{ $t('Debug') }}
+            </button>
+            <PlayerDebugPanel v-if="debugOpen" class="mt-2" />
         </div>
     </aside>
 </template>
