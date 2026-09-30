@@ -4,6 +4,7 @@ import vue from '@vitejs/plugin-vue';
 import laravel from 'laravel-vite-plugin';
 import i18n from 'laravel-vue-i18n/vite';
 import {defineConfig} from 'vite-plus';
+import { playwright } from 'vite-plus/test/browser-playwright';
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 export default defineConfig({
@@ -72,10 +73,40 @@ export default defineConfig({
                 },
             },
         }),
-        vueDevTools({
-            launchEditor: 'phpstorm',
-            componentInspector: true,
-            appendTo: 'resources/js/app.ts',
-        }),
+        ...(process.env.VITEST
+            ? []
+            : [
+                  vueDevTools({
+                      launchEditor: 'phpstorm',
+                      componentInspector: true,
+                      appendTo: 'resources/js/app.ts',
+                  }),
+              ]),
     ],
+    test: {
+        projects: [
+            {
+                extends: true,
+                test: {
+                    name: 'unit',
+                    environment: 'node',
+                    include: ['resources/js/**/*.test.ts'],
+                    exclude: ['resources/js/**/*.browser.test.ts'],
+                },
+            },
+            {
+                extends: true,
+                test: {
+                    name: 'browser',
+                    include: ['resources/js/**/*.browser.test.ts'],
+                    browser: {
+                        enabled: true,
+                        headless: true,
+                        provider: playwright(),
+                        instances: [{ browser: 'chromium' }],
+                    },
+                },
+            },
+        ],
+    },
 });

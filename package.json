@@ -7,7 +7,8 @@
         "dev": "vp dev",
         "lint": "NODE_OPTIONS='--experimental-strip-types' vp fmt resources/ && NODE_OPTIONS='--experimental-strip-types' vp lint --fix",
         "test:lint": "NODE_OPTIONS='--experimental-strip-types' vp fmt --check resources/ && NODE_OPTIONS='--experimental-strip-types' vp lint",
-        "test:types": "tsc --noEmit"
+        "test:types": "tsc --noEmit",
+        "test": "vp test"
     },
     "dependencies": {
         "@inertiajs/vue3": "^3.7.1",
@@ -33,6 +34,7 @@
         "@tailwindcss/vite": "^4.3.3",
         "@types/node": "^26.6.3",
         "@vitejs/plugin-vue": "^6.0.9",
+        "@vitest/browser-playwright": "5.0.1",
         "chokidar": "^5.0.0",
         "concurrently": "^10.0.5",
         "npm-check-updates": "^23.1.0",
@@ -41,6 +43,7 @@
         "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0-rc.1",
         "vite-plugin-vue-devtools": "^8.2.1",
         "vite-plus": "1.0.0-rc.1",
+        "vitest-browser-vue": "^3.1.0",
         "vue-tsc": "^3.3.11"
     },
     "optionalDependencies": {
