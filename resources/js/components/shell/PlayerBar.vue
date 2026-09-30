@@ -19,6 +19,24 @@ const volume = computed(() => (player.state.muted ? 0 : player.state.volume));
 function onVolume(event: Event): void {
     player.setVolume(Number((event.target as HTMLInputElement).value));
 }
+
+function onSeek(event: MouseEvent): void {
+    const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+
+    if (box.width === 0) {
+        return;
+    }
+
+    const ratio = Math.min(
+        1,
+        Math.max(0, (event.clientX - box.left) / box.width),
+    );
+    player.seek(ratio * player.totalSeconds.value);
+}
+
+const controlsDisabled = computed(
+    () => !player.current.value || player.state.unavailable,
+);
 </script>
 
 <template>
@@ -65,7 +83,7 @@ function onVolume(event: Event): void {
                     type="button"
                     class="icon-button"
                     :aria-label="$t('Previous  P')"
-                    :disabled="!player.current.value"
+                    :disabled="controlsDisabled"
                     @click="player.previous"
                 >
                     <SkipBack class="size-[18px] fill-current" />
@@ -76,7 +94,7 @@ function onVolume(event: Event): void {
                     :aria-label="
                         player.state.playing ? $t('Pause') : $t('Play')
                     "
-                    :disabled="!player.current.value"
+                    :disabled="controlsDisabled"
                     @click="player.toggle"
                 >
                     <Pause
@@ -89,7 +107,7 @@ function onVolume(event: Event): void {
                     type="button"
                     class="icon-button"
                     :aria-label="$t('Next  N')"
-                    :disabled="!player.current.value"
+                    :disabled="controlsDisabled"
                     @click="player.next"
                 >
                     <SkipForward class="size-[18px] fill-current" />
@@ -100,37 +118,33 @@ function onVolume(event: Event): void {
             >
                 <span>{{ formatSeconds(player.state.elapsed) }}</span>
                 <div
-                    class="h-1 overflow-hidden rounded-full bg-line"
-                    role="progressbar"
-                    :aria-valuenow="Math.round(player.progress.value * 100)"
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                    :aria-label="$t('Playback progress')"
+                    class="cursor-pointer py-1.5"
+                    data-testid="seek-bar"
+                    @click="onSeek"
                 >
-                    <i
-                        class="progress block h-full origin-left"
-                        :style="{
-                            transform: `scaleX(${player.progress.value})`,
-                        }"
-                    />
+                    <div
+                        class="h-1 overflow-hidden rounded-full bg-line"
+                        role="progressbar"
+                        :aria-valuenow="Math.round(player.progress.value * 100)"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                        :aria-label="$t('Playback progress')"
+                    >
+                        <i
+                            class="progress block h-full origin-left"
+                            :style="{
+                                transform: `scaleX(${player.progress.value})`,
+                            }"
+                        />
+                    </div>
                 </div>
                 <span class="text-right">{{
-                    player.current.value?.duration ?? '0:00'
+                    formatSeconds(player.totalSeconds.value)
                 }}</span>
             </div>
         </div>
 
         <div class="flex items-center justify-end gap-1.5">
-            <span
-                class="mr-1 hidden text-xs font-medium text-faint xl:inline"
-                :title="
-                    $t(
-                        'Playback is simulated until Sonder can control YouTube Music',
-                    )
-                "
-            >
-                {{ $t('Preview player') }}
-            </span>
             <button
                 type="button"
                 class="icon-button"
