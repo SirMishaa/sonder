@@ -93,6 +93,34 @@ afterEach(() => {
 });
 
 describe('usePlayer', () => {
+    it('keeps the restored position while the track is only cued', () => {
+        const storage = memoryStorage();
+        const first = setup({ storage });
+        first.player.playTracks([track('a')], 0, SOURCE);
+        listen(first.transport, 42);
+        first.player.handlePageHide();
+
+        const second = setup({ storage });
+        expect(second.player.state.elapsed).toBe(42);
+        second.player.handlePageHide();
+
+        const third = setup({ storage });
+        expect(third.transport.loads.at(-1)).toEqual({ videoId: 'a', startAt: 42, autoplay: false });
+    });
+
+    it('keeps the saved position when the page closes before the player is ready', () => {
+        const storage = memoryStorage();
+        const first = setup({ storage });
+        first.player.playTracks([track('a')], 0, SOURCE);
+        listen(first.transport, 42);
+        first.player.handlePageHide();
+
+        setup({ storage, ready: false }).player.handlePageHide();
+
+        const third = setup({ storage });
+        expect(third.transport.loads.at(-1)).toEqual({ videoId: 'a', startAt: 42, autoplay: false });
+    });
+
     it('records nothing for tracks changed before the player is ready', () => {
         const { player, sent } = setup({ ready: false });
 

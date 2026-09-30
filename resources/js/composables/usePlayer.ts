@@ -141,6 +141,10 @@ export function createPlayer(deps: PlayerDeps) {
     let transport: PlayerTransport | null = null;
     let listen: Listen | null = null;
     let poll: ReturnType<typeof setInterval> | null = null;
+    // The player's position means something only once the current track has
+    // played: before that (loading, blocked, merely cued) it can read 0 and
+    // would overwrite the restored position.
+    let positionTrusted = false;
 
     const current = computed<QueueTrack | null>(
         () => state.queue[state.index] ?? null,
@@ -282,7 +286,13 @@ export function createPlayer(deps: PlayerDeps) {
     }
 
     function sample(): void {
-        if (!transport) {
+        if (!transport || !state.ready) {
+            return;
+        }
+
+        state.actualVideoId = transport.videoId();
+
+        if (!positionTrusted || state.actualVideoId !== current.value?.videoId) {
             return;
         }
 
@@ -290,7 +300,6 @@ export function createPlayer(deps: PlayerDeps) {
         const duration = transport.duration();
 
         state.elapsed = position;
-        state.actualVideoId = transport.videoId();
 
         if (duration > 0) {
             state.duration = duration;
@@ -316,6 +325,7 @@ export function createPlayer(deps: PlayerDeps) {
 
     function stopAtEnd(): void {
         stopPolling();
+        positionTrusted = false;
         // Pause first: the "paused" event samples the position, which must
         // not overwrite the reset below.
         transport?.pause();
@@ -328,6 +338,7 @@ export function createPlayer(deps: PlayerDeps) {
         state.elapsed = 0;
         state.duration = 0;
         state.origin = origin;
+        positionTrusted = false;
 
         const track = current.value;
 
@@ -365,6 +376,7 @@ export function createPlayer(deps: PlayerDeps) {
 
         if (playback === 'playing') {
             state.playing = true;
+            positionTrusted = true;
 
             if (!listen) {
                 beginListen(state.origin);
@@ -419,6 +431,7 @@ export function createPlayer(deps: PlayerDeps) {
         transport = next;
         state.ready = false;
         state.playing = false;
+        positionTrusted = false;
 
         next.on('ready', () => {
             state.ready = true;

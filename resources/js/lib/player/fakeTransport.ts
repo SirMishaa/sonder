@@ -20,6 +20,7 @@ export class FakeTransport implements PlayerTransport {
     muted = false;
 
     private readonly emitter = createEmitter();
+    private cuedStart: number | null = null;
 
     on: PlayerTransport['on'] = (event, listener) =>
         this.emitter.on(event, listener);
@@ -28,12 +29,20 @@ export class FakeTransport implements PlayerTransport {
         this.loads.push({ videoId, ...options });
         this.calls.push(`load:${videoId}`);
         this.currentVideo = videoId;
-        this.position = options.startAt;
+        // Worst case of YouTube: a cued video reports 0 until it plays.
+        this.position = options.autoplay ? options.startAt : 0;
+        this.cuedStart = options.autoplay ? null : options.startAt;
         this.emitter.emit('state', options.autoplay ? 'playing' : 'cued');
     }
 
     play(): void {
         this.calls.push('play');
+
+        if (this.cuedStart !== null) {
+            this.position = this.cuedStart;
+            this.cuedStart = null;
+        }
+
         this.emitter.emit('state', 'playing');
     }
 
