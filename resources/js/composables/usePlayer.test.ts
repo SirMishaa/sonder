@@ -93,6 +93,22 @@ afterEach(() => {
 });
 
 describe('usePlayer', () => {
+    it('starts over cleanly when a new transport replaces the old one', () => {
+        const { player, transport, sent } = setup();
+        player.playTracks([track('a')], 0, SOURCE);
+        listen(transport, 12);
+
+        const replacement = new FakeTransport();
+        player.attachTransport(replacement);
+
+        expect(player.state.ready).toBe(false);
+        expect(player.state.playing).toBe(false);
+        expect(sent[0]).toMatchObject({ youtube_video_id: 'a', end_reason: 'abandoned', listened_seconds: 12 });
+
+        replacement.becomeReady();
+        expect(replacement.loads.at(-1)).toEqual({ videoId: 'a', startAt: 12, autoplay: false });
+    });
+
     it('loads the chosen track and plays it', () => {
         const { player, transport } = setup();
 

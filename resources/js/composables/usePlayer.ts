@@ -406,7 +406,17 @@ export function createPlayer(deps: PlayerDeps) {
     }
 
     function attachTransport(next: PlayerTransport): void {
+        if (transport) {
+            // A new host (remounted layout) replaces the old player: close
+            // what was playing there and wait for the new one to be ready.
+            sample();
+            stopPolling();
+            endListen('abandoned');
+        }
+
         transport = next;
+        state.ready = false;
+        state.playing = false;
 
         next.on('ready', () => {
             state.ready = true;
