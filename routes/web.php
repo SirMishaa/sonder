@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\DiscoverController;
+use App\Http\Controllers\ListenController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistRefreshController;
 use App\Http\Controllers\SessionController;
@@ -42,6 +43,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('playlists/{playlistId}/refresh', [PlaylistRefreshController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('playlist-refresh.store');
+
+    // Listens...
+    Route::post('listens', [ListenController::class, 'store'])
+        ->middleware('throttle:120,1')
+        ->name('listen.store');
 });
 
 Route::middleware('auth')->group(function (): void {

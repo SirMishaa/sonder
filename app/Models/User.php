@@ -11,6 +11,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -51,6 +52,14 @@ final class User extends Authenticatable implements MustVerifyEmail
     public function youTubeMusicAccount(): HasOne
     {
         return $this->hasOne(YouTubeMusicAccount::class);
+    }
+
+    /**
+     * @return HasMany<Listen, $this>
+     */
+    public function listens(): HasMany
+    {
+        return $this->hasMany(Listen::class);
     }
 
     /**

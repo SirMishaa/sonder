@@ -80,6 +80,8 @@ errorMessage: string | null,
 };
 }
 namespace Enums {
+export type ListenEndReason = 'ended' | 'skipped' | 'previous' | 'jumped' | 'replaced' | 'picked' | 'error' | 'abandoned';
+export type ListenOrigin = 'playlist' | 'search' | 'suggestion' | 'queue' | 'autoplay';
 export type Locale = 'fr_BE' | 'en_US';
 export type YouTubeMusicSyncStatus = 'pending' | 'syncing' | 'completed' | 'failed';
 }
