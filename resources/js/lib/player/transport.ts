@@ -60,7 +60,7 @@ export function createEmitter() {
         event: E,
         ...args: TransportEvents[E]
     ): void {
-        for (const listener of [...(listeners.get(event) ?? [])]) {
+        for (const listener of listeners.get(event) ?? []) {
             (listener as Listener<E>)(...args);
         }
     }

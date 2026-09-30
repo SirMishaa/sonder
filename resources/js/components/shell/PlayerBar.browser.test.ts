@@ -15,7 +15,19 @@ async function mountBar() {
     player.attachTransport(transport);
     transport.becomeReady();
     player.playTracks(
-        [{ videoId: 'a', title: 'Survival', artists: 'Muse', album: null, duration: '3:00', durationSeconds: 180, thumbnailUrl: null, isExplicit: false, isAvailable: true }],
+        [
+            {
+                videoId: 'a',
+                title: 'Survival',
+                artists: 'Muse',
+                album: null,
+                duration: '3:00',
+                durationSeconds: 180,
+                thumbnailUrl: null,
+                isExplicit: false,
+                isAvailable: true,
+            },
+        ],
         0,
         { playlistId: 'PL1', title: 'Mix' },
     );
@@ -35,7 +47,9 @@ it('pauses and resumes through the transport', async () => {
 
     await page.getByRole('button', { name: 'Pause' }).click();
     expect(transport.calls).toContain('pause');
-    await expect.element(page.getByRole('button', { name: 'Play' })).toBeVisible();
+    await expect
+        .element(page.getByRole('button', { name: 'Play' }))
+        .toBeVisible();
 
     await page.getByRole('button', { name: 'Play' }).click();
     expect(transport.calls).toContain('play');
@@ -63,7 +77,9 @@ it('sets the volume', async () => {
 it('no longer presents itself as a preview', async () => {
     await mountBar();
 
-    await expect.element(page.getByText('Preview player')).not.toBeInTheDocument();
+    await expect
+        .element(page.getByText('Preview player'))
+        .not.toBeInTheDocument();
 });
 
 it('disables the controls when the player is unavailable', async () => {
@@ -71,5 +87,7 @@ it('disables the controls when the player is unavailable', async () => {
 
     player.state.unavailable = true;
 
-    await expect.element(page.getByRole('button', { name: 'Next  N' })).toBeDisabled();
+    await expect
+        .element(page.getByRole('button', { name: 'Next  N' }))
+        .toBeDisabled();
 });

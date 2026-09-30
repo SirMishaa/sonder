@@ -23,7 +23,12 @@ function aListen() {
 }
 
 /** Plays `seconds` of media in 250ms steps, media and wall clock in sync. */
-function play(listen: ReturnType<typeof aListen>, from: number, seconds: number, at: number): number {
+function play(
+    listen: ReturnType<typeof aListen>,
+    from: number,
+    seconds: number,
+    at: number,
+): number {
     let position = from;
     let now = at;
 
@@ -43,7 +48,9 @@ describe('listenTracker', () => {
 
         const now = play(listen, 0, 10, T0);
 
-        expect(finishListen(listen, 'skipped', now, 200).listened_seconds).toBe(10);
+        expect(finishListen(listen, 'skipped', now, 200).listened_seconds).toBe(
+            10,
+        );
     });
 
     it('adds nothing while paused', () => {
@@ -54,7 +61,9 @@ describe('listenTracker', () => {
         recordProgress(listen, 5, false, now + 30_000);
         now = play(listen, 5, 5, now + 30_000);
 
-        expect(finishListen(listen, 'ended', now, 200).listened_seconds).toBe(10);
+        expect(finishListen(listen, 'ended', now, 200).listened_seconds).toBe(
+            10,
+        );
     });
 
     it('does not count a seek as listening', () => {
@@ -76,7 +85,9 @@ describe('listenTracker', () => {
 
         recordProgress(listen, 90, true, T0 + 250);
 
-        expect(finishListen(listen, 'skipped', T0 + 250, 200).listened_seconds).toBe(0);
+        expect(
+            finishListen(listen, 'skipped', T0 + 250, 200).listened_seconds,
+        ).toBe(0);
     });
 
     it('counts a long gap when the wall clock moved as much (throttled background tab)', () => {
@@ -85,7 +96,9 @@ describe('listenTracker', () => {
 
         recordProgress(listen, 60, true, T0 + 60_000);
 
-        expect(finishListen(listen, 'ended', T0 + 60_000, 200).listened_seconds).toBe(60);
+        expect(
+            finishListen(listen, 'ended', T0 + 60_000, 200).listened_seconds,
+        ).toBe(60);
     });
 
     it('builds the payload the API expects', () => {
@@ -114,10 +127,14 @@ describe('listenTracker', () => {
         recordProgress(listen, 0, true, T0);
         recordProgress(listen, 2.5, true, T0 + 1250);
 
-        expect(finishListen(listen, 'skipped', T0 + 1250, null).listened_seconds).toBe(1);
+        expect(
+            finishListen(listen, 'skipped', T0 + 1250, null).listened_seconds,
+        ).toBe(1);
     });
 
     it('reports an unknown duration as null', () => {
-        expect(finishListen(aListen(), 'error', T0, 0).duration_seconds).toBeNull();
+        expect(
+            finishListen(aListen(), 'error', T0, 0).duration_seconds,
+        ).toBeNull();
     });
 });

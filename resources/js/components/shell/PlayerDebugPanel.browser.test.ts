@@ -15,8 +15,28 @@ async function mountPanel() {
     transport.becomeReady();
     player.playTracks(
         [
-            { videoId: 'abc', title: 'Survival', artists: 'Muse', album: null, duration: '3:00', durationSeconds: 180, thumbnailUrl: null, isExplicit: false, isAvailable: true },
-            { videoId: 'def', title: 'Psycho', artists: 'Muse', album: null, duration: '5:17', durationSeconds: 317, thumbnailUrl: null, isExplicit: false, isAvailable: true },
+            {
+                videoId: 'abc',
+                title: 'Survival',
+                artists: 'Muse',
+                album: null,
+                duration: '3:00',
+                durationSeconds: 180,
+                thumbnailUrl: null,
+                isExplicit: false,
+                isAvailable: true,
+            },
+            {
+                videoId: 'def',
+                title: 'Psycho',
+                artists: 'Muse',
+                album: null,
+                duration: '5:17',
+                durationSeconds: 317,
+                thumbnailUrl: null,
+                isExplicit: false,
+                isAvailable: true,
+            },
         ],
         0,
         { playlistId: 'PL1', title: 'Mix' },
@@ -35,8 +55,12 @@ async function mountPanel() {
 it('shows the player state and the expected video', async () => {
     await mountPanel();
 
-    await expect.element(page.getByText('playing', { exact: true })).toBeVisible();
-    await expect.element(page.getByText('abc', { exact: true }).first()).toBeVisible();
+    await expect
+        .element(page.getByText('playing', { exact: true }))
+        .toBeVisible();
+    await expect
+        .element(page.getByText('abc', { exact: true }).first())
+        .toBeVisible();
 });
 
 it('flags a likely ad when another video is playing', async () => {
@@ -53,5 +77,7 @@ it('lists player errors', async () => {
 
     transport.fail(150);
 
-    await expect.element(page.getByText(/YouTube error 150 on abc/)).toBeVisible();
+    await expect
+        .element(page.getByText(/YouTube error 150 on abc/))
+        .toBeVisible();
 });

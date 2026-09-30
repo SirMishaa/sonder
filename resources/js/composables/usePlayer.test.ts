@@ -1,4 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vite-plus/test';
 import { createPlayer } from '@/composables/usePlayer';
 import { FakeTransport } from '@/lib/player/fakeTransport';
 import type { ListenPayload } from '@/lib/player/listenTracker';
@@ -34,7 +41,12 @@ function memoryStorage() {
     };
 }
 
-function setup(options: { storage?: ReturnType<typeof memoryStorage>; ready?: boolean } = {}) {
+function setup(
+    options: {
+        storage?: ReturnType<typeof memoryStorage>;
+        ready?: boolean;
+    } = {},
+) {
     const sent: ListenPayload[] = [];
     const unloaded: ListenPayload[] = [];
     const notices: string[] = [];
@@ -86,7 +98,11 @@ describe('usePlayer', () => {
 
         player.playTracks([track('a'), track('b'), track('c')], 1, SOURCE);
 
-        expect(transport.loads.at(-1)).toEqual({ videoId: 'b', startAt: 0, autoplay: true });
+        expect(transport.loads.at(-1)).toEqual({
+            videoId: 'b',
+            startAt: 0,
+            autoplay: true,
+        });
         expect(player.current.value?.videoId).toBe('b');
         expect(player.state.playing).toBe(true);
     });
@@ -109,7 +125,11 @@ describe('usePlayer', () => {
         expect(transport.loads.at(-1)?.videoId).toBe('b');
 
         transport.finish();
-        expect(sent[1]).toMatchObject({ youtube_video_id: 'b', origin: 'autoplay', end_reason: 'ended' });
+        expect(sent[1]).toMatchObject({
+            youtube_video_id: 'b',
+            origin: 'autoplay',
+            end_reason: 'ended',
+        });
         expect(player.state.playing).toBe(false);
     });
 
@@ -121,8 +141,17 @@ describe('usePlayer', () => {
         player.next();
         player.next();
 
-        expect(sent[0]).toMatchObject({ youtube_video_id: 'a', end_reason: 'skipped', listened_seconds: 5, position_seconds: 5 });
-        expect(sent[1]).toMatchObject({ youtube_video_id: 'b', end_reason: 'skipped', origin: 'queue' });
+        expect(sent[0]).toMatchObject({
+            youtube_video_id: 'a',
+            end_reason: 'skipped',
+            listened_seconds: 5,
+            position_seconds: 5,
+        });
+        expect(sent[1]).toMatchObject({
+            youtube_video_id: 'b',
+            end_reason: 'skipped',
+            origin: 'queue',
+        });
         expect(player.state.playing).toBe(false);
     });
 
@@ -133,7 +162,10 @@ describe('usePlayer', () => {
         listen(transport, 2);
         player.previous();
 
-        expect(sent[0]).toMatchObject({ youtube_video_id: 'b', end_reason: 'previous' });
+        expect(sent[0]).toMatchObject({
+            youtube_video_id: 'b',
+            end_reason: 'previous',
+        });
         expect(transport.loads.at(-1)?.videoId).toBe('a');
     });
 
@@ -149,7 +181,11 @@ describe('usePlayer', () => {
 
         listen(transport, 2);
         player.next();
-        expect(sent[0]).toMatchObject({ youtube_video_id: 'a', end_reason: 'skipped', listened_seconds: 7 });
+        expect(sent[0]).toMatchObject({
+            youtube_video_id: 'a',
+            end_reason: 'skipped',
+            listened_seconds: 7,
+        });
     });
 
     it('records a jump when a queued track is picked', () => {
@@ -159,8 +195,14 @@ describe('usePlayer', () => {
         player.jumpTo(2);
         player.next();
 
-        expect(sent[0]).toMatchObject({ youtube_video_id: 'a', end_reason: 'jumped' });
-        expect(sent[1]).toMatchObject({ youtube_video_id: 'c', origin: 'queue' });
+        expect(sent[0]).toMatchObject({
+            youtube_video_id: 'a',
+            end_reason: 'jumped',
+        });
+        expect(sent[1]).toMatchObject({
+            youtube_video_id: 'c',
+            origin: 'queue',
+        });
     });
 
     it('records a pick when a suggestion interrupts the queue', () => {
@@ -168,11 +210,22 @@ describe('usePlayer', () => {
         player.playTracks([track('a'), track('b')], 0, SOURCE);
 
         listen(transport, 3);
-        player.playNext(track('z'), { playlistId: null, title: 'Fresh finds' }, 'suggestion');
+        player.playNext(
+            track('z'),
+            { playlistId: null, title: 'Fresh finds' },
+            'suggestion',
+        );
         player.next();
 
-        expect(sent[0]).toMatchObject({ youtube_video_id: 'a', end_reason: 'picked' });
-        expect(sent[1]).toMatchObject({ youtube_video_id: 'z', origin: 'suggestion', youtube_playlist_id: null });
+        expect(sent[0]).toMatchObject({
+            youtube_video_id: 'a',
+            end_reason: 'picked',
+        });
+        expect(sent[1]).toMatchObject({
+            youtube_video_id: 'z',
+            origin: 'suggestion',
+            youtube_playlist_id: null,
+        });
     });
 
     it('records a replacement when another playlist starts', () => {
@@ -180,9 +233,15 @@ describe('usePlayer', () => {
         player.playTracks([track('a'), track('b')], 0, SOURCE);
 
         listen(transport, 1);
-        player.playTracks([track('c')], 0, { playlistId: 'PL2', title: 'Focus' });
+        player.playTracks([track('c')], 0, {
+            playlistId: 'PL2',
+            title: 'Focus',
+        });
 
-        expect(sent[0]).toMatchObject({ youtube_video_id: 'a', end_reason: 'replaced' });
+        expect(sent[0]).toMatchObject({
+            youtube_video_id: 'a',
+            end_reason: 'replaced',
+        });
         expect(player.current.value?.videoId).toBe('c');
     });
 
@@ -192,9 +251,15 @@ describe('usePlayer', () => {
 
         transport.fail(150);
 
-        expect(sent[0]).toMatchObject({ youtube_video_id: 'a', end_reason: 'error', listened_seconds: 0 });
+        expect(sent[0]).toMatchObject({
+            youtube_video_id: 'a',
+            end_reason: 'error',
+            listened_seconds: 0,
+        });
         expect(transport.loads.at(-1)?.videoId).toBe('b');
-        expect(notices).toEqual(["This track can't be played here, skipping it."]);
+        expect(notices).toEqual([
+            "This track can't be played here, skipping it.",
+        ]);
     });
 
     it('stops when the last track fails', () => {
@@ -229,7 +294,11 @@ describe('usePlayer', () => {
         listen(transport, 42);
         player.handlePageHide();
 
-        expect(unloaded[0]).toMatchObject({ youtube_video_id: 'a', end_reason: 'abandoned', listened_seconds: 42 });
+        expect(unloaded[0]).toMatchObject({
+            youtube_video_id: 'a',
+            end_reason: 'abandoned',
+            listened_seconds: 42,
+        });
     });
 
     it('restores the track paused where it was, keeping its origin', () => {
@@ -241,12 +310,19 @@ describe('usePlayer', () => {
 
         const second = setup({ storage });
 
-        expect(second.transport.loads.at(-1)).toEqual({ videoId: 'b', startAt: 42, autoplay: false });
+        expect(second.transport.loads.at(-1)).toEqual({
+            videoId: 'b',
+            startAt: 42,
+            autoplay: false,
+        });
         expect(second.player.state.playing).toBe(false);
 
         second.player.toggle();
         second.player.next();
-        expect(second.sent[0]).toMatchObject({ youtube_video_id: 'b', origin: 'playlist' });
+        expect(second.sent[0]).toMatchObject({
+            youtube_video_id: 'b',
+            origin: 'playlist',
+        });
     });
 
     it('ignores play until the player is ready, then cues the current track', () => {
@@ -258,7 +334,11 @@ describe('usePlayer', () => {
         expect(transport.calls).toEqual([]);
 
         transport.becomeReady();
-        expect(transport.loads.at(-1)).toEqual({ videoId: 'a', startAt: 0, autoplay: false });
+        expect(transport.loads.at(-1)).toEqual({
+            videoId: 'a',
+            startAt: 0,
+            autoplay: false,
+        });
     });
 
     it('skips tracks without a video id', () => {
@@ -286,7 +366,13 @@ describe('usePlayer', () => {
         player.next();
         player.next();
 
-        expect(sent.map((listen) => [listen.youtube_video_id, listen.end_reason, listen.listened_seconds])).toEqual([
+        expect(
+            sent.map((listen) => [
+                listen.youtube_video_id,
+                listen.end_reason,
+                listen.listened_seconds,
+            ]),
+        ).toEqual([
             ['a', 'skipped', 0],
             ['b', 'skipped', 0],
         ]);
@@ -331,6 +417,10 @@ describe('usePlayer', () => {
         transport.currentVideo = 'ad-video';
         vi.advanceTimersByTime(250);
 
-        expect(player.diagnostics.value).toMatchObject({ expectedVideoId: 'a', actualVideoId: 'ad-video', isLikelyAd: true });
+        expect(player.diagnostics.value).toMatchObject({
+            expectedVideoId: 'a',
+            actualVideoId: 'ad-video',
+            isLikelyAd: true,
+        });
     });
 });

@@ -34,3 +34,4 @@ Homestead.yaml
 frankenphp
 frankenphp-worker.php
 .superpowers/
+/.vitest

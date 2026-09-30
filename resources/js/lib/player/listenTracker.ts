@@ -67,7 +67,10 @@ export function recordProgress(
         const mediaDelta = position - listen.lastSample.position;
         const wallDelta = (nowMs - listen.lastSample.at) / 1000;
 
-        if (mediaDelta > 0 && mediaDelta <= wallDelta + SEEK_TOLERANCE_SECONDS) {
+        if (
+            mediaDelta > 0 &&
+            mediaDelta <= wallDelta + SEEK_TOLERANCE_SECONDS
+        ) {
             listen.listenedSeconds += mediaDelta;
         }
     }
@@ -76,7 +79,11 @@ export function recordProgress(
     listen.position = position;
 }
 
-export function markSeek(listen: Listen, position: number, nowMs: number): void {
+export function markSeek(
+    listen: Listen,
+    position: number,
+    nowMs: number,
+): void {
     listen.lastSample = { position, at: nowMs };
     listen.position = position;
 }
@@ -101,7 +108,10 @@ export function finishListen(
         started_at: new Date(listen.startedAt).toISOString(),
         ended_at: new Date(endedAt).toISOString(),
         position_seconds: Math.max(0, Math.floor(listen.position)),
-        listened_seconds: Math.min(Math.floor(listen.listenedSeconds), lastedSeconds),
+        listened_seconds: Math.min(
+            Math.floor(listen.listenedSeconds),
+            lastedSeconds,
+        ),
         duration_seconds:
             durationSeconds !== null && durationSeconds > 0
                 ? Math.round(durationSeconds)

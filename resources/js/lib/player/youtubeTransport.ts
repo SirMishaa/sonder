@@ -75,7 +75,11 @@ function loadIframeApi(): Promise<YouTubeNamespace> {
             if (window.YT?.Player) {
                 resolve(window.YT);
             } else {
-                reject(new Error('The YouTube IFrame API loaded without YT.Player'));
+                reject(
+                    new Error(
+                        'The YouTube IFrame API loaded without YT.Player',
+                    ),
+                );
             }
         };
 

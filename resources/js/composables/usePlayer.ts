@@ -67,7 +67,14 @@ type PlayerState = {
 
 type PersistedState = Pick<
     PlayerState,
-    'queue' | 'index' | 'elapsed' | 'volume' | 'muted' | 'source' | 'origin' | 'queueOpen'
+    | 'queue'
+    | 'index'
+    | 'elapsed'
+    | 'volume'
+    | 'muted'
+    | 'source'
+    | 'origin'
+    | 'queueOpen'
 >;
 
 const STORAGE_KEY = 'sonder.player.v1';
@@ -139,10 +146,14 @@ export function createPlayer(deps: PlayerDeps) {
         () => state.queue[state.index] ?? null,
     );
     const totalSeconds = computed(() =>
-        state.duration > 0 ? state.duration : (current.value?.durationSeconds ?? 0),
+        state.duration > 0
+            ? state.duration
+            : (current.value?.durationSeconds ?? 0),
     );
     const progress = computed(() =>
-        totalSeconds.value > 0 ? Math.min(1, state.elapsed / totalSeconds.value) : 0,
+        totalSeconds.value > 0
+            ? Math.min(1, state.elapsed / totalSeconds.value)
+            : 0,
     );
     const upNext = computed(() => state.queue.slice(state.index + 1));
     const diagnostics = computed(() => {
@@ -157,7 +168,8 @@ export function createPlayer(deps: PlayerDeps) {
         const isDurationOff =
             state.duration > 0 &&
             storedDuration !== null &&
-            Math.abs(state.duration - storedDuration) > AD_DURATION_TOLERANCE_SECONDS;
+            Math.abs(state.duration - storedDuration) >
+                AD_DURATION_TOLERANCE_SECONDS;
 
         return {
             expectedVideoId,
@@ -257,7 +269,10 @@ export function createPlayer(deps: PlayerDeps) {
 
         const payload = finishListen(listen, reason, now(), durationOrNull());
         listen = null;
-        log('send', `${payload.end_reason} ${payload.youtube_video_id} after ${payload.listened_seconds}s`);
+        log(
+            'send',
+            `${payload.end_reason} ${payload.youtube_video_id} after ${payload.listened_seconds}s`,
+        );
 
         void deps.sender.send(payload).then((recorded) => {
             if (!recorded) {
@@ -374,7 +389,10 @@ export function createPlayer(deps: PlayerDeps) {
     }
 
     function onError(code: number): void {
-        log('error', `YouTube error ${code} on ${current.value?.videoId ?? 'nothing'}`);
+        log(
+            'error',
+            `YouTube error ${code} on ${current.value?.videoId ?? 'nothing'}`,
+        );
 
         if (!listen) {
             beginListen(state.origin);
@@ -546,7 +564,12 @@ export function createPlayer(deps: PlayerDeps) {
         sample();
 
         if (listen) {
-            const payload = finishListen(listen, 'abandoned', now(), durationOrNull());
+            const payload = finishListen(
+                listen,
+                'abandoned',
+                now(),
+                durationOrNull(),
+            );
             listen = null;
             deps.sender.sendOnUnload(payload);
         }

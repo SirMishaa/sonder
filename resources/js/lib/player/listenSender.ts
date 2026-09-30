@@ -9,7 +9,10 @@ export type ListenSender = {
 
 type SenderDeps = {
     url?: () => string;
-    request?: (url: string, payload: ListenPayload) => Promise<{ status: number }>;
+    request?: (
+        url: string,
+        payload: ListenPayload,
+    ) => Promise<{ status: number }>;
     fetcher?: typeof fetch;
     cookie?: () => string;
 };
@@ -40,7 +43,8 @@ export function createListenSender(deps: SenderDeps = {}): ListenSender {
                 data: payload,
                 headers: { Accept: 'application/json' },
             }));
-    const fetcher = deps.fetcher ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
+    const fetcher =
+        deps.fetcher ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
     const cookie = deps.cookie ?? (() => document.cookie);
 
     return {

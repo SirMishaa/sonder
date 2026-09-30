@@ -8,7 +8,10 @@ import type { ListenPayload } from '@/lib/player/listenTracker';
 async function mountHost() {
     const unloaded: ListenPayload[] = [];
     const player = createPlayer({
-        sender: { send: async () => true, sendOnUnload: (payload) => unloaded.push(payload) },
+        sender: {
+            send: async () => true,
+            sendOnUnload: (payload) => unloaded.push(payload),
+        },
         storage: null,
     });
     const transport = new FakeTransport();
@@ -57,20 +60,35 @@ it('sends the listen in progress when the page is hidden', async () => {
     const { player, transport, unloaded } = await mountHost();
     transport.becomeReady();
     player.playTracks(
-        [{ videoId: 'a', title: 'A', artists: 'X', album: null, duration: '3:00', durationSeconds: 180, thumbnailUrl: null, isExplicit: false, isAvailable: true }],
+        [
+            {
+                videoId: 'a',
+                title: 'A',
+                artists: 'X',
+                album: null,
+                duration: '3:00',
+                durationSeconds: 180,
+                thumbnailUrl: null,
+                isExplicit: false,
+                isAvailable: true,
+            },
+        ],
         0,
         { playlistId: 'PL1', title: 'Mix' },
     );
 
     window.dispatchEvent(new PageTransitionEvent('pagehide'));
 
-    expect(unloaded[0]).toMatchObject({ youtube_video_id: 'a', end_reason: 'abandoned' });
+    expect(unloaded[0]).toMatchObject({
+        youtube_video_id: 'a',
+        end_reason: 'abandoned',
+    });
 });
 
 it('destroys its transport when unmounted', async () => {
     const { screen, transport } = await mountHost();
 
-    screen.unmount();
+    await screen.unmount();
 
     expect(transport.calls).toContain('destroy');
 });

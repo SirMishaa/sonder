@@ -43,7 +43,9 @@ function timeOf(at: number): string {
                 {{ player.diagnostics.value.actualVideoId ?? '—' }}
             </dd>
             <dt class="text-faint">{{ $t('Player duration') }}</dt>
-            <dd>{{ formatSeconds(player.diagnostics.value.playerDuration) }}</dd>
+            <dd>
+                {{ formatSeconds(player.diagnostics.value.playerDuration) }}
+            </dd>
             <dt class="text-faint">{{ $t('Stored duration') }}</dt>
             <dd>
                 {{
