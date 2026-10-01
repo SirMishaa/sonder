@@ -20,6 +20,7 @@ import { usePlayer } from '@/composables/usePlayer';
 import { useRelativeTime } from '@/composables/useRelativeTime';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useToast } from '@/composables/useToast';
+import { useTrackTap } from '@/composables/useTrackTap';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { formatDateTime } from '@/lib/i18n';
 
@@ -38,6 +39,7 @@ const props = defineProps<Props>();
 const page = usePage();
 const player = usePlayer();
 const { toast } = useToast();
+const { tap, preventSelection } = useTrackTap(() => source.value);
 
 /** Tracks added from the suggestions block. Fixture: shown here only, never saved. */
 const previewAdditions = ref<App.Data.TrackData[]>([]);
@@ -56,24 +58,25 @@ const changedAgo = useRelativeTime(
     () => props.syncState.lastChangedAt ?? props.syncState.lastCheckedAt,
 );
 
-const isFromThisPlaylist = computed(() =>
-    player.isPlayingFrom(props.playlistId),
-);
-
 function isCurrent(index: number): boolean {
-    const current = player.current.value;
     const track = tracks.value[index];
 
     return (
-        isFromThisPlaylist.value &&
-        current !== null &&
         track !== undefined &&
-        current.key === `${track.videoId ?? track.title}#${index}`
+        player.isCurrentTrack(props.playlistId, track, index)
     );
 }
 
 function play(index = 0): void {
     player.playTracks(tracks.value, index, source.value, 'playlist');
+}
+
+function onTrackClick(event: MouseEvent, index: number): void {
+    const track = tracks.value[index];
+
+    if (track?.isAvailable) {
+        tap(event, track, index, () => play(index));
+    }
 }
 
 const refreshing = ref(false);
@@ -268,7 +271,8 @@ useShortcuts({ r: refresh });
                     }"
                     role="row"
                     :tabindex="track.isAvailable ? 0 : -1"
-                    @click="track.isAvailable && play(index)"
+                    @mousedown="preventSelection"
+                    @click="onTrackClick($event, index)"
                     @keydown.enter="track.isAvailable && play(index)"
                 >
                     <span
@@ -281,16 +285,27 @@ useShortcuts({ r: refresh });
                         />
                         <template v-else>
                             <span class="number">{{ index + 1 }}</span>
-                            <Play
+                            <button
                                 v-if="track.isAvailable"
-                                class="hover-play size-3.5 fill-current text-amber"
-                            />
+                                type="button"
+                                class="hover-play"
+                                tabindex="-1"
+                                :aria-label="
+                                    $t('Play :title', { title: track.title })
+                                "
+                                @click.stop="$event.detail <= 1 && play(index)"
+                            >
+                                <Play
+                                    class="size-3.5 fill-current text-amber"
+                                />
+                            </button>
                         </template>
                     </span>
                     <span class="cell gap-2.5" role="cell">
                         <Artwork
                             :src="track.thumbnailUrl"
                             class="size-8 shrink-0 rounded"
+                            data-track-artwork
                         />
                         <span class="min-w-0">
                             <span class="title block truncate font-semibold">
@@ -448,6 +463,7 @@ useShortcuts({ r: refresh });
 .track {
     display: contents;
     cursor: pointer;
+    user-select: none;
 }
 
 .cell {
@@ -477,7 +493,9 @@ useShortcuts({ r: refresh });
 }
 
 .track:hover .hover-play {
-    display: block;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
 }
 
 .track.is-current .cell {

@@ -168,6 +168,7 @@ const controlsDisabled = computed(
                 type="button"
                 class="queue-button"
                 :class="{ 'is-on': player.state.queueOpen }"
+                data-queue-target
                 :title="$t('Up next  Q')"
                 @click="player.toggleQueue"
             >

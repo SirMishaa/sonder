@@ -21,7 +21,7 @@ function track(videoId: string, title: string): App.Data.TrackData {
     };
 }
 
-it('plays a suggestion right away, as a suggestion', async () => {
+async function setup() {
     const unloaded: ListenPayload[] = [];
     const player = createPlayer({
         sender: {
@@ -56,6 +56,14 @@ it('plays a suggestion right away, as a suggestion', async () => {
         },
     });
 
+    return { player, transport, unloaded };
+}
+
+const LATE_FOCUS = { playlistId: 'PL1', title: 'Late focus' };
+
+it('plays a suggestion right away, as a suggestion', async () => {
+    const { player, transport, unloaded } = await setup();
+
     await page.getByRole('button', { name: 'Play Hysteria' }).click();
 
     expect(player.current.value?.videoId).toBe('b');
@@ -66,4 +74,24 @@ it('plays a suggestion right away, as a suggestion', async () => {
         youtube_video_id: 'b',
         origin: 'suggestion',
     });
+});
+
+it('queues a suggestion next on one click while a track plays', async () => {
+    const { player, transport } = await setup();
+    player.playTracks([track('a', 'Survival')], 0, LATE_FOCUS);
+
+    await page.getByRole('button', { name: 'Play Hysteria' }).click();
+
+    expect(transport.videoId()).toBe('a');
+    expect(player.upNext.value.map((queued) => queued.videoId)).toEqual(['b']);
+});
+
+it('replaces the current track on a double click', async () => {
+    const { player, transport } = await setup();
+    player.playTracks([track('a', 'Survival')], 0, LATE_FOCUS);
+
+    await page.getByRole('button', { name: 'Play Hysteria' }).dblClick();
+
+    expect(transport.videoId()).toBe('b');
+    expect(player.upNext.value).toEqual([]);
 });

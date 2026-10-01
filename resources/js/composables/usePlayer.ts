@@ -29,6 +29,8 @@ export type QueueTrack = {
     durationSeconds: number;
     thumbnailUrl: string | null;
     playlistId: string | null;
+    /** Added by hand to play after the current track. */
+    queued?: boolean;
 };
 
 export type QueueSource = {
@@ -99,13 +101,18 @@ function secondsOf(track: App.Data.TrackData): number {
     return parts.reduce((total, part) => total * 60 + part, 0);
 }
 
+/** Identifies a track by its place in the list it was played from. */
+export function trackKey(track: App.Data.TrackData, position: number): string {
+    return `${track.videoId ?? track.title}#${position}`;
+}
+
 export function toQueueTrack(
     track: App.Data.TrackData,
     position: number,
     playlistId: string | null = null,
 ): QueueTrack {
     return {
-        key: `${track.videoId ?? track.title}#${position}`,
+        key: trackKey(track, position),
         videoId: track.videoId,
         title: track.title,
         artists: track.artists,
@@ -237,9 +244,35 @@ export function createPlayer(deps: PlayerDeps) {
             state.source = saved.source ?? null;
             state.origin = saved.origin ?? state.origin;
             state.queueOpen = saved.queueOpen ?? false;
+            dedupeUpcoming();
         } catch {
             // A corrupt entry simply starts an empty player.
         }
+    }
+
+    /** Keeps the first upcoming copy of each video, dropping the repeats. */
+    function dedupeUpcoming(): void {
+        const seen = new Set<string>();
+        state.queue = state.queue.filter((item, index) => {
+            if (index <= state.index || item.videoId === null) {
+                return true;
+            }
+
+            if (seen.has(item.videoId)) {
+                return false;
+            }
+
+            seen.add(item.videoId);
+
+            return true;
+        });
+    }
+
+    /** Drops every upcoming entry of a video, before it is queued again. */
+    function dropUpcoming(videoId: string): void {
+        state.queue = state.queue.filter(
+            (item, index) => index <= state.index || item.videoId !== videoId,
+        );
     }
 
     function durationOrNull(): number | null {
@@ -367,8 +400,10 @@ export function createPlayer(deps: PlayerDeps) {
     }
 
     function advance(): void {
-        if (state.index + 1 < state.queue.length) {
-            loadIndex(state.index + 1, 'autoplay');
+        const upcoming = state.queue[state.index + 1];
+
+        if (upcoming) {
+            loadIndex(state.index + 1, upcoming.queued ? 'queue' : 'autoplay');
         } else {
             stopAtEnd();
         }
@@ -512,6 +547,105 @@ export function createPlayer(deps: PlayerDeps) {
         loadIndex(state.index + 1, origin);
     }
 
+    /**
+     * Whether the current track is the one at `position` in the given
+     * playlist, played from that list or queued from it by hand.
+     */
+    function isCurrentTrack(
+        playlistId: string | null,
+        track: App.Data.TrackData,
+        position: number,
+    ): boolean {
+        const playing = current.value;
+
+        if (!playing) {
+            return false;
+        }
+
+        // Tracks restored from an older stored queue have no playlistId.
+        const from = playing.playlistId ?? state.source?.playlistId ?? null;
+        const key = trackKey(track, position);
+
+        return (
+            from === playlistId &&
+            (playing.key === key || playing.key.startsWith(`${key}@`))
+        );
+    }
+
+    /**
+     * Queues a track after the current one, behind the tracks already queued
+     * by hand, without interrupting playback. With nothing playing, plays it.
+     * Returns the queued entry's key.
+     */
+    function queueNext(
+        track: App.Data.TrackData,
+        position: number,
+        source: QueueSource,
+    ): string {
+        const item: QueueTrack = {
+            ...toQueueTrack(track, position, source.playlistId),
+            queued: true,
+        };
+        item.key = `${item.key}@${now()}`;
+
+        if (!current.value) {
+            state.queue = [item];
+            state.source = source;
+            loadIndex(0, 'playlist');
+
+            return item.key;
+        }
+
+        if (item.videoId !== null) {
+            dropUpcoming(item.videoId);
+        }
+
+        let insertAt = state.index + 1;
+
+        while (state.queue[insertAt]?.queued) {
+            insertAt++;
+        }
+
+        state.queue.splice(insertAt, 0, item);
+
+        return item.key;
+    }
+
+    /** Moves an upcoming entry to play right after the current track. */
+    function bringUpNext(index: number): void {
+        if (index <= state.index + 1 || index >= state.queue.length) {
+            return;
+        }
+
+        const [item] = state.queue.splice(index, 1);
+        state.queue.splice(state.index + 1, 0, { ...item, queued: true });
+    }
+
+    /**
+     * Reorders the upcoming tracks: `from` and `to` are places in the
+     * up-next list, from 0. A moved track counts as queued by hand.
+     */
+    function moveUpcoming(from: number, to: number): void {
+        const start = state.index + 1;
+        const last = state.queue.length - 1;
+
+        if (from === to || start + from > last || start + to > last) {
+            return;
+        }
+
+        const [item] = state.queue.splice(start + from, 1);
+        state.queue.splice(start + to, 0, { ...item, queued: true });
+    }
+
+    /** Takes a not yet played entry back out of the queue. */
+    function unqueue(key: string): void {
+        const index = state.queue.findIndex((item) => item.key === key);
+
+        if (index > state.index) {
+            state.queue.splice(index, 1);
+        }
+    }
+
     function jumpTo(index: number): void {
         if (index < 0 || index >= state.queue.length) {
             return;
@@ -631,6 +765,10 @@ export function createPlayer(deps: PlayerDeps) {
         attachTransport,
         playTracks,
         playNext,
+        queueNext,
+        unqueue,
+        bringUpNext,
+        moveUpcoming,
         jumpTo,
         next,
         previous,
@@ -642,6 +780,7 @@ export function createPlayer(deps: PlayerDeps) {
             state.queueOpen = !state.queueOpen;
         },
         handlePageHide,
+        isCurrentTrack,
         isPlayingFrom: (playlistId: string) =>
             state.source?.playlistId === playlistId && current.value !== null,
     };
@@ -652,6 +791,10 @@ export type Player = ReturnType<typeof createPlayer>;
 export const playerKey: InjectionKey<Player> = Symbol('player');
 
 let defaultPlayer: Player | null = null;
+
+// A hot-swapped module would start a second player beside the one already
+// driving the iframe; reload instead (the queue is restored from storage).
+import.meta.hot?.accept(() => window.location.reload());
 
 function browserStorage(): Storage | null {
     if (typeof window === 'undefined') {

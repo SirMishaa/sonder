@@ -260,6 +260,35 @@
         animation-delay: calc(var(--i, 0) * 40ms);
     }
 
+    /* A list reordered under the pointer, like the up-next queue. */
+    .list-move {
+        transition: transform 320ms var(--ease-out-quint);
+    }
+
+    .list-enter-active {
+        transition:
+            opacity 320ms var(--ease-out-quint),
+            transform 320ms var(--ease-out-quint);
+    }
+
+    .list-leave-active {
+        position: absolute;
+        inset-inline: 0;
+        transition:
+            opacity 200ms var(--ease-out-quint),
+            transform 200ms var(--ease-out-quint);
+    }
+
+    .list-enter-from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    .list-leave-to {
+        opacity: 0;
+        transform: translateX(18px);
+    }
+
     .view-enter {
         animation: view-in 520ms var(--ease-out-quint) both;
     }

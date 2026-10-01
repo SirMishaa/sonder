@@ -6,6 +6,7 @@ import PlayableArtwork from '@/components/music/PlayableArtwork.vue';
 import { usePlayer } from '@/composables/usePlayer';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useToast } from '@/composables/useToast';
+import { useTrackTap } from '@/composables/useTrackTap';
 import { genreTagsFor, nearArtistFrom } from '@/lib/fixtures';
 
 /**
@@ -90,17 +91,16 @@ function resolve(index: number, action: 'add' | 'skip'): void {
     }
 }
 
+const suggestionsSource = () => ({
+    playlistId: null,
+    title: trans('Suggestions for :playlist', {
+        playlist: props.playlistTitle,
+    }),
+});
+const { tap, preventSelection } = useTrackTap(suggestionsSource);
+
 function play(suggestion: Suggestion): void {
-    player.playNext(
-        suggestion.track,
-        {
-            playlistId: null,
-            title: trans('Suggestions for :playlist', {
-                playlist: props.playlistTitle,
-            }),
-        },
-        'suggestion',
-    );
+    player.playNext(suggestion.track, suggestionsSource(), 'suggestion');
 }
 
 function move(delta: number): void {
@@ -162,9 +162,13 @@ useShortcuts({
                 :disabled="
                     !suggestion.track.isAvailable || !suggestion.track.videoId
                 "
-                @click="play(suggestion)"
+                @mousedown="preventSelection"
+                @click="
+                    tap($event, suggestion.track, index, () => play(suggestion))
+                "
             >
                 <PlayableArtwork
+                    data-track-artwork
                     :src="suggestion.track.thumbnailUrl"
                     class="size-9 rounded"
                 />

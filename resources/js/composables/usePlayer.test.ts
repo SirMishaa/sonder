@@ -314,6 +314,136 @@ describe('usePlayer', () => {
         });
     });
 
+    it('queues tracks after the current one, in the order they were added', () => {
+        const { player } = setup();
+        player.playTracks([track('a'), track('b')], 0, SOURCE);
+
+        player.queueNext(track('x'), 4, SOURCE);
+        player.queueNext(track('y'), 5, SOURCE);
+
+        expect(player.current.value?.videoId).toBe('a');
+        expect(player.upNext.value.map((item) => item.videoId)).toEqual([
+            'x',
+            'y',
+            'b',
+        ]);
+    });
+
+    it('plays a queued track next, recorded as from the queue', () => {
+        const { player, transport, sent } = setup();
+        player.playTracks([track('a'), track('b')], 0, SOURCE);
+        player.queueNext(track('a'), 0, SOURCE);
+
+        transport.finish();
+        transport.finish();
+
+        expect(sent[1]).toMatchObject({
+            youtube_video_id: 'a',
+            origin: 'queue',
+        });
+        expect(player.current.value?.videoId).toBe('b');
+        expect(new Set(player.state.queue.map((item) => item.key)).size).toBe(
+            3,
+        );
+    });
+
+    it('recognizes the current track from its playlist, played or queued', () => {
+        const { player } = setup();
+        player.playTracks([track('a'), track('b')], 0, SOURCE);
+
+        expect(player.isCurrentTrack('PL1', track('a'), 0)).toBe(true);
+        expect(player.isCurrentTrack('PL1', track('a'), 1)).toBe(false);
+        expect(player.isCurrentTrack('PL2', track('a'), 0)).toBe(false);
+
+        player.queueNext(track('c'), 2, { playlistId: 'PL2', title: 'Other' });
+        player.next();
+
+        expect(player.isCurrentTrack('PL2', track('c'), 2)).toBe(true);
+        expect(player.isCurrentTrack('PL1', track('c'), 2)).toBe(false);
+    });
+
+    it('takes back a queued track that has not played yet', () => {
+        const { player } = setup();
+        player.playTracks([track('a'), track('b')], 0, SOURCE);
+        const key = player.queueNext(track('x'), 4, SOURCE);
+
+        player.unqueue(key);
+
+        expect(player.upNext.value.map((item) => item.videoId)).toEqual(['b']);
+    });
+
+    it('moves an upcoming track to play next without interrupting', () => {
+        const { player, transport } = setup();
+        player.playTracks(
+            [track('a'), track('b'), track('c'), track('d')],
+            0,
+            SOURCE,
+        );
+
+        player.bringUpNext(3);
+
+        expect(transport.videoId()).toBe('a');
+        expect(player.upNext.value.map((item) => item.videoId)).toEqual([
+            'd',
+            'b',
+            'c',
+        ]);
+    });
+
+    it('keeps a single upcoming copy of a track queued again', () => {
+        const { player } = setup();
+        player.playTracks([track('a'), track('b'), track('c')], 0, SOURCE);
+
+        player.queueNext(track('c'), 2, SOURCE);
+        player.queueNext(track('c'), 2, SOURCE);
+
+        expect(player.upNext.value.map((item) => item.videoId)).toEqual([
+            'c',
+            'b',
+        ]);
+    });
+
+    it('reorders the upcoming tracks', () => {
+        const { player } = setup();
+        player.playTracks(
+            [track('a'), track('b'), track('c'), track('d')],
+            0,
+            SOURCE,
+        );
+
+        player.moveUpcoming(0, 2);
+
+        expect(player.upNext.value.map((item) => item.videoId)).toEqual([
+            'c',
+            'd',
+            'b',
+        ]);
+    });
+
+    it('drops repeated upcoming tracks from a restored queue', () => {
+        const storage = memoryStorage();
+        const first = setup({ storage });
+        first.player.playTracks(
+            [track('a'), track('b'), track('b')],
+            0,
+            SOURCE,
+        );
+        first.player.handlePageHide();
+
+        const { player } = setup({ storage });
+
+        expect(player.upNext.value.map((item) => item.videoId)).toEqual(['b']);
+    });
+
+    it('plays a queued track at once when nothing is playing', () => {
+        const { player, transport } = setup();
+
+        player.queueNext(track('x'), 0, SOURCE);
+
+        expect(player.current.value?.videoId).toBe('x');
+        expect(transport.loads.at(-1)?.videoId).toBe('x');
+    });
+
     it('records a replacement when another playlist starts', () => {
         const { player, transport, sent } = setup();
         player.playTracks([track('a'), track('b')], 0, SOURCE);

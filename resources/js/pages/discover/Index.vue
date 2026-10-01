@@ -7,6 +7,8 @@ import PlaylistController from '@/actions/App/Http/Controllers/PlaylistControlle
 import Artwork from '@/components/music/Artwork.vue';
 import TrackMiniRow from '@/components/music/TrackMiniRow.vue';
 import { usePlayer } from '@/composables/usePlayer';
+import { useQueuePick } from '@/composables/useQueuePick';
+import { useTrackTap } from '@/composables/useTrackTap';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { languageTag, formatNumber } from '@/lib/i18n';
 
@@ -21,6 +23,12 @@ defineProps<Props>();
 
 const page = usePage();
 const player = usePlayer();
+const freshFindsSource = () => ({
+    playlistId: null,
+    title: trans('Fresh finds'),
+});
+const { tap, preventSelection } = useTrackTap(freshFindsSource);
+const { pick } = useQueuePick();
 
 const library = computed(() => page.props.library);
 
@@ -65,14 +73,7 @@ const recentPlaylists = computed(() =>
 );
 
 function playFind(find: App.Data.SampledTrackData): void {
-    player.playNext(
-        find.track,
-        {
-            playlistId: null,
-            title: trans('Fresh finds'),
-        },
-        'suggestion',
-    );
+    player.playNext(find.track, freshFindsSource(), 'suggestion');
 }
 </script>
 
@@ -133,10 +134,14 @@ function playFind(find: App.Data.SampledTrackData): void {
                         type="button"
                         class="card reveal group min-w-0 text-left"
                         :style="{ '--i': index + 2 }"
-                        @click="playFind(find)"
+                        @mousedown="preventSelection"
+                        @click="
+                            tap($event, find.track, index, () => playFind(find))
+                        "
                     >
                         <div class="relative">
                             <Artwork
+                                data-track-artwork
                                 :src="find.track.thumbnailUrl"
                                 :alt="find.track.title"
                                 class="aspect-square rounded-md shadow-card"
@@ -236,13 +241,15 @@ function playFind(find: App.Data.SampledTrackData): void {
                     >{{ player.state.source.title }}</span
                 >
             </div>
-            <TrackMiniRow
-                v-for="(track, offset) in player.upNext.value.slice(0, 6)"
-                :key="track.key"
-                :track="track"
-                :number="offset + 1"
-                @select="player.jumpTo(player.state.index + 1 + offset)"
-            />
+            <TransitionGroup tag="div" name="list" class="relative">
+                <TrackMiniRow
+                    v-for="(track, offset) in player.upNext.value.slice(0, 6)"
+                    :key="track.key"
+                    :track="track"
+                    :number="offset + 1"
+                    @select="(event) => pick(event, offset)"
+                />
+            </TransitionGroup>
             <p
                 v-if="player.upNext.value.length === 0"
                 class="rounded-lg border border-dashed border-line px-4 py-5 text-sm text-faint"
