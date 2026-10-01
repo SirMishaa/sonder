@@ -7,6 +7,9 @@ namespace App\Providers;
 use App\Enums\Provider;
 use App\Models\User;
 use App\Services\Metadata\CallBudget;
+use App\Services\Metadata\CreditsFm\CreditsFmGateway;
+use App\Services\Metadata\CreditsFm\HttpCreditsFmGateway;
+use App\Services\Metadata\CreditsFm\RateLimitedCreditsFmGateway;
 use App\Services\Metadata\EnrichmentTelemetry;
 use App\Services\Metadata\OpenTelemetryEnrichmentTelemetry;
 use App\Services\Music\ProviderRegistry;
@@ -33,6 +36,10 @@ final class AppServiceProvider extends ServiceProvider
         ));
 
         $this->app->bind(EnrichmentTelemetry::class, OpenTelemetryEnrichmentTelemetry::class);
+        $this->app->bind(CreditsFmGateway::class, fn (): CreditsFmGateway => new RateLimitedCreditsFmGateway(
+            $this->app->make(HttpCreditsFmGateway::class),
+            $this->app->make(CallBudget::class),
+        ));
 
         $this->app->singleton(ProviderRegistry::class, fn (): ProviderRegistry => (new ProviderRegistry($this->app))
             ->register(Provider::YouTubeMusic, YouTubeMusicAdapter::class, YouTubeMusicCredentials::class));

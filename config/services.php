@@ -30,6 +30,15 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'credits_fm' => [
+        'url' => env('CREDITS_FM_URL', 'https://api.credits.fm'),
+    ],
+
+    'musicbrainz' => [
+        'url' => env('MUSICBRAINZ_URL', 'https://musicbrainz.org/ws/2'),
+        'user_agent' => 'Sonder/1.0 ( '.(env('MUSICBRAINZ_CONTACT') ?: 'set MUSICBRAINZ_CONTACT').' )',
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

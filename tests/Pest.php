@@ -24,6 +24,23 @@ pest()->extend(TestCase::class)
 
 expect()->extend('toBeOne', fn () => $this->toBe(1));
 
+/**
+ * A real metadata service response, captured once (tests/Fixtures/Metadata).
+ *
+ * @return array<string, mixed>
+ */
+function metadataFixture(string $name): array
+{
+    $decoded = json_decode((string) file_get_contents(__DIR__."/Fixtures/Metadata/{$name}.json"), true, flags: JSON_THROW_ON_ERROR);
+    $fixture = [];
+
+    foreach (is_array($decoded) ? $decoded : [] as $key => $value) {
+        $fixture[(string) $key] = $value;
+    }
+
+    return $fixture;
+}
+
 function something(): void
 {
     // ..
