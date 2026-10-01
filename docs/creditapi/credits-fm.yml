@@ -1,0 +1,3560 @@
+openapi: 3.1.0
+info:
+  title: Credits API
+  version: 1.2.2
+  description: >-
+    Music Credits + Identifier Search. **Interactive docs (Scalar):** `/docs`.
+    **OpenAPI JSON:** `/_openapi.json`.
+
+
+    ## Servers and paths
+
+
+    - **API:** `/v1/*` — **snake_case** JSON. Scalar lists these operations
+    under **Canonical API (v1)**.
+
+    - **This specification** (as served at `/_openapi.json` and `/docs`)
+    documents the **`/v1/*`** surface plus discovery, redirects, and shared
+    infrastructure — not alternate version prefixes.
+
+    - **Production API host** (`https://api.credits.fm`): use paths as in this
+    document (e.g. `GET /v1/search`). Do **not** call
+    `https://api.credits.fm/api/search` for Try-it — unversioned `/api/*` here
+    **308** to `/v1/*` (see **Redirects** tag).
+
+    - **credits.fm (Next.js)** exposes camelCase JSON under
+    `https://credits.fm/api/*`. Conceptually map `GET /v1/search` ↔ `GET
+    https://credits.fm/api/search` by swapping the prefix; casing follows each
+    host (see discovery `GET /`).
+
+
+    ## Contribute by default
+
+
+    Contributing is **opt-out**, not opt-in. Lookup responses are designed to
+    highlight data gaps so clients can submit improvements.
+
+
+    - **GET** `/v1/isrc/{isrc}`, `/v1/iswc/{iswc}`, `/v1/ipi/{ipi}`,
+    `/v1/isni/{isni}`: unless you pass **`?contribute=false`**, successful
+    responses may include **`missing_fields`** (array) and **`contribute_url`**
+    when gaps exist.
+
+    - **POST** `/v1/batch`: include **`"contribute": false`** in the JSON body
+    to omit **`contribute_url`** in the response. Default is to include it.
+
+    - **POST** `/v1/resolve/track`: include **`"contribute": false`** in the
+    body to omit **`missing_fields`** / **`contribute_url`** on success. Default
+    is on.
+
+    - **MCP** (`/v1/mcp` and unversioned `/mcp`): lookup tools accept
+    **`contribute: false`** in tool arguments to opt out of contribution nudges;
+    the server instructions describe the default behavior.
+
+
+    Actual writes use **POST /v1/contribute** with a valid **`x-api-key`** (see
+    the Contributions tag). A dedicated public UI for this API may ship later;
+    for now, **Scalar** documents behavior here.
+
+
+    ## Enrich
+
+
+    **POST `/v1/enrich/{type}`** completes one ISRC, ISWC, IPI, ISNI, or UPC
+    from public registries and follows a bounded set of proven connections. It
+    is asynchronous: poll the returned **`/v1/jobs/{job_id}`** URL. Enrich is
+    free for every valid Credits API key; usage is recorded at
+    **`billable=false`** and unit price zero.
+
+
+    ## Music Identity graph detail — pagination & expansion
+
+
+    Single-resource **graph** responses are served from **identifier paths** —
+    **`/v1/iswc/{iswc}`**, **`/v1/isrc/{isrc}`**, **`/v1/upc/{upc}`**,
+    **`/v1/isni/{isni}`**, **`/v1/ipi/{ipi}`** — with the same query parameters.
+    Older bookmarked human-readable URL segments may still **308** to these
+    paths in production; this specification lists the canonical routes only.
+    **Identifier** routes accept:
+
+
+    - **`include`**, **`relationships`**, **`relationship`** — merged;
+    comma-separated relationship keys; **`include=all`** expands every edge the
+    handler supports.
+
+    - **`depth`** — 1–5 (default 1); controls how far nested objects expand
+    (e.g. plain ISRC codes vs `{ isrc, title, … }`). On **UPC graph**
+    (**`/v1/upc/{upc}`**) with **`include=songs`**, **`depth=2`** adds each
+    work’s recordings, writers, and publishers under that song.
+
+    - **`limit`** / **`offset`** — paginate **relationship arrays** only
+    (default **50** / **0**); **`limit=-1`** returns full lists. Each expanded
+    list includes a matching **`total_*`** field (e.g. **`total_recordings`**)
+    for client-side paging.
+
+
+    See **`docs/MUSIC_IDENTITY_API.md`** and **`docs/PAGINATION.md`** for
+    aliases and edge cases.
+
+
+    ## API keys (do not confuse with “wrong Supabase”)
+
+
+    - **Read-heavy routes** (`GET /v1/isrc/…`, `POST /v1/batch`, `GET
+    /v1/search`, …) are **public**. They do **not** validate `x-api-key`; a
+    **200** from batch or a lookup **does not** prove your key is registered.
+
+    - **Writes / key management** (`POST /v1/contribute`, `POST /v1/keys`)
+    **require** a valid `cfm_…` key stored in **`api_keys`** on the **same**
+    Supabase project as the index (`isrc_index`, …). If contribute returns
+    **401** while batch returns **200**, treat that as **key resolution**
+    (missing header, wrong prefix, revoked key, typo) — **not** as evidence of
+    two different databases: **contributions** and **api_keys** use the same
+    `Supabase()` client as batch lookups.
+
+    - **Anonymous tier** cannot contribute (`contribute` rate limit `0`/min);
+    you need a **free** (or internal) key for `POST /v1/contribute`.
+servers:
+  - url: https://api.credits.fm
+    description: Production (standalone Nitro). Documented paths are under
+      **`/v1/*`** (e.g. `/v1/search`, `/v1/suggest`). Do not use `/api/...` on
+      this host for Try-it — unversioned `/api/*` **308**s to **`/v1/*`.
+paths:
+  "":
+    get:
+      tags:
+        - App Routes
+      parameters: []
+      responses:
+        "200":
+          description: OK
+  /api/{path}:
+    get:
+      tags: []
+      parameters:
+        - name: path
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+      summary: 308 redirects — /api/* → versioned routes at host root
+  /healthz:
+    get:
+      tags:
+        - Health
+      parameters: []
+      responses:
+        "200":
+          description: Liveness OK (body may indicate degraded/critical)
+      summary: Liveness check (Render)
+      description: Always returns 200 so load balancers succeed. Body contains status,
+        database, and table health.
+  /:
+    get:
+      tags:
+        - Discovery
+      parameters: []
+      responses:
+        "200":
+          description: JSON with `service`, `version`, `transition`, `docs` (canonical
+            **`v1`** templates), `links` (including `mcp_docs` → `/mcp/docs` →
+            `/docs`).
+      summary: API discovery
+      description: "Returns service metadata and **`/v1/*`** URL templates for health,
+        search, lookups, verification, contribution, Crowd, Compute, MCP, and
+        Music Identity. Interactive reference: **GET /docs**. Developer workflow
+        guide: **docs/VERIFY_AND_CONTRIBUTE.md**."
+  /mcp:
+    delete:
+      tags:
+        - MCP
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: DELETE /mcp — session teardown (alias of /v1/mcp)
+    get:
+      tags:
+        - MCP
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: GET /mcp — unversioned alias of /v1/mcp
+      description: Re-exports **`GET /v1/mcp`**. Prefer **`/v1/mcp`** in documentation
+        and new clients.
+    options:
+      tags:
+        - MCP
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: OPTIONS /mcp — CORS preflight (alias of /v1/mcp)
+    post:
+      tags:
+        - MCP
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: POST /mcp — unversioned alias of /v1/mcp
+      description: Re-exports **`POST /v1/mcp`**. Prefer **`/v1/mcp`** for new integrations.
+  /mcp/docs:
+    get:
+      tags:
+        - Discovery
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: GET /mcp/docs — redirect to Scalar /docs
+      description: "**302** to **`/docs`** (Scalar UI)."
+  /v1/account/magic-link:
+    post:
+      tags:
+        - Account & Claims
+      parameters: []
+      responses:
+        "200":
+          description: Link sent (identical response whether or not the account existed)
+        "400":
+          description: Invalid email
+        "429":
+          description: Rate limit exceeded (per IP and per email)
+        "503":
+          description: Email sign-in not configured on this deployment, or database
+            unavailable
+      summary: Request a sign-in link
+      description: "Send a passwordless magic sign-in link to an email address.
+        Accounts are optional: they exist to persist your claimed identifiers
+        across devices by ADOPTING your anonymous compute session — claims
+        themselves always live on sessions. The link is single-use and expires
+        in 15 minutes; requesting a new link invalidates the previous one.
+        Answers `503` on deployments where email sign-in isn't configured (see
+        `account_sign_in` on `GET /v1/me`)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                session_id:
+                  type: string
+                  format: uuid
+                  description: Session to adopt on verify (defaults to the one that requests the
+                    link)
+  /v1/account/me:
+    get:
+      tags:
+        - Account & Claims
+      parameters: []
+      responses:
+        "200":
+          description: Account, sessions, tier, and claims
+        "401":
+          description: Missing, invalid, or expired account token
+        "503":
+          description: Email sign-in not configured, or database unavailable
+      summary: Your account
+      description: "The signed-in account: email, adopted sessions, best earned
+        Credits Compute tier across them, and the deduped union of claims from
+        every adopted session. Authenticate with `Authorization: Bearer
+        <account_token>` (from `POST /v1/account/verify`). Transport is
+        header-only — no cookies."
+  /v1/account/verify:
+    post:
+      tags:
+        - Account & Claims
+      parameters: []
+      responses:
+        "200":
+          description: "Signed in: account_token (bearer), account, session_adopted"
+        "400":
+          description: Invalid body
+        "401":
+          description: Invalid, expired, or already-used link
+        "429":
+          description: Rate limit exceeded
+        "503":
+          description: Email sign-in not configured, or database unavailable
+      summary: Verify a sign-in link
+      description: "Exchange the single-use token from your magic sign-in link for a
+        long-lived bearer `account_token` (90 days — send it as `Authorization:
+        Bearer …` to `GET /v1/account/me`). Verifying also ADOPTS your compute
+        session onto the account so its claims persist across devices; nothing
+        is lost in the upgrade and claims never move between sessions. A link is
+        invalid after first use, after expiry (15 min), or once a newer link was
+        requested."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  description: The token from the emailed link
+                session_id:
+                  type: string
+                  format: uuid
+                  description: Session to adopt (falls back to the session that requested the
+                    link)
+  /v1/artist/{id}:
+    get:
+      tags:
+        - Music Identity
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: ^[a-zA-Z0-9]{22}$
+            example: 1dfeR4HaWDbWqFHLkxsg1d
+          description: Spotify artist ID (22 chars) — used as the platform key; catalog
+            comes from the Credits index
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Release offset for pagination
+      responses:
+        "200":
+          description: Artist discography page from index (snake_case); may be sparse
+            while enrichment is queued
+        "400":
+          description: Invalid Spotify artist ID
+        "500":
+          description: Internal error
+        "503":
+          description: Database not configured
+        "504":
+          description: Timed out
+      summary: Get artist discography by Spotify ID
+      description: Index-first discography from MusicBrainz + upc_index + isrc_index
+        (Credits owns the catalog). Spotify is not awaited on the request path —
+        a background harvest may enrich the index after the response. Paginated
+        by release (`limit` default 5, max 10; `offset`).
+  /v1/audit/catalog:
+    post:
+      tags:
+        - Audit
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Publisher-catalog audit (two-file classification)
+      description: "Classify a publisher catalog into recording-match issues and
+        composition-registration (duplicate registration) issues. Each row
+        carries the metadata that drove its classification: recording title +
+        writers + IPIs from the ISRC side, plus the full related-works group
+        context from the assigned MLC Song Code. Pass `?format=csv` for a
+        combined-CSV response with two clearly-marked sections."
+  /v1/audit/classify:
+    post:
+      tags:
+        - Audit
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Classify one ISRC (audit)
+      description: Single-row catalog-audit classification. Same scoring as
+        /v1/audit/catalog but for one ISRC. Returns the row's recording-match
+        score, composition-registration flag, and the full related-works group
+        context.
+  /v1/audit/shares:
+    options:
+      tags:
+        - App Routes
+      parameters: []
+      responses:
+        "200":
+          description: OK
+    post:
+      tags:
+        - Audit
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Share audit (batch) — not currently available (returns 403 while MLC
+        ownership shares are withheld pending licensing)
+  /v1/audit/unmatched:
+    options:
+      tags:
+        - App Routes
+      parameters: []
+      responses:
+        "200":
+          description: OK
+    post:
+      tags:
+        - Audit
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Unmatched audit (batch)
+  /v1/batch:
+    options:
+      tags:
+        - App Routes
+      parameters: []
+      responses:
+        "200":
+          description: OK
+    post:
+      tags:
+        - Batch
+      parameters: []
+      responses:
+        "400":
+          description: Invalid body or no identifier arrays
+        "503":
+          description: Database unavailable
+      summary: Batch lookup
+      security: []
+      description: >-
+        Look up multiple identifiers in one request. Send JSON with one or more
+        of: isrcs, iswcs, ipis, isnis, upcs (each array max 100, total across
+        arrays ≤ 100). Returns maps keyed by code. Top-level `contribute_url` is
+        included unless `contribute: false` in the body.
+
+
+        **Auth:** this route does **not** read or validate `x-api-key`. Sending
+        a key has **no effect** on authorization. A **200** here does **not**
+        prove your API key is valid; use `POST /v1/contribute` (or `POST
+        /v1/keys`) to verify credentials.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isrcs:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+                iswcs:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+                ipis:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+                isnis:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+                upcs:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+                contribute:
+                  type: boolean
+                  description: Include contribute_url in response (default true). Set false to opt
+                    out.
+                include_mlc_works:
+                  type: boolean
+                  description: Augment ISRC results with live MLC Public Work Search data.
+                    Cache-respecting (14-day); only stale rows hit MLC. Capped
+                    at 25 ISRCs/request.
+  /v1/billing/checkout:
+    post:
+      tags:
+        - Billing
+      parameters: []
+      responses:
+        "200":
+          description: "{ url } — redirect the user here"
+        "400":
+          description: Invalid plan
+        "401":
+          description: Missing or invalid API key
+        "503":
+          description: Billing not configured
+      summary: Start Credits Graph checkout
+      description: Create a Stripe Checkout session for a paid Credits Graph plan
+        (`pro` or `partner`). Authenticate with your full `x-api-key`. Returns
+        the hosted Checkout URL.
+  /v1/billing/portal:
+    post:
+      tags:
+        - Billing
+      parameters: []
+      responses:
+        "200":
+          description: "{ url }"
+        "401":
+          description: Missing or invalid API key
+        "404":
+          description: No billing customer for that key
+        "503":
+          description: Billing not configured
+      summary: Open billing portal
+      description: Create a Stripe Customer Portal session for the key presented via
+        `x-api-key`. Returns the hosted portal URL.
+  /v1/billing/webhook:
+    post:
+      tags:
+        - Billing
+      parameters: []
+      responses:
+        "200":
+          description: Acknowledged
+        "400":
+          description: Signature verification failed
+      summary: Stripe webhook
+      description: Internal Stripe webhook receiver. Not for public use.
+  /v1/catalog/analyze:
+    post:
+      tags:
+        - Catalog
+      parameters: []
+      responses:
+        "200":
+          description: Catalog analysis result (publisher → writer-IPI → ISWC graph).
+        "400":
+          description: Invalid body or no inputs provided.
+        "503":
+          description: Database unavailable.
+      summary: Analyze an ISRC catalog (publisher → writer-IPI → ISWC graph)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isrcs:
+                  type: array
+                  items:
+                    type: string
+                  description: Flat ISRC list. Each becomes a 1-row 'song'. Use this for ad-hoc
+                    'give me the publisher graph for these ISRCs' lookups.
+                songs:
+                  type: array
+                  description: Pre-grouped Song No. structure. Use this to reproduce a publisher's
+                    exact catalog grouping (writers, multiple ISRC variants per
+                    song). Matches the shape `python3
+                    scripts/catalog-extract.py` emits in the credits repo.
+                  items:
+                    type: object
+                    required:
+                      - songNo
+                      - rows
+                    properties:
+                      songNo:
+                        type: string
+                      title:
+                        type: string
+                        nullable: true
+                      writersRaw:
+                        type: string
+                        nullable: true
+                      writers:
+                        type: array
+                        items:
+                          type: string
+                      rows:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            - isrc
+                          properties:
+                            isrc:
+                              type: string
+                            artist:
+                              type: string
+                              nullable: true
+                            recordingTitle:
+                              type: string
+                              nullable: true
+                publisher_name_re:
+                  type: string
+                  description: Case-insensitive regex matching the target publisher's name in MLC.
+                    Optional; when omitted, roster sections return empty arrays.
+                enrich:
+                  type: boolean
+                  description: Default true. When true, unmatched ISRCs are queued for graph-link
+                    enrichment as a side effect.
+  /v1/compute/demand-bump:
+    post:
+      tags:
+        - Credits Compute
+      parameters: []
+      responses:
+        "200":
+          description: "`{ ok: true }`. Repeat bumps are idempotent."
+        "400":
+          description: Invalid body
+        "429":
+          description: Rate limit exceeded
+        "503":
+          description: Database unavailable
+      summary: Bump Credits Compute queue priority for an identifier
+      description: "When `GET /v1/compute/unit` returns `{ unit: null }` for a
+        `(task_type, anchor)` pair, the client POSTs here to upsert a
+        high-priority `compute_queue` row (`reason=demand_lookup`, priority 10).
+        Nightly seeders merge with `GREATEST(priority)`. Idempotent. No API key
+        — same `session_id` as the unit loop. `anchor_type` is `iswc` for
+        `crosslink_verify` / `composition_similarity`, `ipi` for `identity` /
+        `writer_ipi` (`isni` also accepted for identity)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_id
+                - task_type
+                - anchor_type
+                - anchor_id
+              properties:
+                session_id:
+                  type: string
+                  format: uuid
+                task_type:
+                  type: string
+                  enum:
+                    - composition_similarity
+                    - identity
+                    - crosslink_verify
+                    - writer_ipi
+                anchor_type:
+                  type: string
+                  enum:
+                    - iswc
+                    - ipi
+                    - isni
+                anchor_id:
+                  type: string
+  /v1/compute/result:
+    post:
+      tags:
+        - Credits Compute
+      parameters: []
+      responses:
+        "200":
+          description: Processed. `verified` = correct control, `staged` = server-checked
+            and awaiting consensus, `recorded` = stored without a merge-worthy
+            link, `rejected` = failed verification, `invalid` = request/token
+            could not be processed.
+        "400":
+          description: Invalid body
+        "429":
+          description: Rate limit exceeded
+        "503":
+          description: Database unavailable
+      summary: Submit a Credits Compute work-unit result
+      description: "Step 2 of 2. Submit one candidate ID from a unit returned by `GET
+        /v1/compute/unit`. No API key; use the same `session_id` and unchanged
+        opaque `unit_token`. `score` is required only for real
+        `composition_similarity` units and optional for `identity`,
+        `crosslink_verify`, `writer_ipi`, and hidden controls. The server
+        recomputes the answer before it counts. `staged` means accepted for
+        downstream consensus, not already public; `recorded` means stored
+        without a merge-worthy link. Full status guide:
+        `docs/VERIFY_AND_CONTRIBUTE.md`."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - session_id
+                - unit_token
+                - winner_id
+              properties:
+                session_id:
+                  type: string
+                  format: uuid
+                unit_token:
+                  type: string
+                winner_id:
+                  type: string
+                score:
+                  type: number
+                  description: Locally computed similarity score. Required for real
+                    composition_similarity units; optional for identity,
+                    crosslink_verify, writer_ipi, and hidden control units.
+                signals:
+                  type: object
+                  description: Optional ranking signals persisted on the contribution
+                    (observability). Staging uses the server recompute, not
+                    these values.
+                  properties:
+                    ipi_overlap:
+                      type: number
+                    title_score:
+                      type: number
+                    writer_score:
+                      type: number
+                    name_overlap:
+                      type: number
+                    signal_tags:
+                      type: array
+                      items:
+                        type: string
+  /v1/compute/unit:
+    get:
+      tags:
+        - Credits Compute
+      parameters:
+        - in: query
+          name: session_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: task_type
+          required: false
+          schema:
+            type: string
+            enum:
+              - composition_similarity
+              - identity
+              - crosslink_verify
+              - writer_ipi
+        - in: query
+          name: anchor
+          required: false
+          schema:
+            type: string
+          description: "Normalized PK for Demand-Directed Compute. `crosslink_verify` /
+            `composition_similarity`: ISWC. `identity`: IPI or ISNI.
+            `writer_ipi`: IPI. Combined with `task_type`, claims that queue row
+            or returns `{ unit: null }`."
+        - in: query
+          name: prefer
+          required: false
+          schema:
+            type: string
+          description: Comma-separated task-type fallback list for the same anchor, e.g.
+            `crosslink_verify,composition_similarity`. Tried after `task_type`.
+      responses:
+        "200":
+          description: "`{ unit: { unit_token, task_type, anchor, candidates[] } }`, or `{
+            unit: null }`. `unit_token` is opaque, session-bound, and submitted
+            unchanged."
+        "400":
+          description: Missing or invalid session_id
+        "429":
+          description: Rate limit exceeded
+        "503":
+          description: Database unavailable
+      summary: Get a Credits Compute work unit
+      description: "Step 1 of 2. Issue one bounded candidate-matching unit; submit the
+        answer to `POST /v1/compute/result`. No API key — persist one
+        client-generated `session_id` UUID. Always inspect the returned
+        `unit.task_type`: hidden `composition_similarity` controls can be
+        returned even when a caller requests identity work **without** an
+        anchor. With `task_type` + `anchor`, the unit matches that pair or is `{
+        unit: null }` (then `POST /v1/compute/demand-bump`). Task rules:
+        `composition_similarity` = same musical work, `identity` = IPI↔ISNI
+        person/organization, `crosslink_verify` = ISWC↔ISRC recording link,
+        `writer_ipi` = writer-name↔IPI. Full workflow:
+        `docs/VERIFY_AND_CONTRIBUTE.md`."
+  /v1/contribute:
+    options:
+      tags:
+        - App Routes
+      parameters: []
+      responses:
+        "200":
+          description: OK
+    post:
+      tags:
+        - Data contributions
+      parameters: []
+      responses:
+        "201":
+          description: 'Accepted. Response shape: `{ accepted, verified, no_match,
+            pending, total, results }`. Per-item `status` is one of:
+            `auto_accepted` (applied), `pending` (queued for review), `verified`
+            (positive verification — cross-source agreement, sources merged,
+            confidence bumped), `verified_already_recorded` (replay, no trust
+            bump), `no_match` (negative verification — sources disagree or
+            contributor explicitly asserted non-relationship; entry persisted to
+            `*_index.conflicts[]`), `no_match_already_recorded` (replay),
+            `rejected` (validation failure or non-internal-tier no_match). Sum
+            `accepted + verified` for total positive verifications. New
+            contribution `type: "no_match"` lets internal-tier contributors
+            explicitly assert a value or relationship is wrong (works on any
+            contributable field, including arrays). For unknown identifiers,
+            fill_null/append/no_match create a sparse row so the contribution
+            can land; correction on a missing row rejects.'
+        "400":
+          description: Invalid body
+        "401":
+          description: API key required or invalid
+        "403":
+          description: IP blocked
+        "429":
+          description: Rate limit exceeded
+        "503":
+          description: Database unavailable
+      summary: Submit contributions
+      description: >-
+        Submit evidence your integration already has. Requires an **x-api-key**
+        (`cfm_` prefix; create one with `POST /v1/keys`) and accepts at most 25
+        items. Use `fill_null` for an empty scalar, `append` for an array,
+        `correction` to propose replacing an existing value, or internal-only
+        `no_match` for negative evidence. HTTP 201 means the batch was processed
+        — inspect every `results[].status` to learn whether the item was
+        applied, verified, queued, recorded as negative evidence, or rejected.
+        Accepted ISRC↔ISWC links repair both read directions before the response
+        returns. Full field/type/status guide: `docs/VERIFY_AND_CONTRIBUTE.md`.
+
+
+        **Troubleshooting:** read endpoints do not validate API keys. If a
+        lookup returns 200 but contribute returns 401, the key is missing,
+        malformed, unknown, or revoked.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - contributions
+              properties:
+                contributions:
+                  type: array
+                  maxItems: 25
+                  items:
+                    type: object
+                    properties:
+                      target:
+                        type: string
+                        enum:
+                          - isrc
+                          - iswc
+                          - ipi
+                          - isni
+                          - upc
+                      id:
+                        type: string
+                      field:
+                        type: string
+                      value: {}
+                      type:
+                        type: string
+                        enum:
+                          - fill_null
+                          - append
+                          - correction
+                          - no_match
+                      citation:
+                        type: string
+                      notes:
+                        type: string
+  /v1/contributors:
+    get:
+      tags:
+        - Lookups
+      parameters: []
+      responses:
+        "200":
+          description: Leaderboard data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_contributors:
+                    type: integer
+                    description: Unique contributors in last 30 days
+                  contributions_30d:
+                    type: integer
+                    description: Accepted contributions in last 30 days
+                  top:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        label:
+                          type: string
+                          description: Display name (api_keys.contributor_name → name → 'Anonymous')
+                        accepted_30d:
+                          type: integer
+                        top_target:
+                          type:
+                            - string
+                            - "null"
+                          description: Most-contributed-to table (e.g. 'isrc_index')
+                  updated_at:
+                    type: string
+                    format: date-time
+      summary: Public contributors leaderboard
+      description: Top 25 contributors by accepted-contribution count in the last 30
+        days, plus aggregate counts. Powers
+        https://credits.fm/about/contributors and gives agents social proof for
+        the flywheel.
+  /v1/cover-art:
+    options:
+      tags:
+        - App Routes
+      parameters: []
+      responses:
+        "200":
+          description: OK
+    post:
+      tags:
+        - Cover art
+      parameters: []
+      responses:
+        "200":
+          description: Empty cover_art map
+      summary: Deprecated cover art lookup
+      description: Compatibility endpoint. Artwork is not part of the public CC-BY
+        dataset; always returns an empty cover_art map.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isrcs:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 10
+  /v1/coverage:
+    get:
+      tags:
+        - Health
+      parameters: []
+      responses:
+        "200":
+          description: Coverage totals and stats
+        "503":
+          description: Database unavailable
+      summary: Index coverage
+      description: Returns exact row counts per index (isrc, iswc, ipi, isni, upc)
+        from credits_index_summary, the full 20-cell Credits Graph grid + growth
+        + day-over-day deltas + ISRC quality metrics + source mix from the
+        latest index_coverage_stats snapshot. Cached 1 hour.
+  /v1/crowd/task:
+    get:
+      tags:
+        - Crowd verification
+      parameters: []
+      responses:
+        "400":
+          description: Invalid target or missing id
+        "429":
+          description: Rate limit exceeded (shared per-IP budget with `POST /v1/crowd/vote`)
+        "503":
+          description: Database unavailable
+      summary: Get a crowd verification task
+      description: 'Step 1 of 2. Returns one anonymous field-choice task for a record.
+        No API key; persist a client-generated `session_id` UUID so completed
+        tasks are not re-served and the session can establish trust. Render the
+        returned `field` and `options`, then submit one exact `option.value` (or
+        `{ "not_sure": true }`) to `POST /v1/crowd/vote`. Hidden controls are
+        intentionally indistinguishable from real disagreements. Returns `{
+        task: null }` when nothing is available. Full workflow:
+        `docs/VERIFY_AND_CONTRIBUTE.md`.'
+  /v1/crowd/vote:
+    post:
+      tags:
+        - Crowd verification
+      parameters: []
+      responses:
+        "400":
+          description: Invalid body, unknown task, choice not offered, or vote rejected
+        "429":
+          description: Rate limit exceeded (shared per-IP budget with `GET /v1/crowd/task`)
+        "503":
+          description: Database unavailable
+      summary: Vote on a crowd verification task
+      description: 'Step 2 of 2. Submit an exact option `value` from `GET
+        /v1/crowd/task`, or `{ "not_sure": true }`, with the same `session_id`.
+        No API key. `recorded` means the vote landed but consensus is not
+        complete; `verified` means trusted consensus confirmed the live value;
+        `resolved` means the competing value was flagged for trusted review.
+        Anonymous votes never overwrite canonical data. Consensus requires 3
+        distinct voters, trusted weight ≥2, and winning margin ≥1.'
+  /v1/enrich/{type}:
+    post:
+      tags:
+        - Enrich
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema:
+            type: string
+      responses:
+        "202":
+          description: Job started or attached to an identical in-flight job
+        "400":
+          description: Invalid type, identifier, or list size
+        "401":
+          description: API key required or invalid
+        "503":
+          description: Key validation or database temporarily unavailable
+      summary: Complete a public music identifier
+      description: Starts the strongest bounded Credits Enrich walk for one ISRC,
+        ISWC, IPI, ISNI, or UPC. Every run discovers public-registry fields,
+        contributes fill-only facts, verifies them, and follows up to 25 proven
+        connections so the index and graph improve together. Requires a free
+        Credits API key. Lists are supported for ISRC only.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isrc:
+                  type: string
+                  example: USRC17607839
+                isrcs:
+                  type: array
+                  items:
+                    type: string
+                iswc:
+                  type: string
+                  example: T-070129064-3
+                ipi:
+                  type: string
+                  example: "00014107338"
+                isni:
+                  type: string
+                  example: "0000000121032683"
+                upc:
+                  type: string
+                  example: "602537561747"
+                dry_run:
+                  type: boolean
+                  default: false
+                skip_enriched:
+                  type: boolean
+                max:
+                  type: integer
+                  minimum: 1
+  /v1/enrich/ui-prompt:
+    get:
+      tags:
+        - Enrich
+      parameters:
+        - in: query
+          name: job_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Generated implementation prompt
+        "400":
+          description: Missing job_id or job is not done
+        "404":
+          description: Job not found for this API key
+      summary: Generate the credits.fm Enrich UI implementation prompt
+      description: After an Enrich job succeeds, supply its job_id to generate a
+        frontend-agent prompt from this deployment's live OpenAPI operation and
+        that real result. This keeps the website implementation aligned with the
+        deployed API contract.
+      security:
+        - ApiKeyAuth: []
+  /v1/graph/{type}/{id}:
+    get:
+      tags:
+        - Music Identity
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema:
+            type: string
+            enum:
+              - isrc
+              - iswc
+              - ipi
+              - isni
+              - upc
+              - musician
+          description: "Root type. `musician` roots take a MusicBrainz MBID as the LOOKUP
+            key and are seeded from the artist's recordings + IPIs/ISNIs
+            (effective depth 1 from the seeds). Responses speak Credits IDs:
+            musician node `id` is the deterministic Credits ID, with `mbid`
+            carried as source provenance."
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Root identifier code (or MBID for musician)
+        - in: query
+          name: depth
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 2
+          description: Hops from the root (default 2; fixed for musician roots)
+        - in: query
+          name: people
+          required: false
+          schema:
+            type: string
+            enum:
+              - "0"
+              - "1"
+          description: Include musician (people) nodes via the MusicBrainz credit overlay
+            (default 1)
+        - in: query
+          name: per_hop
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 25
+          description: Logical-connection cap per (node, neighbor-type) (default 12)
+        - in: query
+          name: max_nodes
+          required: false
+          schema:
+            type: integer
+            minimum: 10
+            maximum: 300
+          description: Total node budget (default 200)
+        - in: query
+          name: nocache
+          required: false
+          schema:
+            type: string
+          description: "Bypass CDN cache (aliases: no_cache, fresh)"
+      responses:
+        "200":
+          description: "Graph network: nodes[], connections[] (edges[] = deprecated
+            alias), truncated, stats"
+        "400":
+          description: Invalid type or identifier
+        "404":
+          description: Unknown identifier (no index row, no connections, no checks)
+        "503":
+          description: Database unavailable
+      summary: Credits Graph network
+      description: "The Credits Graph: identifier nodes (`isrc`, `iswc`, `ipi`,
+        `isni`, `upc`) and connections around one root code, with per-connection
+        source provenance and verification status (`verified` = ≥2 independent
+        sources, `single` = one). Node `no_match` lists directions checked with
+        no counterpart (verified absence). Typed ISRC↔ISRC relationship
+        connections (cover, sample, remix, …) are overlaid as `kind: relation`.
+        `depth` 1–2 (default 2); explore third-order by re-querying any node at
+        depth 1 and merging. Caps: `per_hop` ≤25 per (node, neighbor-type),
+        `max_nodes` ≤300; `truncated` and per-node `has_more` report capping.
+        The connection array is `connections` and counts are
+        `stats.connection_count` / `stats.verified_connections`; `edges` /
+        `edge_count` / `verified_edges` are deprecated aliases (same data) kept
+        for one migration window."
+  /v1/graph/{type}/{id}/neighbors:
+    get:
+      tags:
+        - Music Identity
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema:
+            type: string
+            enum:
+              - isrc
+              - iswc
+              - ipi
+              - isni
+              - upc
+          description: Node type (musician nodes have no crosslink neighbors)
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Node identifier code
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum:
+              - isrc
+              - iswc
+              - ipi
+              - isni
+              - upc
+          description: Neighbor type to page through
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 5000
+          description: Neighbours to skip (default 0). Prefer the `next_offset` from the
+            previous page.
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 25
+          description: Neighbors per page (default 12)
+        - in: query
+          name: nocache
+          required: false
+          schema:
+            type: string
+          description: "Bypass CDN cache (aliases: no_cache, fresh)"
+      responses:
+        "200":
+          description: "One page of neighbours: node, neighbor_type, neighbours[], offset,
+            next_offset, total, has_more"
+        "400":
+          description: Invalid node type, identifier, or neighbor type
+        "404":
+          description: Unknown identifier (no connections, no index row)
+        "503":
+          description: Database unavailable
+      summary: Credits Graph node neighbors (paginated)
+      description: "Page through the neighbors of one graph node for a single neighbor
+        type. The network read (`GET /v1/graph/{type}/{id}`) caps logical
+        connections per (node, neighbor-type) at `per_hop` and reports
+        truncation via each node's `has_more`; this endpoint is the follow-up
+        read — deterministic pages ordered by source count then recency, so no
+        neighbor repeats across THIS endpoint's pages. Ordering is not
+        guaranteed to align with the slice embedded in a network response (that
+        read merges directions after its per-hop cut), so page from `offset=0`
+        and merge results by neighbor id. Pages tile exactly: follow
+        `next_offset` until `has_more` is false and you will see every neighbour
+        the bounded scan found, once each. Each neighbor carries the
+        connection's source provenance and verification status (`verified` = ≥2
+        independent sources, `single` = one)."
+  /v1/graph/activity:
+    get:
+      tags:
+        - Music Identity
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 150
+          description: Max events (default 60)
+        - in: query
+          name: since
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Only events after this ISO timestamp (clamped to now−24h)
+        - in: query
+          name: nocache
+          required: false
+          schema:
+            type: string
+          description: "Bypass CDN cache (aliases: no_cache, fresh)"
+      responses:
+        "200":
+          description: events[], stats, as_of
+        "400":
+          description: Invalid since timestamp
+        "503":
+          description: Database unavailable
+      summary: Credits Graph activity feed
+      description: "Status updates across the Credits Graph, newest first:
+        `link_found` (connection observed), `link_verified` (connection crossed
+        ≥2 independent sources), `relation_found` (typed ISRC↔ISRC relationship:
+        cover, sample, remix, …), `no_match_recorded` (direction checked against
+        every source, no counterpart — verified absence). Poll with `since` set
+        to the previous response's `as_of` for deltas. `since` is clamped to the
+        last 24 hours. Stats include the planner-estimated Credits Graph total
+        and the latest daily completeness snapshot."
+  /v1/graph/expand:
+    post:
+      tags:
+        - Music Identity
+      parameters: []
+      responses:
+        "200":
+          description: "Union of the expansions: expanded[], nodes[], connections[],
+            truncated, stats"
+        "400":
+          description: Invalid body, node type, or identifier
+        "404":
+          description: No requested node resolved to a valid identifier
+        "503":
+          description: Database unavailable
+      summary: Credits Graph batch expansion
+      description: "Expand several graph nodes in ONE call — the explorer's follow-up
+        read when a user opens multiple nodes. Runs a single seeded traversal
+        across every requested node and returns the union, with per-connection
+        provenance and verification status exactly as `GET
+        /v1/graph/{type}/{id}` does. Pass `exclude` (node keys you already hold,
+        `\"type:id\"`) to strip nodes from the response; connections touching
+        them are still returned, since the connection is the new information.
+        Seeds are always excluded. Caps: 48 nodes per request, `per_hop` ≤25,
+        `max_nodes` ≤300; free/unentitled callers are capped at 25 nodes and the
+        preview envelope."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nodes
+              properties:
+                nodes:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - type
+                      - id
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                          - isrc
+                          - iswc
+                          - ipi
+                          - isni
+                          - upc
+                      id:
+                        type: string
+                exclude:
+                  type: array
+                  items:
+                    type: string
+                  description: Node keys already held ("isrc:USRC17607839")
+                depth:
+                  type: integer
+                  minimum: 1
+                  maximum: 2
+                  description: Hops from each seed (default 1)
+                per_hop:
+                  type: integer
+                  minimum: 1
+                  maximum: 25
+                  description: Connection cap per (node, neighbor-type) (default 12)
+                max_nodes:
+                  type: integer
+                  minimum: 10
+                  maximum: 300
+                  description: Total node budget (default 200)
+                people:
+                  type: boolean
+                  description: Include musician (people) nodes (default true)
+  /v1/graph/search:
+    get:
+      tags:
+        - Music Identity
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+          description: Search query
+        - in: query
+          name: type
+          required: false
+          schema:
+            type: string
+            enum:
+              - all
+              - artist
+              - song
+              - recording
+              - release
+              - musician
+              - publisher
+          description: Entity bucket (default all)
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+          description: Per bucket (default 20, max 500, -1 = cap 500)
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Skip within bucket
+        - in: query
+          name: exclude_lyrics
+          required: false
+          schema:
+            type: string
+            enum:
+              - "true"
+              - "false"
+              - "1"
+              - "0"
+          description: When true, ISRC/recording bucket skips lyrics-based index matches
+            (title/song columns only)
+        - in: query
+          name: nocache
+          required: false
+          schema:
+            type: string
+          description: "Bypass CDN cache (aliases: no_cache, fresh)"
+      responses:
+        "200":
+          description: Bucketed hits (artists, songs, recordings, releases, musicians,
+            publishers)
+        "400":
+          description: Invalid query
+        "503":
+          description: Database unavailable
+      summary: Graph search (bucketed)
+      description: "Music Identity search: bucketed results by entity type (`all`,
+        `artist`, `song`, `recording`, `release`, `musician`, `publisher`).
+        Default `limit` 20 (max 500; `-1` requests up to 500 per bucket). Use
+        `offset` for paging within each bucket. Optional `exclude_lyrics=true`
+        omits lyrics-indexed ISRC matches (same as GET /v1/search). Optional
+        `nocache` / `no_cache` / `fresh` for uncached reads."
+  /v1/health:
+    get:
+      tags:
+        - Health
+      parameters: []
+      responses:
+        "200":
+          description: All critical tables above threshold
+        "503":
+          description: DB unavailable or one or more critical tables below threshold
+      summary: Health check (full)
+      description: Returns 200 when DB is connected and critical tables meet
+        thresholds; 503 when DB unavailable or any table below threshold.
+        Response includes status, database, timestamp, and per-table status.
+  /v1/identity:
+    get:
+      tags:
+        - Music Identity
+      parameters: []
+      responses:
+        "200":
+          description: JSON discovery payload with path templates and links
+      summary: Identifier graph discovery
+      description: Returns links and descriptions for Music Identity resources under
+        `/v1/` (recordings, songs, releases, artists, musicians, publishers,
+        graph search). See also **GET /v1/graph/search**.
+  /v1:
+    get:
+      tags:
+        - Music Identity
+      parameters: []
+      responses:
+        "200":
+          description: JSON discovery payload with path templates and links
+      summary: Discovery root (legacy)
+      description: Same JSON as **GET /v1/identity** — path templates and links for
+        Music Identity under `/v1/`. Prefer `/v1/identity` for new clients.
+  /v1/ipi-group/summary:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: query
+          name: ipis
+          required: true
+          schema:
+            type: string
+            example: 00177337244,00177337342
+      responses:
+        "200":
+          description: Aggregated summary
+        "400":
+          description: Invalid or oversized group
+        "404":
+          description: No catalog data found for any IPI in the group
+        "503":
+          description: Database unavailable
+      summary: Catalog verify summary for a group of IPIs
+      description: Aggregated Catalog Verify summary across a group of up to 10 IPIs.
+        Use for publisher entities that hold separate IPIs across PROs (e.g.
+        Sony Music Publishing). Returns the same shape as /v1/ipi/{ipi}/summary
+        with the head listing every IPI in the group.
+    post:
+      tags:
+        - Lookups
+      parameters: []
+      responses:
+        "200":
+          description: Aggregated summary
+        "400":
+          description: Invalid or oversized group
+        "404":
+          description: No catalog data found for any IPI in the group
+        "503":
+          description: Database unavailable
+      summary: Catalog verify summary for an IPI group (body variant)
+      description: POST variant of /v1/ipi-group/summary. Use when callers would
+        prefer a body to a query string (internal tools, partner onboarding).
+        Same shape and IPI cap as the GET.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ipis
+              properties:
+                ipis:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+                    pattern: ^\d{9,11}$
+                  example:
+                    - "00177337244"
+                    - "00177337342"
+  /v1/ipi/{ipi}:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: ipi
+          required: true
+          schema:
+            type: string
+            pattern: ^\d{9,11}$
+            example: "00508530861"
+          description: 9–11 digit IPI (**digits only** in the path; hyphens stripped if
+            present). **`represent`** implies graph mode.
+      responses:
+        "400":
+          description: Invalid IPI
+        "404":
+          description: IPI not found
+        "503":
+          description: Database unavailable
+      summary: Get IPI
+      description: "**Canonical IPI URL.** Default: flat **`IpiDetailResponse`**.
+        Graph mode: **`represent=musician`** (default when inferred) or
+        **`represent=publisher`**; legacy **`/v1/musicians/…`** /
+        **`/v1/publishers/…`** **308** here with the appropriate `represent`
+        hint."
+  /v1/ipi/{ipi}/publisher-links:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: ipi
+          required: true
+          schema:
+            type: string
+            pattern: ^\d{9,11}$
+            example: "00508530861"
+        - in: query
+          name: role
+          required: false
+          schema:
+            type: string
+            enum:
+              - RightsAdministrator
+              - OriginalPublisher
+              - SubPublisher
+              - SubstitutedPublisher
+        - in: query
+          name: include
+          required: false
+          schema:
+            type: string
+            enum:
+              - gaps
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Ranked publisher-links list
+        "400":
+          description: Invalid parameters
+        "404":
+          description: No songwriter credits for this IPI
+        "503":
+          description: Database unavailable
+      summary: Publisher links for a songwriter IPI
+      description: "Returns every publisher linked to the IPI across any ISRC, ranked
+        by song count. Optionally filter by role (MLC long-form) and request
+        per-song gap flags (where the top RightsAdministrator is missing). Data
+        source: ipi_isrc_mappings. Distinct from the registration-eligibility
+        endpoint, which gates on the curated verified_publishers table."
+  /v1/ipi/{ipi}/publishers:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: ipi
+          required: true
+          schema:
+            type: string
+            pattern: ^\d{9,11}$
+            example: "00508530861"
+          description: 9-11 digit IPI number
+        - in: query
+          name: include
+          required: false
+          schema:
+            type: string
+            enum:
+              - isrcs
+          description: Pass include=isrcs to return the list of shared ISRCs per publisher
+      responses:
+        "200":
+          description: Publisher list for songwriter
+        "400":
+          description: Invalid or missing IPI
+        "404":
+          description: No songwriter credits found for this IPI
+        "503":
+          description: Database unavailable
+      summary: Get publishers for songwriter IPI
+      description: Returns all publishers that co-occur with the given songwriter IPI
+        across any ISRC, from ipi_isrc_mappings. Pass ?include=isrcs to see
+        shared ISRCs per publisher.
+  /v1/ipi/{ipi}/registration-eligibility:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: ipi
+          required: true
+          schema:
+            type: string
+            pattern: ^\d{9,11}$
+            example: "00508530861"
+        - in: query
+          name: only
+          required: false
+          schema:
+            type: string
+            enum:
+              - eligible
+              - ineligible
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Eligibility verdicts per ISRC
+        "400":
+          description: Invalid parameters
+        "404":
+          description: No credits for this IPI
+        "503":
+          description: Database unavailable
+      summary: Registration eligibility for a songwriter IPI
+      description: Per-song verdict (eligible | ineligible) gated on the
+        verified_publishers table. A song is ineligible when any credited
+        publisher's IPI is in verified_publishers. Blockers list the verified
+        publisher(s) that caused the ineligible verdict.
+  /v1/ipi/{ipi}/summary:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: ipi
+          required: true
+          schema:
+            type: string
+            pattern: ^\d{9,11}$
+            example: "00177337244"
+      responses:
+        "200":
+          description: Summary payload
+        "400":
+          description: Invalid IPI
+        "404":
+          description: No catalog data found for this IPI
+        "503":
+          description: Database unavailable
+      summary: Catalog verify summary for an IPI
+      description: "Single-call summary used by the Catalog Verify hero: counts +
+        top-5 samples for writers (publisher mode), publishers (songwriter
+        mode), works (ISWCs), recordings (ISRCs), releases (UPCs), and linked
+        ISNIs. Branches internally on entity_type."
+  /v1/ipi/{ipi}/works:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: ipi
+          required: true
+          schema:
+            type: string
+            pattern: ^\d{9,11}$
+            example: "00177337244"
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Ranked works list
+        "400":
+          description: Invalid IPI format
+        "404":
+          description: No works found for this IPI
+        "503":
+          description: Database unavailable
+      summary: Ranked works (ISWCs) for an IPI
+      description: Returns works attributable to this IPI. Songwriter/artist rows are
+        verified against each work's songwriter payload; false or
+        performer-derived IPI links are excluded. Originals rank before
+        sample/interpolation credits, then by recording count. `original_works`
+        and `also_credited` split the paged result. Publisher works are
+        aggregated from the publisher catalog (ISRCs → ISWCs). Triggers a
+        fire-and-forget graph-link verification queue entry on each call.
+  /v1/isni/{isni}:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: isni
+          required: true
+          schema:
+            type: string
+            pattern: ^\d{15}[\dX]$
+            example: "0000000000012571"
+          description: 16-character ISNI (spaces/dashes stripped; last digit may be **X**).
+      responses:
+        "400":
+          description: Invalid or missing ISNI
+        "404":
+          description: ISNI not found
+        "503":
+          description: Database unavailable
+      summary: Get ISNI
+      description: "**Canonical ISNI URL.** Default: flat **`IsniDetailResponse`** —
+        name, entity type, roles, linked IPIs, sample works/recordings, and
+        **`recordings_url`** → **`GET /v1/isni/{isni}/recordings`** (full
+        paginated list). Falls back to MusicBrainz when not in index. With
+        **`graph=1`** or any of **`include`**, **`relationships`**,
+        **`relationship`**, **`depth`**: Music Identity graph (legacy **`GET
+        /v1/artists/{isni}`** **308**s here); e.g. **`?include=recordings`**
+        selects only that connection without enabling flat pagination mode.
+        **`limit` / `offset` alone** (no graph keys) paginate flat **`isrcs`** /
+        **`iswcs`** slices only. Optional contribution hints unless
+        **`?contribute=false`**."
+  /v1/isni/{isni}/recordings:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: isni
+          required: true
+          schema:
+            type: string
+            example: "0000000000012571"
+          description: 16-character ISNI (last char may be X).
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of recordings to skip (paginate the deduped, sorted list).
+      responses:
+        "200":
+          description: Recordings list (may be empty if ISNI has none linked).
+        "400":
+          description: Invalid ISNI.
+        "404":
+          description: ISNI not found.
+        "503":
+          description: Database unavailable.
+      summary: Get recordings for an ISNI
+      description: Returns the full ISRC list for an ISNI's recordings, paginated and
+        enriched with recording title, artist names, ISWC, and songwriters.
+        Walks `mb_artist_isnis → mb_artist_credits → mb_recordings → mb_isrcs`,
+        dedupes by ISRC, and joins `isrc_index` for metadata. Use `?limit=5000`
+        for catalog dumps.
+  /v1/isrc/{isrc}:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: isrc
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Z]{2}[A-Z0-9]{3}\d{7}$
+            example: GBAYE0601498
+          description: 12-character ISRC (dashes/spaces stripped before validation).
+            Response fields are **snake_case** (`recording_title`, …).
+      responses:
+        "400":
+          description: Invalid or missing ISRC
+        "404":
+          description: ISRC not found
+        "503":
+          description: Database unavailable
+      summary: Get ISRC
+      description: "**Canonical ISRC URL.** Default: flat **`IsrcDetailResponse`**
+        plus optional contribution hints. With graph query keys (**`graph=1`**,
+        **`include`**, **`limit`**, …): Music Identity graph (legacy **`GET
+        /v1/recordings/{isrc}`** **308**s here) **plus the same flat scalar
+        fields** (songwriters, performers, MLC fields, sources, …) so graph mode
+        is a superset of the flat document."
+  /v1/isrc/{isrc}/mlc-live:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: isrc
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Z]{2}[A-Z0-9]{3}\d{7}$
+            example: USRC12003364
+          description: 12-character ISRC
+        - in: query
+          name: refresh
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Bypass the 14-day cache and force a fresh MLC API call
+      responses:
+        "200":
+          description: "MLC works for this ISRC (source: cache | live | stale |
+            unavailable)"
+        "400":
+          description: Invalid ISRC
+        "503":
+          description: Database unavailable
+      summary: Live MLC Public Work Search by ISRC
+      description: 'Cache-aware live MLC Public Work Search lookup for this ISRC. This
+        is separate from the scheduled MLC Bulk Feed (Bulk Data Access)
+        pipeline, which enriches the shared index tables. Returns work(s) with
+        writer chains, ISWCs, publishers, and alternative titles. Cached 14 days
+        — pass `?refresh=true` to force a fresh MLC fetch. `source` is `cache` |
+        `live` | `stale` | `unavailable`. An empty `works` array means no MLC
+        registration (or MLC is temporarily unavailable — `source:
+        "unavailable"`). Always 200 unless the database is unavailable.'
+  /v1/isrc/{isrc}/relationships:
+    get:
+      tags:
+        - Relationships
+      parameters:
+        - in: path
+          name: isrc
+          required: true
+          schema:
+            type: string
+            example: USUM71710485
+          description: 12-character ISRC
+        - in: query
+          name: type
+          required: false
+          schema:
+            type: string
+          description: Filter to one relation_type (cover, sample, interpolation, ...).
+            Omit for all.
+        - in: query
+          name: direction
+          required: false
+          schema:
+            type: string
+            enum:
+              - from
+              - to
+              - both
+            default: both
+          description: Relationship direction relative to the ISRC
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Aggregated relationships with source attribution
+        "400":
+          description: Invalid ISRC or query param
+        "503":
+          description: Database unavailable
+      summary: Get typed relationships for an ISRC
+      description: Returns directed typed relationships (cover / sample /
+        interpolation / translation / medley / remix / live / etc.) involving
+        this ISRC. Each relationship is sourced from one or more upstream
+        catalogs (MusicBrainz, SecondHandSongs, Discogs, etc.) — aggregated rows
+        include the union of sources backing the relationship.
+  /v1/iswc/{iswc}:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: iswc
+          required: true
+          schema:
+            type: string
+            example: T-010434240-6
+          description: ISWC in **`T-#########-#`** form or compact **`T##########`**
+            (normalized server-side). Response fields are **snake_case**
+            (`song_title`, `isrc_count`, …).
+      responses:
+        "400":
+          description: Invalid or missing ISWC
+        "404":
+          description: ISWC not found
+        "503":
+          description: Database unavailable
+      summary: Get ISWC
+      description: "**Canonical ISWC URL.** Without graph query keys: flat
+        **`IswcDetailResponse`** (snake_case) plus optional contribution hints.
+        With **`graph=1`** or **`include`** / **`relationships`** / **`limit`**
+        / **`offset`** / **`depth`**: Music Identity **graph** JSON (same
+        behavior as legacy **`GET /v1/songs/{iswc}`**, which **308**s to this
+        path), **including flat work fields** (`songwriters`,
+        `songwriter_count`, `isrc_count`, `updated_at`, …) alongside
+        relationship arrays."
+  /v1/iswc/{iswc}/related-works:
+    get:
+      tags:
+        - Compositions
+      parameters:
+        - in: path
+          name: iswc
+          required: true
+          schema:
+            type: string
+            example: T-928-760-686-4
+          description: ISWC in T-#########-# or compact T########## form. Normalized
+            server-side.
+      responses:
+        "200":
+          description: Related-works group including this ISWC.
+        "400":
+          description: Invalid ISWC.
+        "404":
+          description: ISWC not found in any group.
+        "503":
+          description: Database unavailable.
+      summary: Get related-works group for ISWC
+      description: Returns the related-works group containing this ISWC. A group
+        groups ISWCs and MLC Song Codes that represent the same musical work.
+        404 when the ISWC is in our index but not yet grouped (no duplicate
+        registrations found).
+  /v1/iswc/{iswc}/relationships:
+    get:
+      tags:
+        - Relationships
+      parameters:
+        - in: path
+          name: iswc
+          required: true
+          schema:
+            type: string
+            example: T-928-760-686-4
+          description: ISWC in T-#########-# or T########## form
+        - in: query
+          name: type
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Aggregated relationships with source attribution
+        "400":
+          description: Invalid ISWC or query param
+        "503":
+          description: Database unavailable
+      summary: Get typed relationships for an ISWC
+      description: Returns directed typed relationships involving any ISRC tied to
+        this ISWC. Relationships are sourced from one or more upstream catalogs
+        (MusicBrainz, SecondHandSongs, Discogs).
+  /v1/jobs/{job_id}:
+    get:
+      tags:
+        - Enrich
+      parameters:
+        - in: path
+          name: job_id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Key-scoped job state, counters, events, and result
+        "401":
+          description: API key required or invalid
+        "404":
+          description: Job not found for this API key
+      summary: Get an Enrich job
+      security:
+        - ApiKeyAuth: []
+  /v1/jobs:
+    get:
+      tags:
+        - Enrich
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 25
+      responses:
+        "200":
+          description: Recent jobs belonging to the supplied API key
+        "401":
+          description: API key required or invalid
+      summary: List recent Enrich jobs
+      security:
+        - ApiKeyAuth: []
+  /v1/keys:
+    options:
+      tags:
+        - App Routes
+      parameters: []
+      responses:
+        "200":
+          description: OK
+    post:
+      tags:
+        - API keys
+      parameters: []
+      responses:
+        "201":
+          description: Key created (key, prefix, name, created_at, limits)
+        "400":
+          description: Invalid body
+        "409":
+          description: Max keys per email exceeded
+        "429":
+          description: Too many key creation requests from this IP
+        "503":
+          description: Database unavailable
+      summary: Create API key
+      description: Create the API key required by `POST /v1/contribute` (name and
+        email required). Verify, Crowd, and Compute do not need a key. Returns
+        the raw `cfm_` key once — store it securely. Max 3 active keys per
+        email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+              properties:
+                name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                email:
+                  type: string
+                  format: email
+                contributor_name:
+                  type: string
+                contributor_url:
+                  type: string
+                  format: uri
+  /v1/lookup:
+    get:
+      tags:
+        - Lookup
+      parameters:
+        - in: query
+          name: url
+          required: true
+          schema:
+            type: string
+            format: uri
+          description: Spotify or Apple Music URL
+      responses:
+        "200":
+          description: Resolved track, album, or artist hint
+        "400":
+          description: Missing or unsupported URL
+        "404":
+          description: Resource not found on platform
+        "500":
+          description: Internal error
+        "503":
+          description: Spotify not configured or unavailable
+      summary: Resolve URL (Spotify / Apple Music)
+      description: Resolve Spotify or Apple Music URLs to track/album metadata and
+        identifiers. Spotify requires client credentials; ISRC backfill uses
+        Supabase when set (`NITRO_PUBLIC_BASE_URL` for credits links).
+  /v1/mcp:
+    delete:
+      tags:
+        - MCP
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: MCP session teardown (DELETE)
+      description: JSON-RPC session cleanup when supported.
+    get:
+      tags:
+        - MCP
+      parameters:
+        - in: header
+          name: Accept
+          required: false
+          schema:
+            type: string
+          description: Use `text/html` to redirect to Scalar `/docs`
+      responses:
+        "200":
+          description: JSON MCP metadata
+        "302":
+          description: Redirect to /docs when Accept is text/html
+      summary: MCP discovery (GET)
+      description: "Without `Accept: text/html`, returns JSON transport metadata
+        (`protocolVersion`, `apiBase: /v1`). With `Accept: text/html`, redirects
+        to **/docs** (Scalar)."
+    options:
+      tags:
+        - MCP
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: MCP CORS preflight (OPTIONS)
+    post:
+      tags:
+        - MCP
+      parameters: []
+      responses:
+        "200":
+          description: JSON-RPC result object, array of results, or JSON-RPC error
+        "204":
+          description: No content (e.g. notification with no reply)
+      summary: MCP JSON-RPC over HTTP
+      description: "Model Context Protocol (stateless). POST JSON-RPC 2.0:
+        `initialize`, `tools/list`, `tools/call`. Tools call this host's REST
+        API under **/v1/**. Optional **x-api-key** header for higher rate
+        limits. Lookup tools include contribution nudges by default; pass
+        **`contribute: false`** in tool arguments to opt out."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: Single JSON-RPC object or an array of requests (batch)
+              oneOf:
+                - type: object
+                  required:
+                    - jsonrpc
+                    - method
+                  properties:
+                    jsonrpc:
+                      type: string
+                      enum:
+                        - "2.0"
+                    id: {}
+                    method:
+                      type: string
+                    params:
+                      type: object
+                      additionalProperties: true
+                - type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+  /v1/me:
+    get:
+      tags:
+        - Contributions
+      parameters:
+        - in: query
+          name: session_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Your earned tier and contribution totals
+        "503":
+          description: Database unavailable
+      summary: Your Credits Compute status
+      description: Returns your earned Credits Compute tier and contribution totals.
+        Identify with an API key (`x-api-key`) and/or an anonymous compute
+        session (`?session_id=`). Contributing verified work raises your `tier`.
+  /v1/me/claims:
+    get:
+      tags:
+        - Account & Claims
+      parameters:
+        - in: query
+          name: session_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Your claims
+        "400":
+          description: Missing or invalid session_id
+        "429":
+          description: Rate limit exceeded
+        "503":
+          description: Database unavailable
+      summary: List your claims
+      description: The identifiers claimed by your compute session (`?session_id=` or
+        `x-compute-session` header), each with its `verification` trust signal
+        (`unverified` | `compute_verified` | `owner_verified`).
+    post:
+      tags:
+        - Account & Claims
+      parameters: []
+      responses:
+        "200":
+          description: Already claimed (idempotent)
+        "201":
+          description: Claim created
+        "400":
+          description: Invalid session, type, or code
+        "404":
+          description: Code not found in the Credits index
+        "409":
+          description: Claim cap (24) reached
+        "429":
+          description: Rate limit exceeded
+        "503":
+          description: Database unavailable
+      summary: Claim an identifier
+      description: "Add an identifier code to your personal Credits Graph (`GET
+        /v1/me/graph`). No API key — identify with your compute `session_id`
+        (body, query, or `x-compute-session` header). The code must exist in the
+        Credits index; up to 24 claims per session. Idempotent: re-claiming
+        answers `200` with the stored claim. Claiming is open — `verification`
+        (`unverified` | `compute_verified` | `owner_verified`) is a separate
+        trust signal derived from your earned Credits Compute tier, never a
+        gate."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - code
+              properties:
+                session_id:
+                  type: string
+                  format: uuid
+                  description: Compute session (also accepted via ?session_id= or
+                    x-compute-session header)
+                type:
+                  type: string
+                  enum:
+                    - isrc
+                    - iswc
+                    - ipi
+                    - isni
+                    - upc
+                    - musician
+                code:
+                  type: string
+                  description: "Identifier code (musician: MusicBrainz MBID)"
+  /v1/me/claims/{code}:
+    delete:
+      tags:
+        - Account & Claims
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: type
+          required: false
+          schema:
+            type: string
+            enum:
+              - isrc
+              - iswc
+              - ipi
+              - isni
+              - upc
+              - musician
+        - in: query
+          name: session_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: "Removed (removed: n; 0 when nothing matched)"
+        "400":
+          description: Invalid session, type, or code
+        "429":
+          description: Rate limit exceeded
+        "503":
+          description: Database unavailable
+      summary: Remove a claim
+      description: "Remove an identifier from your personal graph. Pass `?type=` to
+        disambiguate; without it the code is removed under every claim type
+        whose normalization matches. Idempotent — `removed: 0` still answers
+        `200`."
+  /v1/me/graph:
+    get:
+      tags:
+        - Account & Claims
+      parameters:
+        - in: query
+          name: session_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Compute session (or x-compute-session header)
+        - in: query
+          name: depth
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 2
+          description: Hops beyond your claimed codes (default 1)
+      responses:
+        "200":
+          description: "Personal graph: root, claims (with gaps), nodes[], connections[],
+            stats"
+        "400":
+          description: Missing or invalid session_id
+        "429":
+          description: Rate limit exceeded
+        "503":
+          description: Database unavailable
+      summary: Your personal Credits Graph
+      description: "The subgraph around YOUR claimed identifiers (see `POST
+        /v1/me/claims`): one seeded traversal across every claim, a synthetic
+        `you` root node at hop 0 with `kind: claim` connections to your codes,
+        and a per-claim `gaps` summary — `verified`, `single_source`,
+        `verifiable` (fixable right now via Credits Compute), and `no_match`
+        (verified absences). Zero claims still answers `200` with just the `you`
+        node and a hint. `depth` 1–2 (default 1). The connection array is
+        `connections`; `edges` is a deprecated alias."
+  /v1/mlc/{code}/related-works:
+    get:
+      tags:
+        - Compositions
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+            example: NVCBR5
+          description: MLC Song Code, e.g. NVCBR5 (case-insensitive).
+      responses:
+        "200":
+          description: Related-works group including this MLC Song Code.
+        "400":
+          description: Invalid MLC Song Code.
+        "404":
+          description: MLC Song Code not found in any group.
+        "503":
+          description: Database unavailable.
+      summary: Get related-works group for MLC Song Code
+      description: Returns the related-works group containing this MLC Song Code. A
+        group groups MLC Song Codes and ISWCs that represent the same musical
+        work. 404 when the code is not part of any group (i.e. no detected
+        duplicate registrations).
+  /v1/musician/{mbid}:
+    get:
+      tags:
+        - Music Identity
+      parameters:
+        - in: path
+          name: mbid
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 000002a0-8f8a-4320-ac61-7f60e8b44f32
+          description: MusicBrainz artist ID
+      responses:
+        "200":
+          description: Musician profile
+        "400":
+          description: Invalid MBID format
+        "404":
+          description: Musician not found
+        "503":
+          description: Service unavailable
+      summary: Get musician by MBID
+      description: "Full musician profile by MBID (credits.fm parity): nested artist,
+        unified credits, releases, Spotify supplement when configured."
+  /v1/musician/{mbid}/publisher-links:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: mbid
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 000002a0-8f8a-4320-ac61-7f60e8b44f32
+        - in: query
+          name: role
+          required: false
+          schema:
+            type: string
+            enum:
+              - RightsAdministrator
+              - OriginalPublisher
+              - SubPublisher
+              - SubstitutedPublisher
+        - in: query
+          name: include
+          required: false
+          schema:
+            type: string
+            enum:
+              - gaps
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Ranked publisher-links list
+        "400":
+          description: Invalid parameters
+        "404":
+          description: Musician not found
+        "503":
+          description: Database unavailable
+      summary: Publisher links for a musician (MBID)
+      description: Aggregates publisher-links data across every IPI linked to the
+        musician via mb_artist_ipis. Returns a unioned, ranked publisher list
+        plus per-contributing-IPI breakdown. Optional gap flags identify ISRCs
+        where the top RightsAdministrator is missing across the musician's full
+        catalog.
+  /v1/musician/{mbid}/registration-eligibility:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: mbid
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 000002a0-8f8a-4320-ac61-7f60e8b44f32
+        - in: query
+          name: only
+          required: false
+          schema:
+            type: string
+            enum:
+              - eligible
+              - ineligible
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Eligibility verdicts per ISRC
+        "400":
+          description: Invalid parameters
+        "404":
+          description: Musician not found
+        "503":
+          description: Database unavailable
+      summary: Registration eligibility for a musician (MBID)
+      description: Per-song verdict (eligible | ineligible) aggregated across every
+        IPI linked to the MBID via mb_artist_ipis. Gated on the
+        verified_publishers table.
+  /v1/ownership/analyze-data:
+    post:
+      tags:
+        - Ownership
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Songwriter analysis on caller-supplied matched_songs (no fetch)
+  /v1/ownership/analyze:
+    post:
+      tags:
+        - Ownership
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Songwriter analysis across ISRCs
+      description: "Live MLC analysis: every songwriter across the ISRCs with
+        per-songwriter song_count, walking interested_parties. Sourced from the
+        Notes Credits API (batched). For catalog songwriter aggregation
+        (notes-api collaborators, fast index reads), use POST /v1/songwriters
+        instead — do not call this route for that job."
+  /v1/ownership/ip-chains-data:
+    post:
+      tags:
+        - Ownership
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Broken IP-chain detection on caller-supplied matched_songs (no fetch)
+  /v1/ownership/ip-chains:
+    post:
+      tags:
+        - Ownership
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Broken IP-chain detection for a writer across ISRCs
+  /v1/ownership/representation-data:
+    post:
+      tags:
+        - Ownership
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Representation verdict on caller-supplied matched_songs (no fetch)
+  /v1/ownership/representation:
+    post:
+      tags:
+        - Ownership
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Songwriter representation check across ISRCs
+  /v1/ownership/search-data:
+    post:
+      tags:
+        - Ownership
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Songwriter name search on caller-supplied matched_songs (no fetch)
+  /v1/ownership/search:
+    post:
+      tags:
+        - Ownership
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Songwriter name search with representation analysis
+      description: "Live MLC analysis: writers matching name, hierarchically-connected
+        trusted publishers, and per-song representation flags. Sourced from the
+        Notes Credits API (batched). For publishers nested under a writer across
+        a catalog (notes-api musician merge), use POST /v1/publishers with
+        writer_name instead — do not call this route for that job."
+  /v1/publishers:
+    post:
+      tags:
+        - Catalog
+      parameters: []
+      responses:
+        "200":
+          description: Aggregated publishers for the writer
+        "400":
+          description: Invalid body
+        "503":
+          description: Database unavailable
+      summary: Find publishers for a writer across recordings
+      security: []
+      description: Catalog publisher aggregation (notes-api musician publisher merge
+        and similar). Given a writer name (fuzzy matched, typically the last
+        name) and a set of ISRCs, returns the publishers credited under that
+        writer across those recordings, each with an isrc_count. Reads
+        isrc_index.songwriters JSONB nesting — not a live MLC trusted-publisher
+        walk. Same shape as `related_entities` on GET /v1/ipi/{ipi}. Body field
+        is writer_name (`name` returns 400). ISRCs are uppercased, stripped of
+        separators, deduped, and capped at 1000. Do not use POST
+        /v1/ownership/search for this job.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                writer_name:
+                  type: string
+                  description: Writer name, fuzzy matched (typically last name)
+                isrcs:
+                  type: array
+                  items:
+                    type: string
+                  description: Catalog ISRCs (normalized + deduped, capped at 1000)
+              required:
+                - writer_name
+                - isrcs
+  /v1/publishers/{ipi}/catalog:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: ipi
+          required: true
+          schema:
+            type: string
+            pattern: ^\d{9,11}$
+            example: "01138884620"
+        - in: query
+          name: role
+          required: false
+          schema:
+            type: string
+            enum:
+              - RightsAdministrator
+              - OriginalPublisher
+              - SubPublisher
+              - SubstitutedPublisher
+        - in: query
+          name: include
+          required: false
+          schema:
+            type: string
+            enum:
+              - issues
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Publisher catalog
+        "400":
+          description: Invalid parameters
+        "404":
+          description: No catalog found for this IPI / role
+        "503":
+          description: Database unavailable
+      summary: Get publisher catalog with optional audit flags
+      description: Returns every ISRC where the given publisher IPI is credited
+        (optionally filtered by role). Pass include=issues to get per-song
+        data-quality flags (missing_iswc, missing_mlc_code, missing_sw_ipi) and
+        summary counts.
+  /v1/publishers/{ipi}/musicians:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: ipi
+          required: true
+          schema:
+            type: string
+            pattern: ^\d{9,11}$
+            example: "01138884620"
+        - in: query
+          name: role
+          required: false
+          schema:
+            type: string
+            enum:
+              - RightsAdministrator
+              - OriginalPublisher
+              - SubPublisher
+              - SubstitutedPublisher
+              - all
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Musicians for the publisher
+        "400":
+          description: Invalid parameters
+        "404":
+          description: Publisher has no matching songs
+        "503":
+          description: Database unavailable
+      summary: Musicians administered by a publisher
+      description: "Reverse lookup: given a publisher IPI, returns the ranked list of
+        songwriters/musicians they work with, with per-musician song counts.
+        Default role filter is RightsAdministrator (the most BI-relevant slice).
+        Use role=all for no filter. MBIDs resolved via mb_artist_ipis when
+        available."
+  /v1/publishers/search:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 2
+        - in: query
+          name: role
+          required: false
+          schema:
+            type: string
+            enum:
+              - RightsAdministrator
+              - OriginalPublisher
+              - SubPublisher
+              - SubstitutedPublisher
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Publisher search results
+        "400":
+          description: Invalid query parameters
+        "503":
+          description: Database unavailable
+      summary: Search publishers by name
+      description: Returns publisher entities matching a name fragment, aggregated
+        from ipi_isrc_mappings. Each item carries role counts
+        (RightsAdministrator, OriginalPublisher, SubPublisher,
+        SubstitutedPublisher) and distinct song count across any role.
+        Optionally filter by a single publisher role.
+  /v1/related-works/{id}:
+    get:
+      tags:
+        - Compositions
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            example: ISWC:T9287606864
+          description: Deterministic group ID. Either `ISWC:<min iswc>` or `MLC:<min
+            mlc_song_code>`.
+      responses:
+        "200":
+          description: Related-works group with full member list.
+        "400":
+          description: Invalid group ID format.
+        "404":
+          description: Related-works group not found.
+        "503":
+          description: Database unavailable.
+      summary: Get related-works group by ID
+      description: Returns the full related-works group — head + every member ISWC and
+        MLC Song Code. Groups group identifiers that represent the same
+        underlying musical work. Built nightly from MLC Song Code collisions,
+        CISAC redirects, MusicBrainz works, and title/writer similarity.
+  /v1/resolve/batch:
+    post:
+      tags:
+        - Resolve
+      parameters: []
+      responses:
+        "200":
+          description: Batch results
+        "400":
+          description: Invalid body
+        "503":
+          description: Database unavailable
+      summary: Batch resolve tracks to ISRCs
+      description: Up to 50 { name, artist } pairs. Returns total, resolved count, and
+        per-row credits_url when ISRC found.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tracks:
+                  type: array
+                  maxItems: 50
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      artist:
+                        type: string
+  /v1/resolve/songwriter:
+    post:
+      tags:
+        - Resolve
+      parameters: []
+      responses:
+        "200":
+          description: Resolved songwriter (single match with publishers, or
+            disambiguation list)
+        "400":
+          description: Invalid body
+        "503":
+          description: Database unavailable
+      summary: Resolve songwriter name to IPI
+      description: Given a songwriter name and ISRCs/ISWCs for context, searches
+        isrc_index.songwriters to find matching IPIs. If exactly one IPI
+        matches, returns publisher data inline. If multiple match, returns a
+        disambiguation list.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Songwriter name (fuzzy matched)
+                isrcs:
+                  type: array
+                  items:
+                    type: string
+                  description: ISRCs of songs they're credited on (max 500)
+                iswcs:
+                  type: array
+                  items:
+                    type: string
+                  description: ISWCs of works they're credited on (max 100)
+              required:
+                - name
+  /v1/resolve/track:
+    post:
+      tags:
+        - Resolve
+      parameters: []
+      responses:
+        "400":
+          description: Missing required body fields
+        "500":
+          description: Unexpected server error
+        "503":
+          description: Database unavailable
+        "504":
+          description: Resolve exceeded time budget (try again)
+      summary: Resolve single track to ISRC and credits
+      description: "Resolve by name+artist, DSP URL, or a Spotify/Apple Music DSP
+        resource id. When name/artist accompanies a DSP identity, verifies the
+        exact recording and returns `recording_match: false` instead of
+        attaching the wrong recording's ISRC. Otherwise returns ISRC and credits
+        when found, or 200 with `isrc: null`."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                artist:
+                  type: string
+                spotify_url:
+                  type: string
+                  format: uri
+                apple_music_url:
+                  type: string
+                  format: uri
+                dsp:
+                  type: string
+                  enum:
+                    - spotify
+                    - apple_music
+                  description: Required only for a bare DSP ID
+                dsp_resource_id:
+                  type: string
+                  description: Raw BWARM identifier (`spotify::spotify:track:…`, `applemusic::…`)
+                    or a bare track/song ID with `dsp`
+                unmatched_resource_record_id:
+                  type: string
+                  description: BWARM UnmatchedResourceRecordId; echoed with a stable per-resource
+                    key
+                contribute:
+                  type: boolean
+                  description: Include missing_fields + contribute_url when gaps exist (default
+                    true). Set false to opt out.
+  /v1/samples:
+    get:
+      tags:
+        - Discovery
+      parameters: []
+      responses:
+        "200":
+          description: Arrays of sample identifiers per type
+        "503":
+          description: Database unavailable
+      summary: Sample identifiers
+      description: "Returns up to ten IDs per type: curated working examples first,
+        then richer index rows (isrcs, iswcs, ipis, isnis, upcs, mbids) for
+        building detail URLs."
+  /v1/search:
+    get:
+      tags:
+        - Search
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: Search text or identifier (canonicalized server-side)
+        - in: query
+          name: type
+          required: false
+          schema:
+            type: string
+            enum:
+              - auto
+              - isrc
+              - iswc
+              - ipi
+              - isni
+              - upc
+              - musician
+              - all
+            default: auto
+          description: Which buckets to search (default auto)
+        - in: query
+          name: match
+          required: false
+          schema:
+            type: string
+            enum:
+              - default
+              - recording_title
+            default: default
+          description: "`recording_title`: title/song columns only for ISRC bucket (no
+            artist-name catalog path); with type auto/all, other buckets are
+            skipped unless the query looks like a specific code."
+        - in: query
+          name: exclude_lyrics
+          required: false
+          schema:
+            type: string
+            enum:
+              - "true"
+              - "false"
+              - "1"
+              - "0"
+          description: When true, ISRC hits skip lyrics-indexed / broad text paths
+            (title-focused ranking).
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - in: query
+          name: engine
+          required: false
+          schema:
+            type: string
+            enum:
+              - pg
+              - typesense
+          description: Search engine for fuzzy text queries. Default follows
+            `NITRO_USE_TYPESENSE`. `typesense` forces Typesense for this request
+            when server permits override; `pg` forces PostgreSQL. Engine applies
+            to every text-search `type` (`auto`, `all`, `isrc`, `iswc`, `ipi`,
+            `isni`, `upc`); the `musician` bucket and exact identifier
+            (ISRC/ISWC/IPI/ISNI/UPC) lookups always use PG. When Typesense
+            answers a bucket, the per-bucket PG branch is skipped to avoid the
+            12s tsquery ceiling.
+        - in: query
+          name: entity_type
+          required: false
+          schema:
+            type: string
+          description: Comma-separated list. Filters IPI / ISNI buckets by `entity_type`
+            (e.g. `musician,publisher`). Typesense path only.
+        - in: query
+          name: roles
+          required: false
+          schema:
+            type: string
+          description: Comma-separated list. Filters IPI / ISNI buckets by `roles`
+            (any-of). Typesense path only.
+        - in: query
+          name: release_year_min
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Lower bound on `release_year` for ISRC + UPC buckets. Typesense
+            path only.
+        - in: query
+          name: release_year_max
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Upper bound on `release_year` for ISRC + UPC buckets. Typesense
+            path only.
+        - in: query
+          name: min_isrc_count
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Minimum `isrc_count` for ISWC / IPI / ISNI / UPC buckets. Typesense
+            path only.
+        - in: query
+          name: source
+          required: false
+          schema:
+            type: string
+          description: Comma-separated list. Filters ISRC bucket by primary `source` (e.g.
+            `mlc,musicbrainz`). Typesense path only.
+        - in: query
+          name: type_label
+          required: false
+          schema:
+            type: string
+          description: Comma-separated list. Filters musicians bucket by `type_label`
+            (`group` | `person`). Title-cased server-side to match stored
+            values; Typesense path only.
+        - in: query
+          name: sort_by
+          required: false
+          schema:
+            type: string
+            enum:
+              - relevance
+              - isrc_count
+              - recent
+              - title
+            default: relevance
+          description: Per-bucket sort applied on the Typesense path. `recent` only for
+            ISRC/UPC; other buckets fall back to relevance.
+        - in: query
+          name: facets
+          required: false
+          schema:
+            type: string
+            enum:
+              - "true"
+              - "false"
+              - "1"
+              - "0"
+          description: When truthy on the Typesense path, response carries a `meta` block
+            with per-bucket facet counts + `search_time_ms` + `found` totals.
+        - in: query
+          name: nocache
+          required: false
+          schema:
+            type: string
+          description: "Skip public CDN cache (aliases: no_cache, fresh)"
+      responses:
+        "200":
+          description: Bucketed hits; optional linkResult, warnings
+        "400":
+          description: Invalid query (bad type, limit, offset window, …)
+        "503":
+          description: Database unavailable
+      summary: Unified identifier search
+  /v1/songwriters:
+    post:
+      tags:
+        - Catalog
+      parameters: []
+      responses:
+        "200":
+          description: Aggregated songwriters
+        "400":
+          description: Invalid body
+        "503":
+          description: Database unavailable
+      summary: Aggregate songwriters across recordings
+      security: []
+      description: Catalog songwriter aggregation (notes-api collaborators and
+        similar). Given a set of ISRCs, returns the distinct songwriters
+        credited across them, each with a song_count (distinct ISRCs the writer
+        appears on within the input). Reads isrc_index.songwriters JSONB — not a
+        live MLC fetch. ISRCs are uppercased, stripped of separators, deduped,
+        and capped at 1000. Publishers are not nested — use POST /v1/publishers.
+        Do not use POST /v1/ownership/analyze for this job.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isrcs:
+                  type: array
+                  items:
+                    type: string
+                  description: Catalog ISRCs (normalized + deduped, capped at 1000)
+              required:
+                - isrcs
+  /v1/suggest:
+    get:
+      tags:
+        - Search
+      parameters:
+        - in: query
+          name: q
+          required: false
+          schema:
+            type: string
+            minLength: 2
+          description: Search string (min 2 chars)
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 25
+          description: Max suggestions (default 10); 0 = bounded window fill
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Skip N suggestions; offset + limit ≤ 100 (default 0)
+        - in: query
+          name: nocache
+          required: false
+          schema:
+            type: string
+          description: Skip CDN cache (1/true/yes); aliases no_cache, fresh
+      responses:
+        "200":
+          description: Suggestions array (empty when q too short or DB unavailable)
+      summary: Autocomplete suggestions
+      description: Fast autocomplete across ISRC, ISWC, IPI, ISNI, UPC and musicians.
+        Min 2 characters. limit default 10; limit 0 fills bounded window.
+  /v1/typeahead:
+    get:
+      tags:
+        - Search
+      parameters:
+        - in: query
+          name: q
+          required: false
+          schema:
+            type: string
+            minLength: 2
+          description: Search string (min 2 chars after trim)
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 25
+            default: 10
+          description: Max suggestions returned after interleaving (default 10)
+        - in: query
+          name: nocache
+          required: false
+          schema:
+            type: string
+          description: Skip CDN cache (1/true/yes); aliases no_cache, fresh
+      responses:
+        "200":
+          description: Suggestions array (empty when q too short or DB unavailable)
+      summary: Cross-collection typeahead (Typesense-backed)
+      description: Prefix + typo-tolerant autocomplete across recordings, songs,
+        releases, publishers/writers, and artists. Response shape matches
+        /v1/suggest so the frontend dropdown can route both endpoints through
+        the same parser. Falls back to PG `/v1/suggest` when Typesense isn't
+        configured.
+  /v1/upc/{upc}:
+    get:
+      tags:
+        - Lookups
+      parameters:
+        - in: path
+          name: upc
+          required: true
+          schema:
+            type: string
+            pattern: ^\d{12,14}$
+            example: "602445790098"
+          description: 12–14 digit UPC / EAN (**digits only** in the path). No
+            contribution hints on flat release rows.
+      responses:
+        "200":
+          description: Flat **`upc_index`** row (snake_case) or Music Identity release
+            graph when graph query keys are used.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        "400":
+          description: Invalid or missing UPC
+        "404":
+          description: UPC not found
+        "503":
+          description: Database unavailable
+      summary: Get UPC
+      description: "**Canonical UPC URL.** Default: release summary from `upc_index`.
+        With **`graph=1`** or graph query keys: Music Identity graph (same as
+        legacy **`GET /v1/releases/{upc}`**)."
+  /v1/validate/batch:
+    options:
+      tags:
+        - App Routes
+      parameters: []
+      responses:
+        "200":
+          description: OK
+    post:
+      tags:
+        - Validate
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Batch ISRC validation
+      description: Validate ISRCs against index + Notes Credits API. Optional
+        include_dsp_check cross-references Spotify and Apple Music when
+        credentials are configured. ?format=csv returns CSV.
+  /v1/verify/{type}/{code}:
+    get:
+      tags:
+        - Verify
+      parameters:
+        - in: path
+          name: type
+          required: true
+          schema:
+            type: string
+            enum:
+              - isrc
+              - iswc
+              - ipi
+              - isni
+              - upc
+            example: isrc
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+            example: GBAYE0601498
+        - in: query
+          name: raw
+          required: false
+          schema:
+            type: string
+            enum:
+              - "1"
+          description: Include raw per-adapter results
+      responses:
+        "200":
+          description: Verify result
+        "400":
+          description: Invalid type or code format
+      summary: Multi-source identifier verification
+      description: "Use this to inspect evidence, not to submit a new value. Fans out
+        to every configured source supporting the identifier type and returns
+        per-field `{ value, verified, agreeing_sources, disagreeing_sources }`,
+        `overall_level` (`unverified`, `single_source`, `verified`, or
+        `conflicted`), and `linked_identifiers` with edge provenance. A field is
+        verified when ≥2 independent sources agree. Unavailable adapters do not
+        count as negative evidence. The request records the verification attempt
+        and observed conflicts. Use `POST /v1/contribute` when your integration
+        already has sourced data. Full workflow:
+        `docs/VERIFY_AND_CONTRIBUTE.md`."
+  /v1/verify/batch:
+    post:
+      tags:
+        - Verify
+      parameters: []
+      responses:
+        "200":
+          description: OK
+      summary: Batch multi-source verification
+      description: Run the same evidence inspection as `GET /v1/verify/:type/:code`
+        for up to 100 `{ type, code }` items. This does not submit
+        caller-supplied values. Invalid entries are returned inline as `{ error,
+        input }`, preserving input order. Use `POST /v1/contribute` when your
+        integration already has sourced metadata or a link.
+  /docs:
+    get:
+      tags:
+        - App Routes
+      parameters: []
+      responses:
+        "200":
+          description: OK
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Credits.fm API key (`cfm_` prefix). Issue via POST /v1/keys or on
+        credits.fm.
+tags:
+  - name: Discovery
+    description: Service JSON (`GET /`), samples, MCP doc redirect.
+  - name: Health
+    description: Liveness (`/healthz`, `/v1/health`) and public coverage metrics.
+  - name: Search
+    description: Unified search and autocomplete (`/v1/search`, `/v1/suggest`).
+  - name: Lookup
+    description: Platform URL resolution (`/v1/lookup`).
+  - name: Lookups
+    description: Identifier detail routes (ISRC, ISWC, IPI, ISNI, UPC) and related
+      sub-resources.
+  - name: Music Identity
+    description: Graph discovery (`GET /v1/identity`) and bucketed search (`GET
+      /v1/graph/search`).
+  - name: Batch
+    description: Batch identifier fetch (`POST /v1/batch`).
+  - name: Resolve
+    description: Track/songwriter resolution helpers.
+  - name: Validate
+    description: ISRC validation against registry data.
+  - name: Verify
+    description: Multi-source identifier verification.
+  - name: Audit
+    description: Share and unmatched audits (JSON/CSV).
+  - name: Contributions
+    description: Authenticated data contributions (`POST /v1/contribute`).
+  - name: Crowd verification
+    description: "Anonymous one-tap field verification (`GET /v1/crowd/task`, `POST
+      /v1/crowd/vote`). No API key — identify with a client-generated
+      `session_id` UUID. Hidden credit controls gate trust; consensus never
+      overwrites a canonical scalar. Guide: `docs/VERIFY_AND_CONTRIBUTE.md`."
+  - name: Credits Compute
+    description: "Anonymous candidate-matching work units (`GET /v1/compute/unit`,
+      `POST /v1/compute/result`) that earn higher rate limits and graph
+      entitlement. No API key — same `session_id` UUID as crowd. Status: `GET
+      /v1/me`. Guide: `docs/VERIFY_AND_CONTRIBUTE.md`."
+  - name: Account & Claims
+    description: "Your personal Credits Graph: claim identifiers against your
+      anonymous compute session (`POST /v1/me/claims`), read the claimed
+      subgraph with gap summaries (`GET /v1/me/graph`), and optionally persist
+      claims across devices with a passwordless email account (`/v1/account/*` —
+      availability reported by `account_sign_in` on `GET /v1/me`)."
+  - name: API keys
+    description: Issue API keys (`POST /v1/keys`).
+  - name: MCP
+    description: Model Context Protocol over Streamable HTTP (`/v1/mcp` —
+      unversioned `/mcp` aliases here).
+  - name: Cover art
+    description: Deprecated compatibility endpoint; artwork is excluded from public
+      API responses.
+  - name: Enrich
+    description: Keyed public-registry completion for ISRC, ISWC, IPI, ISNI, and
+      UPC. Every run performs the same bounded neighborhood walk and contributes
+      fill-only facts. Free for every valid Credits API key.
+  - name: App Routes
+    description: Nitro default bucket for untagged routes — should be empty; report
+      stray operations if you see this group.
+x-tagGroups:
+  - name: Canonical API (v1)
+    tags:
+      - Discovery
+      - Health
+      - Search
+      - Lookup
+      - Lookups
+      - Music Identity
+      - Batch
+      - Resolve
+      - Validate
+      - Verify
+      - Audit
+      - Contributions
+      - Crowd verification
+      - Credits Compute
+      - Account & Claims
+      - API keys
+      - MCP
+      - Cover art
+      - Enrich
+  - name: Infrastructure
+    tags:
+      - App Routes
