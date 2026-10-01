@@ -11,6 +11,9 @@ use App\Services\Metadata\CreditsFm\CreditsFmGateway;
 use App\Services\Metadata\CreditsFm\HttpCreditsFmGateway;
 use App\Services\Metadata\CreditsFm\RateLimitedCreditsFmGateway;
 use App\Services\Metadata\EnrichmentTelemetry;
+use App\Services\Metadata\MusicBrainz\HttpMusicBrainzGateway;
+use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
+use App\Services\Metadata\MusicBrainz\RateLimitedMusicBrainzGateway;
 use App\Services\Metadata\OpenTelemetryEnrichmentTelemetry;
 use App\Services\Music\ProviderRegistry;
 use App\Services\Music\YouTubeMusic\Gateway\RateLimitedGateway;
@@ -38,6 +41,10 @@ final class AppServiceProvider extends ServiceProvider
         $this->app->bind(EnrichmentTelemetry::class, OpenTelemetryEnrichmentTelemetry::class);
         $this->app->bind(CreditsFmGateway::class, fn (): CreditsFmGateway => new RateLimitedCreditsFmGateway(
             $this->app->make(HttpCreditsFmGateway::class),
+            $this->app->make(CallBudget::class),
+        ));
+        $this->app->bind(MusicBrainzGateway::class, fn (): MusicBrainzGateway => new RateLimitedMusicBrainzGateway(
+            $this->app->make(HttpMusicBrainzGateway::class),
             $this->app->make(CallBudget::class),
         ));
 
