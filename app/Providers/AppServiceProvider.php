@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models\User;
+use App\Services\Music\YouTubeMusic\Gateway\RateLimitedGateway;
 use App\Services\YouTubeMusic\CachedClient;
 use App\Services\YouTubeMusic\Client;
 use App\Services\YouTubeMusic\RateLimitedClient;
@@ -40,7 +41,7 @@ final class AppServiceProvider extends ServiceProvider
         // exists and that its quotas reset hourly. A person browsing makes a
         // few dozen calls a minute; this stays well under that, while the
         // hourly cap stops any runaway loop long before YouTube would.
-        RateLimiter::for(RateLimitedClient::LIMITER, fn (string $account): array => [
+        RateLimiter::for(RateLimitedGateway::LIMITER, fn (string $account): array => [
             Limit::perMinute(30)->by('youtube-music:minute:'.$account),
             Limit::perHour(500)->by('youtube-music:hour:'.$account),
         ]);

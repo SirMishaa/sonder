@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Services\YouTubeMusic;
+namespace App\Services\Music\YouTubeMusic;
 
 use WpOrg\Requests\Session;
 

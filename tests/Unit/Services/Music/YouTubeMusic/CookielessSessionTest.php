@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Services\YouTubeMusic\CookielessSession;
+use App\Services\Music\YouTubeMusic\CookielessSession;
 use WpOrg\Requests\Transport;
 
 it('never replays cookies a response set on a later request', function (): void {

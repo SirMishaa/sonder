@@ -7,6 +7,7 @@ namespace App\Services\YouTubeMusic;
 use App\Data\AccountData;
 use App\Data\PlaylistData;
 use App\Exceptions\YouTubeMusicException;
+use App\Services\Music\YouTubeMusic\CookielessSession;
 use Throwable;
 use Ytmusicapi\YTMusic;
 
