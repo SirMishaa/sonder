@@ -32,8 +32,9 @@ final class ResolveLibraryTracks implements ShouldQueue
 
     /**
      * @param  list<array{provider: string, externalId: string, title: string, artists: string, durationSeconds: int|null}>  $tracks
+     * @param  int  $budgetSeconds  how long one run may resolve before it hands the worker back
      */
-    public function __construct(public readonly array $tracks)
+    public function __construct(public readonly array $tracks, public readonly int $budgetSeconds = 30)
     {
         $this->queuedAt = now()->getTimestamp();
         $this->onQueue('enrichment');
@@ -56,27 +57,29 @@ final class ResolveLibraryTracks implements ShouldQueue
     {
         $pending = $this->unsettled();
 
-        if ($pending === []) {
-            return;
-        }
+        if ($pending !== []) {
+            try {
+                resolve(ResolveRecordings::class)->handle($pending, until: now()->addSeconds($this->budgetSeconds));
+            } catch (MetadataSourceRateLimited $exception) {
+                $this->release($exception->retryAfter);
 
-        try {
-            $recordings = resolve(ResolveRecordings::class)->handle($pending);
-        } catch (MetadataSourceRateLimited $exception) {
-            $this->release($exception->retryAfter);
+                return;
+            }
 
-            return;
-        }
+            if ($this->unsettled() !== []) {
+                $this->release(1);
 
-        foreach ($recordings as $recording) {
-            foreach (DescribeRecording::SOURCES as $source) {
-                EnrichRecording::dispatch($recording->id, $source);
+                return;
             }
         }
+
+        $this->describeResolved();
     }
 
     public function failed(Throwable $exception): void
     {
+        $this->describeResolved();
+
         foreach ($this->unsettled() as $track) {
             RecordingResolution::query()->updateOrCreate(
                 ['provider' => $track->provider, 'external_id' => $track->externalId],
@@ -87,6 +90,29 @@ final class ResolveLibraryTracks implements ShouldQueue
                     'next_attempt_at' => now()->addDay(),
                 ],
             );
+        }
+    }
+
+    /**
+     * Starts describing every recording the runs of this job resolved, once
+     * they are all done (earlier runs may have been released halfway).
+     */
+    private function describeResolved(): void
+    {
+        $recordingIds = RecordingResolution::query()
+            ->whereIn('external_id', array_column($this->tracks, 'externalId'))
+            ->where('status', ResolutionStatus::Resolved)
+            ->where('updated_at', '>=', now()->setTimestamp($this->queuedAt))
+            ->whereNotNull('recording_id')
+            ->get(['recording_id'])
+            ->map(fn (RecordingResolution $resolution): ?string => $resolution->recording_id)
+            ->filter()
+            ->unique();
+
+        foreach ($recordingIds as $recordingId) {
+            foreach (DescribeRecording::SOURCES as $source) {
+                EnrichRecording::dispatch($recordingId, $source);
+            }
         }
     }
 

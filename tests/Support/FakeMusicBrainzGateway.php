@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
+use App\Enums\MetadataSource;
+use App\Exceptions\Metadata\MetadataSourceRateLimited;
 use App\Services\Metadata\Data\TrackQuery;
 use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
 use Throwable;
@@ -23,6 +25,9 @@ final class FakeMusicBrainzGateway implements MusicBrainzGateway
     public array $artists = [];
 
     public ?Throwable $failure = null;
+
+    /** Refuses every call after this many, like Sonder's own one-call-a-second budget. */
+    public ?int $refuseAfterCalls = null;
 
     /** @var list<string> */
     public array $calls = [];
@@ -53,6 +58,10 @@ final class FakeMusicBrainzGateway implements MusicBrainzGateway
      */
     private function answer(string $call, ?array $payload): ?array
     {
+        if ($this->refuseAfterCalls !== null && count($this->calls) >= $this->refuseAfterCalls) {
+            throw new MetadataSourceRateLimited(MetadataSource::MusicBrainz, 1);
+        }
+
         $this->calls[] = $call;
 
         if ($this->failure instanceof Throwable) {

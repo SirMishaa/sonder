@@ -191,3 +191,53 @@ it('reports each resolution', function (): void {
 
     expect($this->telemetry->resolutions)->toBe([['status' => 'not_found', 'method' => null, 'confidence' => null]]);
 });
+
+it('accepts a search hit without a duration when it is the only full-score match', function (): void {
+    $this->musicBrainz->searches['Muse|Survival'] = studioSearchHit();
+
+    resolve(ResolveRecordings::class)->handle([survival(duration: null)]);
+
+    expect(RecordingResolution::query()->sole()->status)->toBe(ResolutionStatus::Resolved);
+});
+
+it('refuses to guess between full-score search hits when the duration is unknown', function (): void {
+    $this->musicBrainz->searches['Muse|Survival'] = metadataFixture('musicbrainz-recording-search');
+
+    resolve(ResolveRecordings::class)->handle([survival(duration: null)]);
+
+    expect(RecordingResolution::query()->sole()->status)->toBe(ResolutionStatus::NotFound);
+});
+
+it('rejects another song of the same artist when lengths cannot be compared', function (): void {
+    $this->creditsFm->isrcs['Muse|Survival'] = 'GBAHT0300001';
+    $this->musicBrainz->isrcs['GBAHT0300001'] = ['recordings' => [[
+        'id' => '22222222-2222-2222-2222-222222222222',
+        'title' => 'Hysteria',
+        'artist-credit' => [['name' => 'Muse', 'artist' => ['id' => '9c9f1380-2516-4fc9-a3e6-f9f61941d090', 'name' => 'Muse']]],
+    ]]];
+
+    resolve(ResolveRecordings::class)->handle([survival()]);
+
+    expect(RecordingResolution::query()->sole()->status)->toBe(ResolutionStatus::NotFound);
+});
+
+it('does not ask MusicBrainz again for answers it gave less than a day ago', function (): void {
+    $this->creditsFm->isrcs['Muse|Survival'] = 'GBAHT1200434';
+
+    resolve(ResolveRecordings::class)->handle([survival()]);
+    $calls = count($this->musicBrainz->calls);
+    resolve(ResolveRecordings::class)->handle([survival()]);
+
+    expect(count($this->musicBrainz->calls))->toBe($calls)
+        ->and($calls)->toBeGreaterThan(0);
+});
+
+it('stops between tracks once past its deadline', function (): void {
+    $recordings = resolve(ResolveRecordings::class)->handle(
+        [survival(), new TrackToResolve(Provider::YouTubeMusic, 'hysteria000', 'Hysteria', 'Muse', 227)],
+        until: now()->subSecond(),
+    );
+
+    expect($recordings)->toBe([])
+        ->and(RecordingResolution::query()->count())->toBe(1);
+});

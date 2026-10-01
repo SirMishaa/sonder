@@ -20,6 +20,7 @@ use App\Services\Metadata\EnrichmentTelemetry;
 use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
 use App\Services\Metadata\MusicBrainz\MusicBrainzMapper;
 use App\Support\MusicText;
+use Carbon\CarbonInterface;
 
 final readonly class ResolveRecordings
 {
@@ -42,9 +43,10 @@ final readonly class ResolveRecordings
      * answers are kept a day so a retry does not ask again.
      *
      * @param  list<TrackToResolve>  $tracks  at most MAX_TRACKS
+     * @param  CarbonInterface|null  $until  stops between tracks once past it; the rest stays unresolved
      * @return list<Recording>
      */
-    public function handle(array $tracks): array
+    public function handle(array $tracks, ?CarbonInterface $until = null): array
     {
         if ($tracks === []) {
             return [];
@@ -58,6 +60,10 @@ final readonly class ResolveRecordings
 
             if ($recording instanceof Recording) {
                 $resolved[$recording->id] = $recording;
+            }
+
+            if ($until !== null && now()->greaterThanOrEqualTo($until)) {
+                break;
             }
         }
 
@@ -180,15 +186,18 @@ final readonly class ResolveRecordings
 
     private function confirmedByMusicBrainz(TrackToResolve $track, TrackQuery $query, string $isrc): ?RegistryRecording
     {
-        $payload = $this->musicBrainz->isrc($isrc);
-        Enrichment::store(Enrichment::SOURCE, $track->key(), MetadataSource::MusicBrainz, "isrc:{$isrc}", $payload === null ? EnrichmentStatus::NotFound : EnrichmentStatus::Done, $payload);
+        $payload = $this->ask($track, MetadataSource::MusicBrainz, "isrc:{$isrc}", fn (): ?array => $this->musicBrainz->isrc($isrc));
 
         if ($payload === null) {
             return null;
         }
 
         foreach (MusicBrainzMapper::recordings($payload) as $recording) {
-            if ($this->sameDuration($track->durationSeconds, $recording->durationSeconds) && $this->creditsArtist($recording, $query->artist, $track->artists)) {
+            $lengthsCompared = $track->durationSeconds !== null && $recording->durationSeconds !== null;
+
+            if ($this->sameDuration($track->durationSeconds, $recording->durationSeconds)
+                && $this->creditsArtist($recording, $query->artist, $track->artists)
+                && ($lengthsCompared || MusicText::sameTitle($recording->title, $query->title))) {
                 return $recording;
             }
         }
@@ -196,10 +205,37 @@ final readonly class ResolveRecordings
         return null;
     }
 
+    /**
+     * One answer of a source about this track, reused when it is less than
+     * a day old: a job released halfway through does not ask again.
+     *
+     * @param  callable(): (array<string, mixed>|null)  $fetch
+     * @return array<string, mixed>|null
+     */
+    private function ask(TrackToResolve $track, MetadataSource $source, string $endpoint, callable $fetch): ?array
+    {
+        $known = Enrichment::query()
+            ->where('subject_type', Enrichment::SOURCE)
+            ->where('subject_key', $track->key())
+            ->where('source', $source)
+            ->where('endpoint', $endpoint)
+            ->whereIn('status', [EnrichmentStatus::Done, EnrichmentStatus::NotFound])
+            ->where('fetched_at', '>=', now()->subDay())
+            ->first();
+
+        if ($known instanceof Enrichment) {
+            return $known->payload;
+        }
+
+        $payload = $fetch();
+        Enrichment::store(Enrichment::SOURCE, $track->key(), $source, $endpoint, $payload === null ? EnrichmentStatus::NotFound : EnrichmentStatus::Done, $payload);
+
+        return $payload;
+    }
+
     private function confirmedByCreditsFm(TrackToResolve $track, TrackQuery $query, string $isrc): bool
     {
-        $payload = $this->creditsFm->isrc($isrc);
-        Enrichment::store(Enrichment::SOURCE, $track->key(), MetadataSource::CreditsFm, "isrc:{$isrc}", $payload === null ? EnrichmentStatus::NotFound : EnrichmentStatus::Done, $payload);
+        $payload = $this->ask($track, MetadataSource::CreditsFm, "isrc:{$isrc}", fn (): ?array => $this->creditsFm->isrc($isrc));
 
         if ($payload === null) {
             return false;
@@ -213,33 +249,31 @@ final readonly class ResolveRecordings
 
     private function searchMusicBrainz(TrackToResolve $track, TrackQuery $query): ?RegistryRecording
     {
-        $payload = $this->musicBrainz->searchRecordings($query);
-        Enrichment::store(Enrichment::SOURCE, $track->key(), MetadataSource::MusicBrainz, 'search', EnrichmentStatus::Done, $payload);
+        $payload = $this->ask($track, MetadataSource::MusicBrainz, "search:{$query->artist}|{$query->title}", fn (): array => $this->musicBrainz->searchRecordings($query)) ?? [];
+        $sameSong = array_values(array_filter(
+            MusicBrainzMapper::recordings($payload),
+            fn (RegistryRecording $recording): bool => $this->creditsArtist($recording, $query->artist, $track->artists)
+                && MusicText::sameTitle($recording->title, $query->title),
+        ));
 
-        foreach (MusicBrainzMapper::recordings($payload) as $recording) {
-            if ($this->acceptableSearchHit($track, $query, $recording)) {
+        if ($track->durationSeconds === null) {
+            // Every exact title and artist match scores 100: without a length
+            // to compare, only a single such match is unambiguous.
+            $exact = array_values(array_filter($sameSong, fn (RegistryRecording $recording): bool => $recording->score === 100));
+
+            return count($exact) === 1 && ! $this->namesAnotherVersion($exact[0]->disambiguation, $track->title) ? $exact[0] : null;
+        }
+
+        foreach ($sameSong as $recording) {
+            if (($recording->score ?? 0) >= 90
+                && $recording->durationSeconds !== null
+                && $this->sameDuration($track->durationSeconds, $recording->durationSeconds)
+                && ! $this->namesAnotherVersion($recording->disambiguation, $track->title)) {
                 return $recording;
             }
         }
 
         return null;
-    }
-
-    private function acceptableSearchHit(TrackToResolve $track, TrackQuery $query, RegistryRecording $recording): bool
-    {
-        if ($this->namesAnotherVersion($recording->disambiguation, $track->title)) {
-            return false;
-        }
-
-        $durationOk = $track->durationSeconds === null
-            ? $recording->score === 100
-            : ($recording->score ?? 0) >= 90
-                && $recording->durationSeconds !== null
-                && $this->sameDuration($track->durationSeconds, $recording->durationSeconds);
-
-        return $durationOk
-            && $this->creditsArtist($recording, $query->artist, $track->artists)
-            && MusicText::sameTitle($recording->title, $query->title);
     }
 
     /**

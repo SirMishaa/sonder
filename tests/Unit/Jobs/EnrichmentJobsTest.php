@@ -132,3 +132,45 @@ it('records a failure once the job gives up', function (): void {
         ->and($enrichment->endpoint)->toBe('isrc')
         ->and($enrichment->next_attempt_at?->toIso8601String())->toBe(now()->addDay()->toIso8601String());
 });
+
+it('describes every recording it resolved, even across released runs', function (): void {
+    Queue::fake();
+    $this->creditsFm->isrcs['Muse|Survival'] = 'GBAHT1200434';
+    $this->creditsFm->isrcs['Muse|Hysteria'] = 'GBAHT0300001';
+    $this->musicBrainz->isrcs['GBAHT1200434'] = metadataFixture('musicbrainz-isrc');
+    $this->musicBrainz->isrcs['GBAHT0300001'] = ['recordings' => [[
+        'id' => '22222222-2222-2222-2222-222222222222',
+        'title' => 'Hysteria',
+        'length' => 227000,
+        'artist-credit' => [['name' => 'Muse', 'artist' => ['id' => '9c9f1380-2516-4fc9-a3e6-f9f61941d090', 'name' => 'Muse']]],
+    ]]];
+    $job = (new ResolveLibraryTracks([
+        ...survivalBatch(),
+        ['provider' => Provider::YouTubeMusic->value, 'externalId' => 'hysteria000', 'title' => 'Hysteria', 'artists' => 'Muse', 'durationSeconds' => 227],
+    ]))->withFakeQueueInteractions();
+    $this->musicBrainz->refuseAfterCalls = 1;
+
+    $job->handle();
+
+    $job->assertReleased(1);
+    Queue::assertNotPushed(EnrichRecording::class);
+
+    $this->travel(1)->seconds();
+    $this->musicBrainz->refuseAfterCalls = null;
+    $job->handle();
+
+    Queue::assertPushed(EnrichRecording::class, 4);
+});
+
+it('releases instead of running past its time budget', function (): void {
+    Queue::fake();
+    $job = (new ResolveLibraryTracks([
+        ...survivalBatch(),
+        ['provider' => Provider::YouTubeMusic->value, 'externalId' => 'hysteria000', 'title' => 'Hysteria', 'artists' => 'Muse', 'durationSeconds' => 227],
+    ], budgetSeconds: -1))->withFakeQueueInteractions();
+
+    $job->handle();
+
+    $job->assertReleased(1);
+    expect(RecordingResolution::query()->where('status', ResolutionStatus::NotFound)->count())->toBe(1);
+});
