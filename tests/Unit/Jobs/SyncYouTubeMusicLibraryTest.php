@@ -6,12 +6,14 @@ use App\Actions\SyncPlaylistsFromYouTubeMusicAction;
 use App\Enums\YouTubeMusicSyncStatus;
 use App\Events\YouTubeMusicSyncUpdated;
 use App\Exceptions\Providers\CredentialsRejected;
+use App\Jobs\ResolveLibraryTracks;
 use App\Jobs\SyncYouTubeMusicLibrary;
 use App\Models\Playlist;
 use App\Models\YouTubeMusicAccount;
 use App\Models\YouTubeMusicSync;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
+use Illuminate\Support\Facades\Queue;
 use Tests\Support\FakeProviderAdapter;
 
 it('syncs the library and marks the sync completed', function (): void {
@@ -163,4 +165,17 @@ it('lets the overlap lock of a dead worker expire with the sync it was guarding'
     // Without an expiry, a killed worker keeps the lock for a day and every
     // later sync job of the account is silently dropped.
     expect($middleware->expiresAfter)->toBe(YouTubeMusicSync::STALE_AFTER_MINUTES * 60);
+});
+
+it('queues the new tracks for enrichment once the sync completes', function (): void {
+    Event::fake([YouTubeMusicSyncUpdated::class]);
+    Queue::fake([ResolveLibraryTracks::class]);
+    $account = YouTubeMusicAccount::factory()->create();
+    $sync = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')->create();
+    $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1', title: 'Deep Focus')];
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1', title: 'Deep Focus');
+
+    (new SyncYouTubeMusicLibrary($sync->id, $account->id))->handle(resolve(SyncPlaylistsFromYouTubeMusicAction::class));
+
+    Queue::assertPushed(ResolveLibraryTracks::class);
 });

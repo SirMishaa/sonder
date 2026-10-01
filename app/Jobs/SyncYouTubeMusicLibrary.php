@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Actions\QueueTrackResolution;
 use App\Actions\SyncPlaylistsFromYouTubeMusicAction;
 use App\Enums\YouTubeMusicSyncStatus;
 use App\Events\YouTubeMusicSyncUpdated;
@@ -121,6 +122,13 @@ final class SyncYouTubeMusicLibrary implements ShouldQueue
             'finished_at' => now(),
         ]);
         broadcast(new YouTubeMusicSyncUpdated($sync));
+
+        // Enrichment is a bonus: a completed sync never fails because of it.
+        try {
+            resolve(QueueTrackResolution::class)->handle($sync->youtubeMusicAccount);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     /**

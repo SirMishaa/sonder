@@ -49,6 +49,19 @@ function metadataFixture(string $name): array
     return $fixture;
 }
 
+/**
+ * A track of the library, created the way the sync stores it.
+ */
+function libraryTrack(?App\Models\Playlist $playlist, ?string $videoId, string $title = 'Survival', string $artists = 'Muse'): App\Models\Track
+{
+    return ($playlist ?? App\Models\Playlist::factory()->create())->tracks()->create([
+        'youtube_video_id' => $videoId,
+        'title' => $title,
+        'artists' => $artists,
+        'duration_seconds' => 258,
+    ]);
+}
+
 function something(): void
 {
     // ..

@@ -72,11 +72,11 @@
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#a7f3d0,#fdba74,#fde047\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"php artisan typescript:transform --watch\" \"bun run dev\" \"php artisan reverb:start\" --names=server,queue,logs,types,vite,reverb --kill-others"
+            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#a7f3d0,#fdba74,#fde047\" \"php artisan serve\" \"php artisan queue:listen --tries=1 --queue=default,enrichment\" \"php artisan pail --timeout=0\" \"php artisan typescript:transform --watch\" \"bun run dev\" \"php artisan reverb:start\" --names=server,queue,logs,types,vite,reverb --kill-others"
         ],
         "devWithOctane": [
             "Composer\\Config::disableProcessTimeout",
-            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#a7f3d0,#fdba74,#fde047\" \"php artisan octane:start --watch --server=frankenphp --port=8003 --caddyfile=Caddyfile\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"php artisan typescript:transform --watch\" \"bun run dev\" \"php artisan reverb:start\" --names=server,queue,logs,types,vite,reverb --kill-others"
+            "bunx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#a7f3d0,#fdba74,#fde047\" \"php artisan octane:start --watch --server=frankenphp --port=8003 --caddyfile=Caddyfile\" \"php artisan queue:listen --tries=1 --queue=default,enrichment\" \"php artisan pail --timeout=0\" \"php artisan typescript:transform --watch\" \"bun run dev\" \"php artisan reverb:start\" --names=server,queue,logs,types,vite,reverb --kill-others"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
