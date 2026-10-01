@@ -12,7 +12,7 @@ type YouTubePlayer = {
     unMute(): void;
     getCurrentTime(): number;
     getDuration(): number;
-    getVideoData(): { video_id?: string };
+    getVideoData(): { video_id?: string } | undefined;
     destroy(): void;
 };
 
@@ -168,7 +168,7 @@ export function createYouTubeTransport(element: HTMLElement): PlayerTransport {
         setMuted: (muted) => (muted ? player?.mute() : player?.unMute()),
         currentTime: () => player?.getCurrentTime() ?? 0,
         duration: () => player?.getDuration() ?? 0,
-        videoId: () => player?.getVideoData().video_id ?? null,
+        videoId: () => player?.getVideoData()?.video_id ?? null,
         on: emitter.on,
         destroy() {
             destroyed = true;
