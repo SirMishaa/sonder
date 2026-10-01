@@ -35,6 +35,19 @@ final class YouTubeMusicSync extends Model
 
     use HasUuids;
 
+    /**
+     * Minutes without progress after which a running sync is taken for
+     * orphaned: the job updates the row after every playlist, so silence
+     * this long means its worker died (crash, restart, deploy).
+     */
+    public const int STALE_AFTER_MINUTES = 5;
+
+    /**
+     * A sync paused by the call budget waits as pending until its job would
+     * give up retrying (`SyncYouTubeMusicLibrary::retryUntil()`).
+     */
+    public const int PAUSED_STALE_AFTER_MINUTES = 120;
+
     protected $fillable = [
         'youtube_music_account_id',
         'status',
@@ -79,5 +92,42 @@ final class YouTubeMusicSync extends Model
     public function isOwnedBy(User $user): bool
     {
         return $this->youtubeMusicAccount->user_id === $user->id;
+    }
+
+    /**
+     * Pending or syncing, whether or not a worker is still behind it.
+     */
+    public function isActive(): bool
+    {
+        return in_array($this->status, [YouTubeMusicSyncStatus::Pending, YouTubeMusicSyncStatus::Syncing], true);
+    }
+
+    /**
+     * Active on paper, but nothing has advanced it for too long to still have
+     * a worker behind it.
+     */
+    public function isStale(): bool
+    {
+        if (! $this->isActive()) {
+            return false;
+        }
+
+        $limit = $this->status === YouTubeMusicSyncStatus::Syncing ? self::STALE_AFTER_MINUTES : self::PAUSED_STALE_AFTER_MINUTES;
+
+        return $this->updated_at->isBefore(now()->subMinutes($limit));
+    }
+
+    /**
+     * Closes a sync whose job will never finish it. Playlists it already
+     * checked keep their fingerprint, so the next sync skips them and in
+     * effect resumes where this one stopped.
+     */
+    public function markInterrupted(): void
+    {
+        $this->update([
+            'status' => YouTubeMusicSyncStatus::Failed,
+            'error_message' => 'The sync stopped before it could finish.',
+            'finished_at' => now(),
+        ]);
     }
 }

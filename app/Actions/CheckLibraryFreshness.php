@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
-use App\Enums\YouTubeMusicSyncStatus;
 use App\Models\YouTubeMusicAccount;
 use App\Models\YouTubeMusicSync;
 
@@ -31,9 +30,9 @@ final readonly class CheckLibraryFreshness
             ->latest('created_at')
             ->first();
 
-        $isRunning = $latest !== null
-            && in_array($latest->status, [YouTubeMusicSyncStatus::Pending, YouTubeMusicSyncStatus::Syncing], true);
-        $isFresh = $latest !== null && $latest->created_at->isAfter(now()->subMinutes(self::STALE_AFTER_MINUTES));
+        $isInterrupted = $latest !== null && $latest->isStale();
+        $isRunning = $latest !== null && $latest->isActive() && ! $isInterrupted;
+        $isFresh = $latest !== null && ! $isInterrupted && $latest->created_at->isAfter(now()->subMinutes(self::STALE_AFTER_MINUTES));
 
         if ($isRunning || $isFresh || $account->hasExpiredCookie()) {
             return $isRunning ? $latest : null;

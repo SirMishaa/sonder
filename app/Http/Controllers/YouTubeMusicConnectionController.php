@@ -45,9 +45,17 @@ final readonly class YouTubeMusicConnectionController
         return to_route('youtube-music-connection.sync', $sync);
     }
 
-    public function show(YouTubeMusicSync $sync, #[CurrentUser] User $user): Response
+    /**
+     * The sync progress page. An interrupted sync is replaced on sight, so a
+     * crashed worker never leaves the page stuck on a frozen counter.
+     */
+    public function show(YouTubeMusicSync $sync, #[CurrentUser] User $user, StartYouTubeMusicSync $startSync): Response|RedirectResponse
     {
         abort_unless($sync->isOwnedBy($user), 404);
+
+        if ($sync->isStale()) {
+            return to_route('youtube-music-connection.sync', $startSync->handle($sync->youtubeMusicAccount));
+        }
 
         return Inertia::render('youtube-music-connection/Sync', [
             'sync' => YouTubeMusicSyncData::fromModel($sync),

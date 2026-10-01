@@ -155,3 +155,19 @@ it('clears the expired flag when a fresh cookie is pasted', function (): void {
 
     expect($account->refresh()->hasExpiredCookie())->toBeFalse();
 });
+
+it('replaces an interrupted sync when its page is opened', function (): void {
+    Illuminate\Support\Facades\Queue::fake();
+    $user = User::factory()->create();
+    $account = YouTubeMusicAccount::factory()->for($user)->create();
+    $orphan = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')->create([
+        'status' => YouTubeMusicSyncStatus::Syncing,
+        'updated_at' => now()->subMinutes(6),
+    ]);
+
+    $response = $this->actingAs($user)->get(route('youtube-music-connection.sync', $orphan));
+
+    $replacement = YouTubeMusicSync::query()->whereKeyNot($orphan->id)->firstOrFail();
+    $response->assertRedirectToRoute('youtube-music-connection.sync', $replacement);
+    expect($orphan->refresh()->status)->toBe(YouTubeMusicSyncStatus::Failed);
+});

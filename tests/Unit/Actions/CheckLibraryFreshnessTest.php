@@ -53,3 +53,16 @@ it('leaves an expired cookie alone until the user replaces it', function (): voi
     expect($sync)->toBeNull()
         ->and(YouTubeMusicSync::query()->count())->toBe(0);
 });
+
+it('retries a recent sync that was interrupted instead of waiting an hour', function (): void {
+    $orphan = YouTubeMusicSync::factory()->for($this->account, 'youtubeMusicAccount')->create([
+        'status' => YouTubeMusicSyncStatus::Syncing,
+        'created_at' => now()->subMinutes(10),
+        'updated_at' => now()->subMinutes(6),
+    ]);
+
+    $sync = resolve(CheckLibraryFreshness::class)->handle($this->account);
+
+    expect($sync?->id)->not->toBe($orphan->id)
+        ->and($orphan->refresh()->status)->toBe(YouTubeMusicSyncStatus::Failed);
+});

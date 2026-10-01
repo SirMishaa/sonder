@@ -103,6 +103,19 @@ it('releases itself when the call budget is spent, without flagging the cookie',
         ->and($account->refresh()->hasExpiredCookie())->toBeFalse();
 });
 
+it('marks a sync paused by the call budget as pending, so it is not taken for an orphan', function (): void {
+    Event::fake([YouTubeMusicSyncUpdated::class]);
+    $account = YouTubeMusicAccount::factory()->create();
+    $sync = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')->create(['updated_at' => now()->subMinutes(10)]);
+    $this->fakeProvider()->rateLimitedFor = 42;
+
+    $job = (new SyncYouTubeMusicLibrary($sync->id, $account->id))->withFakeQueueInteractions();
+    $job->handle(resolve(SyncPlaylistsFromYouTubeMusicAction::class));
+
+    expect($sync->refresh()->status)->toBe(YouTubeMusicSyncStatus::Pending)
+        ->and($sync->updated_at->isAfter(now()->subMinute()))->toBeTrue();
+});
+
 it('fails a sync left running when the job gives up', function (): void {
     Event::fake([YouTubeMusicSyncUpdated::class]);
     $account = YouTubeMusicAccount::factory()->create();
@@ -142,4 +155,12 @@ it('stores the failure as a code when the cookie is refused', function (): void 
 
     expect($sync->refresh()->error_message)->toBe('credentials_rejected')
         ->and($account->refresh()->cookie_expired_at)->not->toBeNull();
+});
+
+it('lets the overlap lock of a dead worker expire with the sync it was guarding', function (): void {
+    $middleware = (new SyncYouTubeMusicLibrary('sync', 'account'))->middleware()[0];
+
+    // Without an expiry, a killed worker keeps the lock for a day and every
+    // later sync job of the account is silently dropped.
+    expect($middleware->expiresAfter)->toBe(YouTubeMusicSync::STALE_AFTER_MINUTES * 60);
 });

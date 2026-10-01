@@ -50,7 +50,11 @@ final class SyncYouTubeMusicLibrary implements ShouldQueue
     public function middleware(): array
     {
         return [
-            (new WithoutOverlapping($this->youTubeMusicAccountId))->dontRelease(),
+            (new WithoutOverlapping($this->youTubeMusicAccountId))
+                ->dontRelease()
+                // A killed worker never releases the lock; let it lapse with
+                // the sync it guarded, which is then taken for orphaned.
+                ->expireAfter(YouTubeMusicSync::STALE_AFTER_MINUTES * 60),
         ];
     }
 
@@ -86,7 +90,11 @@ final class SyncYouTubeMusicLibrary implements ShouldQueue
             );
         } catch (ProviderRateLimited $exception) {
             // Picks up where it stopped: playlists already checked keep
-            // their fingerprint and are skipped on the next attempt.
+            // their fingerprint and are skipped on the next attempt. Pending
+            // (and a fresh updated_at) tells StartYouTubeMusicSync the sync
+            // is paused, not orphaned.
+            $sync->update(['status' => YouTubeMusicSyncStatus::Pending]);
+            broadcast(new YouTubeMusicSyncUpdated($sync));
             $this->release($exception->retryAfter);
 
             return;
@@ -124,15 +132,11 @@ final class SyncYouTubeMusicLibrary implements ShouldQueue
     {
         $sync = YouTubeMusicSync::query()->find($this->syncId);
 
-        if ($sync === null || ! in_array($sync->status, [YouTubeMusicSyncStatus::Pending, YouTubeMusicSyncStatus::Syncing], true)) {
+        if ($sync === null || ! $sync->isActive()) {
             return;
         }
 
-        $sync->update([
-            'status' => YouTubeMusicSyncStatus::Failed,
-            'error_message' => 'The sync stopped before it could finish.',
-            'finished_at' => now(),
-        ]);
+        $sync->markInterrupted();
         broadcast(new YouTubeMusicSyncUpdated($sync));
     }
 }

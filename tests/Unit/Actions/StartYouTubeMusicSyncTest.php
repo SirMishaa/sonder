@@ -52,3 +52,47 @@ it('starts a new sync once the previous one finished', function (): void {
     expect(YouTubeMusicSync::query()->count())->toBe(2);
     Queue::assertPushed(SyncYouTubeMusicLibrary::class);
 });
+
+it('replaces a sync that stopped making progress, closing it as interrupted', function (): void {
+    Queue::fake();
+    $account = YouTubeMusicAccount::factory()->create();
+    $orphan = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')->create([
+        'status' => YouTubeMusicSyncStatus::Syncing,
+        'updated_at' => now()->subMinutes(6),
+    ]);
+
+    $sync = resolve(StartYouTubeMusicSync::class)->handle($account);
+
+    expect($sync->id)->not->toBe($orphan->id)
+        ->and($orphan->refresh()->status)->toBe(YouTubeMusicSyncStatus::Failed)
+        ->and($orphan->error_message)->toBe('The sync stopped before it could finish.')
+        ->and($orphan->finished_at)->not->toBeNull();
+    Queue::assertPushed(SyncYouTubeMusicLibrary::class, fn (SyncYouTubeMusicLibrary $job): bool => $job->syncId === $sync->id);
+});
+
+it('keeps reusing a sync that made progress a few minutes ago', function (): void {
+    Queue::fake();
+    $account = YouTubeMusicAccount::factory()->create();
+    $running = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')->create([
+        'status' => YouTubeMusicSyncStatus::Syncing,
+        'updated_at' => now()->subMinutes(4),
+    ]);
+
+    expect(resolve(StartYouTubeMusicSync::class)->handle($account)->id)->toBe($running->id);
+});
+
+it('waits for a sync paused by the call budget until its job would give up', function (int $minutesAgo, bool $isReplaced): void {
+    Queue::fake();
+    $account = YouTubeMusicAccount::factory()->create();
+    $paused = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')->create([
+        'status' => YouTubeMusicSyncStatus::Pending,
+        'updated_at' => now()->subMinutes($minutesAgo),
+    ]);
+
+    $sync = resolve(StartYouTubeMusicSync::class)->handle($account);
+
+    expect($sync->id !== $paused->id)->toBe($isReplaced);
+})->with([
+    'paused 90 minutes ago' => [90, false],
+    'paused 3 hours ago' => [180, true],
+]);
