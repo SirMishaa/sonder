@@ -29,3 +29,20 @@ arch('the YouTube Music adapter stays behind the provider contracts')
 arch('actions depend on contracts, never on a concrete adapter')
     ->expect('App\Actions')
     ->not->toUse('App\Services\Music\YouTubeMusic');
+
+arch('actions reach metadata services through their gateway contracts')
+    ->expect('App\Actions')
+    ->not->toUse([
+        'App\Services\Metadata\CreditsFm\HttpCreditsFmGateway',
+        'App\Services\Metadata\CreditsFm\RateLimitedCreditsFmGateway',
+        'App\Services\Metadata\MusicBrainz\HttpMusicBrainzGateway',
+        'App\Services\Metadata\MusicBrainz\RateLimitedMusicBrainzGateway',
+    ]);
+
+arch('only the metadata gateways call metadata services over HTTP')
+    ->expect('App\Services\Metadata')
+    ->not->toUse('Illuminate\Support\Facades\Http')
+    ->ignoring([
+        'App\Services\Metadata\CreditsFm\HttpCreditsFmGateway',
+        'App\Services\Metadata\MusicBrainz\HttpMusicBrainzGateway',
+    ]);
