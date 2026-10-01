@@ -12,13 +12,8 @@ use App\Services\Music\YouTubeMusic\Gateway\YouTubeMusicGateway;
 use App\Services\Music\YouTubeMusic\Gateway\YtmusicapiGateway;
 use App\Services\Music\YouTubeMusic\YouTubeMusicAdapter;
 use App\Services\Music\YouTubeMusic\YouTubeMusicCredentials;
-use App\Services\YouTubeMusic\CachedClient;
-use App\Services\YouTubeMusic\Client;
-use App\Services\YouTubeMusic\RateLimitedClient;
-use App\Services\YouTubeMusic\YtmusicapiClient;
 use Illuminate\Cache\RateLimiter as CacheRateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
-use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -29,13 +24,6 @@ final class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // The cache sits outside the rate limit, so a cached lookup never
-        // spends a call from the budget.
-        $this->app->bind(Client::class, fn (): Client => new CachedClient(
-            new RateLimitedClient(new YtmusicapiClient(), $this->app->make(CacheRateLimiter::class)),
-            $this->app->make(Repository::class),
-        ));
-
         $this->app->bind(YouTubeMusicGateway::class, fn (): YouTubeMusicGateway => new RateLimitedGateway(
             $this->app->make(YtmusicapiGateway::class),
             $this->app->make(CacheRateLimiter::class),

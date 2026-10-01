@@ -3,17 +3,16 @@
 declare(strict_types=1);
 
 use App\Actions\SyncPlaylistsFromYouTubeMusicAction;
-use App\Exceptions\YouTubeMusicException;
 use App\Models\Playlist;
 use App\Models\YouTubeMusicAccount;
-use Tests\Support\FakeYouTubeMusicClient;
+use Tests\Support\FakeProviderAdapter;
 
 it('upserts playlists and tracks from YouTube Music', function (): void {
     $account = YouTubeMusicAccount::factory()->create();
-    $this->fakeYouTubeMusic()->playlists = [
-        FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1', title: 'Deep Focus', trackCount: 1),
+    $this->fakeProvider()->playlists = [
+        FakeProviderAdapter::aPlaylistSummary(id: 'PL1', title: 'Deep Focus', trackCount: 1),
     ];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1', title: 'Deep Focus', trackCount: 1);
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1', title: 'Deep Focus', trackCount: 1);
 
     resolve(SyncPlaylistsFromYouTubeMusicAction::class)->handle($account);
 
@@ -25,8 +24,8 @@ it('upserts playlists and tracks from YouTube Music', function (): void {
 
 it('replaces the tracks of a playlist synced a second time', function (): void {
     $account = YouTubeMusicAccount::factory()->create();
-    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1', trackCount: 1);
+    $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1')];
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1', trackCount: 1);
 
     $action = resolve(SyncPlaylistsFromYouTubeMusicAction::class);
     $action->handle($account);
@@ -40,12 +39,12 @@ it('replaces the tracks of a playlist synced a second time', function (): void {
 
 it('reports progress after each playlist, with the total known up front', function (): void {
     $account = YouTubeMusicAccount::factory()->create();
-    $this->fakeYouTubeMusic()->playlists = [
-        FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1', title: 'Deep Focus'),
-        FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL2', title: 'Gaming'),
+    $this->fakeProvider()->playlists = [
+        FakeProviderAdapter::aPlaylistSummary(id: 'PL1', title: 'Deep Focus'),
+        FakeProviderAdapter::aPlaylistSummary(id: 'PL2', title: 'Gaming'),
     ];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1', title: 'Deep Focus');
-    $this->fakeYouTubeMusic()->tracks['PL2'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL2', title: 'Gaming');
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1', title: 'Deep Focus');
+    $this->fakeProvider()->tracks['PL2'] = FakeProviderAdapter::aPlaylist(id: 'PL2', title: 'Gaming');
 
     $calls = [];
 
@@ -65,8 +64,8 @@ it('reports progress after each playlist, with the total known up front', functi
 
 it('skips downloading the tracks of a playlist whose listing did not change', function (): void {
     $account = YouTubeMusicAccount::factory()->create();
-    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
+    $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1')];
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1');
 
     $action = resolve(SyncPlaylistsFromYouTubeMusicAction::class);
     $action->handle($account);
@@ -75,44 +74,44 @@ it('skips downloading the tracks of a playlist whose listing did not change', fu
 
     $playlist = Playlist::query()->where('youtube_playlist_id', 'PL1')->firstOrFail();
 
-    expect($this->fakeYouTubeMusic()->callCount('playlist'))->toBe(1)
+    expect($this->fakeProvider()->callCount('playlist'))->toBe(1)
         ->and($playlist->last_checked_at->isSameMinute(now()))->toBeTrue();
 });
 
 it('downloads the tracks again once the listing changes', function (): void {
     $account = YouTubeMusicAccount::factory()->create();
-    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1', trackCount: 1)];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
+    $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1', trackCount: 1)];
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1');
 
     $action = resolve(SyncPlaylistsFromYouTubeMusicAction::class);
     $action->handle($account);
 
-    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1', trackCount: 2)];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1', trackCount: 2, tracks: [
-        FakeYouTubeMusicClient::aTrack('One', 'VID_A'),
-        FakeYouTubeMusicClient::aTrack('Two', 'VID_B'),
+    $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1', trackCount: 2)];
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1', trackCount: 2, tracks: [
+        FakeProviderAdapter::aTrack('One', 'VID_A'),
+        FakeProviderAdapter::aTrack('Two', 'VID_B'),
     ]);
     $action->handle($account);
 
     $playlist = Playlist::query()->where('youtube_playlist_id', 'PL1')->firstOrFail();
 
-    expect($this->fakeYouTubeMusic()->callCount('playlist'))->toBe(2)
+    expect($this->fakeProvider()->callCount('playlist'))->toBe(2)
         ->and($playlist->tracks()->count())->toBe(2);
 });
 
 it('flags a playlist that left the library without deleting it', function (): void {
     $account = YouTubeMusicAccount::factory()->create();
-    $this->fakeYouTubeMusic()->playlists = [
-        FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1'),
-        FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL2'),
+    $this->fakeProvider()->playlists = [
+        FakeProviderAdapter::aPlaylistSummary(id: 'PL1'),
+        FakeProviderAdapter::aPlaylistSummary(id: 'PL2'),
     ];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
-    $this->fakeYouTubeMusic()->tracks['PL2'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL2');
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1');
+    $this->fakeProvider()->tracks['PL2'] = FakeProviderAdapter::aPlaylist(id: 'PL2');
 
     $action = resolve(SyncPlaylistsFromYouTubeMusicAction::class);
     $action->handle($account);
 
-    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
+    $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1')];
     $action->handle($account);
 
     $removed = Playlist::query()->where('youtube_playlist_id', 'PL2')->firstOrFail();
@@ -125,21 +124,10 @@ it('flags a playlist that left the library without deleting it', function (): vo
 it('clears the flag when a removed playlist comes back', function (): void {
     $account = YouTubeMusicAccount::factory()->create();
     $playlist = Playlist::factory()->for($account, 'youtubeMusicAccount')->removed()->create(['youtube_playlist_id' => 'PL1']);
-    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
+    $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1')];
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1');
 
     resolve(SyncPlaylistsFromYouTubeMusicAction::class)->handle($account);
-
-    expect($playlist->refresh()->removed_at)->toBeNull();
-});
-
-it('treats an empty library as a signed-out cookie and flags nothing', function (): void {
-    $account = YouTubeMusicAccount::factory()->create();
-    $playlist = Playlist::factory()->for($account, 'youtubeMusicAccount')->create();
-    $this->fakeYouTubeMusic()->playlists = [];
-
-    expect(fn () => resolve(SyncPlaylistsFromYouTubeMusicAction::class)->handle($account))
-        ->toThrow(YouTubeMusicException::class, 'no longer recognises this cookie');
 
     expect($playlist->refresh()->removed_at)->toBeNull();
 });

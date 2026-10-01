@@ -7,13 +7,13 @@ use App\Enums\YouTubeMusicSyncStatus;
 use App\Models\Playlist;
 use App\Models\YouTubeMusicAccount;
 use App\Models\YouTubeMusicSync;
-use Tests\Support\FakeYouTubeMusicClient;
+use Tests\Support\FakeProviderAdapter;
 
 beforeEach(function (): void {
     $this->account = YouTubeMusicAccount::factory()->create();
     Playlist::factory()->for($this->account, 'youtubeMusicAccount')->create(['last_checked_at' => now()->subDays(2)]);
-    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
+    $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1')];
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1');
 });
 
 it('starts a sync when the last attempt is over an hour old', function (): void {

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
-use App\Data\PlaylistData;
-use App\Data\TrackData;
 use App\Models\Playlist;
 use App\Models\Track;
+use App\Services\Music\Data\RemotePlaylist;
+use App\Services\Music\Data\RemoteTrack;
+use App\Services\Thumbnails\ThumbnailProxy;
+use Carbon\CarbonInterval;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,12 +26,12 @@ final readonly class SyncPlaylistTracks
     /**
      * @return bool Whether anything about the playlist changed.
      */
-    public function handle(Playlist $playlist, PlaylistData $data): bool
+    public function handle(Playlist $playlist, RemotePlaylist $data): bool
     {
         return DB::transaction(function () use ($playlist, $data): bool {
             $changed = false;
 
-            $playlist->fill(['duration' => $data->duration]);
+            $playlist->fill(['duration' => $this->playlistDuration($data)]);
 
             if ($playlist->isDirty()) {
                 $changed = true;
@@ -41,10 +43,10 @@ final readonly class SyncPlaylistTracks
                 $track->artists,
             ]);
 
-            $incoming = $this->keyed($data->tracks, fn (TrackData $track): array => [
-                $track->videoId,
+            $incoming = $this->keyed($data->tracks, fn (RemoteTrack $track): array => [
+                $track->ref?->externalId,
                 $track->title,
-                $track->artists,
+                $track->artistNames(),
             ]);
 
             $position = 0;
@@ -114,19 +116,41 @@ final readonly class SyncPlaylistTracks
     /**
      * @return array<string, mixed>
      */
-    private function attributes(TrackData $track, int $position): array
+    private function attributes(RemoteTrack $track, int $position): array
     {
         return [
-            'youtube_video_id' => $track->videoId,
+            'youtube_video_id' => $track->ref?->externalId,
             'title' => $track->title,
-            'artists' => $track->artists,
-            'album' => $track->album,
-            'duration' => $track->duration,
+            'artists' => $track->artistNames(),
+            'album' => $track->album?->title,
+            'duration' => $track->durationSeconds === null ? null : $this->clock($track->durationSeconds),
             'duration_seconds' => $track->durationSeconds,
-            'thumbnail_url' => $track->thumbnailUrl,
+            'thumbnail_url' => ThumbnailProxy::url($track->thumbnailUrl),
             'is_explicit' => $track->isExplicit,
             'is_available' => $track->isAvailable,
             'position' => $position,
         ];
+    }
+
+    /**
+     * "3:19", or "1:02:03" past an hour, as YouTube Music displays it.
+     */
+    private function clock(int $seconds): string
+    {
+        $hours = intdiv($seconds, 3600);
+        $clock = sprintf('%d:%02d', intdiv($seconds % 3600, 60), $seconds % 60);
+
+        return $hours > 0 ? sprintf('%d:%02d:%02d', $hours, intdiv($seconds % 3600, 60), $seconds % 60) : $clock;
+    }
+
+    /**
+     * Total length in the app locale ("48 min", "1h 12m"); null when no
+     * track reports a duration.
+     */
+    private function playlistDuration(RemotePlaylist $data): ?string
+    {
+        $total = array_sum(array_map(fn (RemoteTrack $track): int => $track->durationSeconds ?? 0, $data->tracks));
+
+        return $total === 0 ? null : CarbonInterval::seconds($total)->cascade()->forHumans(['short' => true, 'parts' => 2]);
     }
 }

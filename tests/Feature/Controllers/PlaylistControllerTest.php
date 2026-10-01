@@ -9,17 +9,17 @@ use App\Models\YouTubeMusicAccount;
 use App\Models\YouTubeMusicSync;
 use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia;
-use Tests\Support\FakeYouTubeMusicClient;
+use Tests\Support\FakeProviderAdapter;
 
 it('lists the playlists of the connected account', function (): void {
     $user = User::factory()->create();
     $account = YouTubeMusicAccount::factory()->for($user)->create(['account_name' => 'Mishaa']);
-    $this->fakeYouTubeMusic()->playlists = [
-        FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1', title: 'Deep Focus'),
-        FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL2', title: 'Gaming'),
+    $this->fakeProvider()->playlists = [
+        FakeProviderAdapter::aPlaylistSummary(id: 'PL1', title: 'Deep Focus'),
+        FakeProviderAdapter::aPlaylistSummary(id: 'PL2', title: 'Gaming'),
     ];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1', title: 'Deep Focus');
-    $this->fakeYouTubeMusic()->tracks['PL2'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL2', title: 'Gaming');
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1', title: 'Deep Focus');
+    $this->fakeProvider()->tracks['PL2'] = FakeProviderAdapter::aPlaylist(id: 'PL2', title: 'Gaming');
 
     // First visit: nothing synced yet, redirects to the blocking sync page.
     $this->actingAs($user)->get(route('playlist.index'))
@@ -45,7 +45,7 @@ it('sends a user with no connection to the connection page', function (): void {
 it('redirects to the sync page and fails the sync when the cookie stopped working', function (): void {
     $user = User::factory()->create();
     YouTubeMusicAccount::factory()->for($user)->create();
-    $this->fakeYouTubeMusic()->shouldFail = true;
+    $this->fakeProvider()->shouldFail = true;
 
     $response = $this->actingAs($user)->get(route('playlist.index'));
 
@@ -59,8 +59,8 @@ it('refreshes stale playlists in the background instead of blocking', function (
     Playlist::factory()->for($account, 'youtubeMusicAccount')->create([
         'last_checked_at' => now()->subDays(2),
     ]);
-    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
+    $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1')];
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1');
 
     $response = $this->actingAs($user)->get(route('playlist.index'));
 
@@ -74,9 +74,9 @@ it('refreshes stale playlists in the background instead of blocking', function (
 it('renders the playlist with tracks from the database', function (): void {
     $user = User::factory()->create();
     $account = YouTubeMusicAccount::factory()->for($user)->create();
-    $fake = $this->fakeYouTubeMusic();
-    $fake->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1', title: 'Deep Focus')];
-    $fake->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1', title: 'Deep Focus');
+    $fake = $this->fakeProvider();
+    $fake->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1', title: 'Deep Focus')];
+    $fake->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1', title: 'Deep Focus');
 
     $this->actingAs($user)->get(route('playlist.index'));
 
@@ -104,9 +104,9 @@ it('redirects when playlist is not in the database', function (): void {
 it('syncs playlists from YouTube Music to the database', function (): void {
     $user = User::factory()->create();
     $account = YouTubeMusicAccount::factory()->for($user)->create();
-    $fake = $this->fakeYouTubeMusic();
-    $fake->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1', trackCount: 42)];
-    $fake->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
+    $fake = $this->fakeProvider();
+    $fake->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1', trackCount: 42)];
+    $fake->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1');
 
     $this->actingAs($user)->get(route('playlist.index'));
 
@@ -142,6 +142,9 @@ it('tells the index which playlists left the library and when it was last checke
     $account = YouTubeMusicAccount::factory()->for($user)->create();
     Playlist::factory()->for($account, 'youtubeMusicAccount')->create(['youtube_playlist_id' => 'PL_KEPT']);
     Playlist::factory()->for($account, 'youtubeMusicAccount')->removed()->create(['youtube_playlist_id' => 'PL_GONE']);
+    // The page starts a freshness sync; it is incidental here, so make it fail
+    // rather than read an empty fake library as "every playlist was removed".
+    $this->fakeProvider()->unavailable = true;
 
     $response = $this->actingAs($user)->get(route('playlist.index'));
 

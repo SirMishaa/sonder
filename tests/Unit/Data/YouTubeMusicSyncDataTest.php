@@ -36,3 +36,17 @@ it('shows the error message in the active language', function (): void {
     expect(YouTubeMusicSyncData::fromModel($sync)->errorMessage)
         ->toBe('YouTube Music a refusé la requête. Le cookie enregistré a peut-être expiré.');
 });
+
+it('translates a stored failure code in the viewer locale', function (): void {
+    $sync = YouTubeMusicSync::factory()->create(['error_message' => 'unavailable']);
+    app()->setLocale('fr_BE');
+
+    expect(YouTubeMusicSyncData::fromModel($sync)->errorMessage)
+        ->toBe('YouTube Music est injoignable. Réessayez dans quelques minutes.');
+});
+
+it('still renders a legacy English failure message', function (): void {
+    $sync = YouTubeMusicSync::factory()->create(['error_message' => 'Something legacy happened.']);
+
+    expect(YouTubeMusicSyncData::fromModel($sync)->errorMessage)->toBe('Something legacy happened.');
+});

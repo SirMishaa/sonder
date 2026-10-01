@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use App\Exceptions\YouTubeMusicException;
+use App\Exceptions\Providers\CredentialsRejected;
 use App\Models\Playlist;
 use App\Models\User;
 use App\Models\YouTubeMusicAccount;
 use Illuminate\Support\Facades\Exceptions;
-use Tests\Support\FakeYouTubeMusicClient;
+use Tests\Support\FakeProviderAdapter;
 
 /**
  * @param  array<string, mixed>  $attributes
@@ -26,8 +26,8 @@ function refreshablePlaylist(User $user, array $attributes = []): Playlist
 it('re-reads the tracks even though the listing did not change', function (): void {
     $user = User::factory()->create();
     $playlist = refreshablePlaylist($user);
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1', tracks: [
-        FakeYouTubeMusicClient::aTrack('Swapped in', 'VID_NEW'),
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1', tracks: [
+        FakeProviderAdapter::aTrack('Swapped in', 'VID_NEW'),
     ]);
 
     $response = $this->actingAs($user)
@@ -46,7 +46,7 @@ it('does not let a user refresh another user playlist', function (): void {
         ->post(route('playlist-refresh.store', 'PL1'));
 
     $response->assertNotFound();
-    expect($this->fakeYouTubeMusic()->callCount('playlist'))->toBe(0);
+    expect($this->fakeProvider()->callCount('playlist'))->toBe(0);
 });
 
 it('refuses to refresh a playlist that left the library', function (): void {
@@ -56,20 +56,20 @@ it('refuses to refresh a playlist that left the library', function (): void {
     $response = $this->actingAs($user)->post(route('playlist-refresh.store', 'PL1'));
 
     $response->assertSessionHasErrors('refresh');
-    expect($this->fakeYouTubeMusic()->callCount('playlist'))->toBe(0);
+    expect($this->fakeProvider()->callCount('playlist'))->toBe(0);
 });
 
 it('reports a YouTube Music failure instead of crashing', function (): void {
     $user = User::factory()->create();
     refreshablePlaylist($user);
-    $this->fakeYouTubeMusic()->shouldFail = true;
+    $this->fakeProvider()->shouldFail = true;
     Exceptions::fake();
 
     $response = $this->actingAs($user)->post(route('playlist-refresh.store', 'PL1'));
 
     $response->assertSessionHasErrors('refresh');
 
-    Exceptions::assertReported(YouTubeMusicException::class);
+    Exceptions::assertReported(CredentialsRejected::class);
 });
 
 it('sends guests to the login page', function (): void {
@@ -82,7 +82,7 @@ it('tells the user to wait when the call budget is spent', function (): void {
     $user = User::factory()->create();
     $account = YouTubeMusicAccount::factory()->for($user)->create();
     $playlist = Playlist::factory()->for($account, 'youtubeMusicAccount')->create();
-    $this->fakeYouTubeMusic()->rateLimitedFor = 42;
+    $this->fakeProvider()->rateLimitedFor = 42;
 
     $response = $this->actingAs($user)
         ->fromRoute('playlist.show', $playlist->youtube_playlist_id)
@@ -90,4 +90,14 @@ it('tells the user to wait when the call budget is spent', function (): void {
 
     $response->assertSessionHasErrors(['refresh' => 'Sonder is pacing its calls to YouTube Music. Try again in 42 seconds.']);
     expect($account->refresh()->hasExpiredCookie())->toBeFalse();
+});
+
+it('shows the outage message when YouTube Music cannot be reached', function (): void {
+    $user = User::factory()->create();
+    refreshablePlaylist($user);
+    $this->fakeProvider()->unavailable = true;
+
+    $response = $this->actingAs($user)->post(route('playlist-refresh.store', 'PL1'));
+
+    $response->assertSessionHasErrors(['refresh' => 'YouTube Music could not be reached. Try again in a few minutes.']);
 });

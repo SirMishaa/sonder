@@ -7,11 +7,14 @@ use App\Models\User;
 use App\Models\YouTubeMusicAccount;
 use App\Models\YouTubeMusicSync;
 use Inertia\Testing\AssertableInertia;
-use Tests\Support\FakeYouTubeMusicClient;
+use Tests\Support\FakeProviderAdapter;
 
 it('renders discover with library stats and fresh finds loaded after the page', function (): void {
     $user = User::factory()->create();
     $account = YouTubeMusicAccount::factory()->for($user)->create();
+    // The page starts a freshness sync; it is incidental here, so make it fail
+    // rather than read an empty fake library as "every playlist was removed".
+    $this->fakeProvider()->unavailable = true;
     $playlist = Playlist::factory()->for($account, 'youtubeMusicAccount')->create();
     $playlist->tracks()->create([
         'youtube_video_id' => 'VID_A',
@@ -40,8 +43,8 @@ it('sends a user with no connection to the connection page', function (): void {
 it('sends a newly connected user to the blocking first sync', function (): void {
     $user = User::factory()->create();
     YouTubeMusicAccount::factory()->for($user)->create();
-    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
+    $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1')];
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1');
 
     $this->actingAs($user)
         ->get(route('dashboard'))

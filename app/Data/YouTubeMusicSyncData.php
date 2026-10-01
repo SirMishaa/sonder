@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Data;
 
+use App\Enums\Provider;
+use App\Enums\ProviderErrorCode;
 use App\Enums\YouTubeMusicSyncStatus;
 use App\Models\YouTubeMusicSync;
 use Spatie\LaravelData\Data;
@@ -34,13 +36,20 @@ final class YouTubeMusicSyncData extends Data
     }
 
     /**
-     * Error messages are stored in English, as thrown, and translated when
-     * shown so a sync that failed before a language change reads correctly.
+     * Failures are stored as a ProviderErrorCode and translated when shown,
+     * in the viewer's locale. Rows written before codes existed hold an
+     * English sentence, translated through the JSON catalogue as before.
      */
     private static function translate(?string $message): ?string
     {
         if ($message === null) {
             return null;
+        }
+
+        $code = ProviderErrorCode::tryFrom($message);
+
+        if ($code !== null) {
+            return $code->userMessage(Provider::YouTubeMusic);
         }
 
         $translation = __($message);

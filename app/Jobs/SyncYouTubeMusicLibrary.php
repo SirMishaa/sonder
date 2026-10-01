@@ -7,8 +7,9 @@ namespace App\Jobs;
 use App\Actions\SyncPlaylistsFromYouTubeMusicAction;
 use App\Enums\YouTubeMusicSyncStatus;
 use App\Events\YouTubeMusicSyncUpdated;
-use App\Exceptions\YouTubeMusicException;
-use App\Exceptions\YouTubeMusicRateLimitedException;
+use App\Exceptions\Providers\CredentialsRejected;
+use App\Exceptions\Providers\ProviderException;
+use App\Exceptions\Providers\ProviderRateLimited;
 use App\Models\Playlist;
 use App\Models\YouTubeMusicSync;
 use DateTimeInterface;
@@ -83,18 +84,22 @@ final class SyncYouTubeMusicLibrary implements ShouldQueue
                     broadcast(new YouTubeMusicSyncUpdated($sync));
                 },
             );
-        } catch (YouTubeMusicRateLimitedException $exception) {
+        } catch (ProviderRateLimited $exception) {
             // Picks up where it stopped: playlists already checked keep
             // their fingerprint and are skipped on the next attempt.
             $this->release($exception->retryAfter);
 
             return;
-        } catch (YouTubeMusicException $exception) {
+        } catch (ProviderException $exception) {
             report($exception);
-            $sync->youtubeMusicAccount->markCookieExpired();
+
+            if ($exception instanceof CredentialsRejected) {
+                $sync->youtubeMusicAccount->markCookieExpired();
+            }
+
             $sync->update([
                 'status' => YouTubeMusicSyncStatus::Failed,
-                'error_message' => $exception->getMessage(),
+                'error_message' => $exception->errorCode()->value,
                 'finished_at' => now(),
             ]);
             broadcast(new YouTubeMusicSyncUpdated($sync));

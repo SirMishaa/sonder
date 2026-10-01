@@ -148,9 +148,6 @@ it('clears the expired flag when a fresh cookie is pasted', function (): void {
     $account = YouTubeMusicAccount::factory()->for($user)->expired()->create();
     $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1')];
     $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1');
-    // Transitional (plan 1, task 5): the inline sync still runs on the legacy client.
-    $this->fakeYouTubeMusic()->playlists = [Tests\Support\FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = Tests\Support\FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
 
     $this->actingAs($user)->post(route('youtube-music-connection.store'), [
         'cookie' => YouTubeMusicAccountFactory::cookie(),

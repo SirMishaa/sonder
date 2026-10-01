@@ -1,11 +1,5 @@
 declare namespace App {
 namespace Data {
-export type AccountData = {
-name: string,
-channelId: string | null,
-thumbnailUrl: string | null,
-isPremium: boolean,
-};
 export type ArtistTallyData = {
 name: string,
 trackCount: number,
@@ -80,9 +74,13 @@ errorMessage: string | null,
 };
 }
 namespace Enums {
+export type ArtistRole = 'main' | 'featured';
 export type ListenEndReason = 'ended' | 'skipped' | 'previous' | 'jumped' | 'replaced' | 'picked' | 'error' | 'abandoned';
 export type ListenOrigin = 'playlist' | 'search' | 'suggestion' | 'queue' | 'autoplay';
 export type Locale = 'fr_BE' | 'en_US';
+export type Provider = 'youtube_music';
+export type ProviderErrorCode = 'credentials_rejected' | 'unavailable' | 'rate_limited';
+export type SourceKind = 'audio' | 'video';
 export type YouTubeMusicSyncStatus = 'pending' | 'syncing' | 'completed' | 'failed';
 }
 }
