@@ -1,0 +1,82 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Jobs;
+
+use App\Actions\DescribeContributor;
+use App\Actions\ProjectContributorTags;
+use App\Enums\EnrichmentStatus;
+use App\Enums\MetadataSource;
+use App\Exceptions\Metadata\MetadataSourceRateLimited;
+use App\Models\Contributor;
+use App\Models\Enrichment;
+use DateTimeInterface;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
+use Throwable;
+
+/**
+ * Asks one metadata source about one main artist, then projects its tags.
+ * Unique per artist and source: several recordings name the same artist.
+ */
+final class EnrichContributor implements ShouldBeUnique, ShouldQueue
+{
+    use Queueable;
+
+    public int $maxExceptions = 3;
+
+    public int $uniqueFor = 3600;
+
+    public function __construct(
+        public readonly string $contributorId,
+        public readonly MetadataSource $source,
+    ) {
+        $this->onQueue('enrichment');
+    }
+
+    public function uniqueId(): string
+    {
+        return "{$this->contributorId}:{$this->source->value}";
+    }
+
+    public function retryUntil(): DateTimeInterface
+    {
+        return now()->plus(hours: 2);
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function backoff(): array
+    {
+        return [60, 600, 3600];
+    }
+
+    public function handle(): void
+    {
+        $contributor = Contributor::query()->find($this->contributorId);
+
+        if ($contributor === null) {
+            return;
+        }
+
+        try {
+            $status = resolve(DescribeContributor::class)->handle($contributor, $this->source);
+        } catch (MetadataSourceRateLimited $exception) {
+            $this->release($exception->retryAfter);
+
+            return;
+        }
+
+        if ($status instanceof EnrichmentStatus) {
+            resolve(ProjectContributorTags::class)->handle($contributor);
+        }
+    }
+
+    public function failed(Throwable $exception): void
+    {
+        Enrichment::store(Enrichment::CONTRIBUTOR, $this->contributorId, $this->source, 'artist', EnrichmentStatus::Failed, error: $exception->getMessage());
+    }
+}
