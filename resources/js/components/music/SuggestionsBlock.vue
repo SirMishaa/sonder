@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { trans } from 'laravel-vue-i18n';
-import { Plus, Sparkles, X } from 'lucide-vue-next';
+import { Play, Plus, Sparkles, X } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import Artwork from '@/components/music/Artwork.vue';
+import { usePlayer } from '@/composables/usePlayer';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useToast } from '@/composables/useToast';
 import { genreTagsFor, nearArtistFrom } from '@/lib/fixtures';
@@ -11,6 +12,7 @@ import { genreTagsFor, nearArtistFrom } from '@/lib/fixtures';
  * "Would fit this playlist". Fixture: the pool is sampled from the user's own
  * library, and the "near" artist and genre tags come from `@/lib/fixtures`.
  * Adding or skipping only changes this view; nothing is written anywhere.
+ * Playing a suggestion starts it right away, the queue resuming after it.
  */
 type Props = {
     pool: App.Data.SampledTrackData[];
@@ -25,6 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const { toast } = useToast();
+const player = usePlayer();
 
 type Suggestion = {
     key: string;
@@ -85,6 +88,19 @@ function resolve(index: number, action: 'add' | 'skip'): void {
     } else {
         toast(trans('Skipped :title'), suggestion.track.title);
     }
+}
+
+function play(suggestion: Suggestion): void {
+    player.playNext(
+        suggestion.track,
+        {
+            playlistId: null,
+            title: trans('Suggestions for :playlist', {
+                playlist: props.playlistTitle,
+            }),
+        },
+        'suggestion',
+    );
 }
 
 function move(delta: number): void {
@@ -167,6 +183,20 @@ useShortcuts({
             <div class="flex gap-1.5">
                 <button
                     type="button"
+                    class="action"
+                    :aria-label="
+                        $t('Play :title', { title: suggestion.track.title })
+                    "
+                    :disabled="
+                        !suggestion.track.isAvailable ||
+                        !suggestion.track.videoId
+                    "
+                    @click="play(suggestion)"
+                >
+                    <Play class="size-4 fill-current" />
+                </button>
+                <button
+                    type="button"
                     class="action add"
                     :aria-label="`Add ${suggestion.track.title}`"
                     @click="resolve(index, 'add')"
@@ -238,6 +268,11 @@ useShortcuts({
 .action:hover {
     background: var(--color-raised);
     color: var(--color-paper);
+}
+
+.action:disabled {
+    opacity: 0.4;
+    pointer-events: none;
 }
 
 .action.add:hover {
