@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Enums\ArtistRole;
 use App\Enums\Provider;
 use App\Enums\SourceKind;
-use App\Exceptions\Providers\CredentialsRejected;
 use App\Services\Music\YouTubeMusic\YouTubeMusicMapper;
 
 $mapper = fn (): YouTubeMusicMapper => new YouTubeMusicMapper();
@@ -164,13 +163,18 @@ it('maps an account', function () use ($mapper): void {
     $account = $mapper()->account((object) ['name' => 'Mishaa', 'channelId' => 'UC123']);
 
     expect($account->displayName)->toBe('Mishaa')
-        ->and($account->ref->externalId)->toBe('UC123');
+        ->and($account->ref?->externalId)->toBe('UC123');
 });
 
 it('names an account it cannot read', function () use ($mapper): void {
     expect($mapper()->account((object) ['channelId' => 'UC123'])->displayName)->toBe('Unknown account');
 });
 
-it('refuses an account without a channel id', function () use ($mapper): void {
-    $mapper()->account((object) ['name' => 'Mishaa']);
-})->throws(CredentialsRejected::class);
+it('keeps an account that has no YouTube channel', function () use ($mapper): void {
+    // Google accounts that never created a channel have no channel id; their
+    // cookie still works, so this must not read as a refused session.
+    $account = $mapper()->account((object) ['name' => 'Mishaa']);
+
+    expect($account->displayName)->toBe('Mishaa')
+        ->and($account->ref)->toBeNull();
+});

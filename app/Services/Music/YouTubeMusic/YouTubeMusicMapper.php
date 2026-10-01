@@ -7,7 +7,6 @@ namespace App\Services\Music\YouTubeMusic;
 use App\Enums\ArtistRole;
 use App\Enums\Provider;
 use App\Enums\SourceKind;
-use App\Exceptions\Providers\CredentialsRejected;
 use App\Services\Music\Data\ProviderRef;
 use App\Services\Music\Data\RemoteAccount;
 use App\Services\Music\Data\RemoteAlbum;
@@ -33,15 +32,14 @@ final readonly class YouTubeMusicMapper
     private const string PODCAST_EPISODE = 'MUSIC_VIDEO_TYPE_PODCAST_EPISODE';
 
     /**
-     * @throws CredentialsRejected Without a channel id there is no account to act for.
+     * A signed-out session never gets here (ytmusicapi throws "Could not find
+     * account information."), so a missing channel id only means the account
+     * has no YouTube channel.
      */
     public function account(object $payload): RemoteAccount
     {
-        $channelId = $this->string($payload, 'channelId')
-            ?? throw new CredentialsRejected(Provider::YouTubeMusic, 'the account has no channel id');
-
         return new RemoteAccount(
-            ref: new ProviderRef(Provider::YouTubeMusic, $channelId),
+            ref: $this->ref($payload, 'channelId'),
             displayName: $this->string($payload, 'name') ?? 'Unknown account',
         );
     }

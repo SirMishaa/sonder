@@ -19,7 +19,7 @@ beforeEach(function (): void {
 it('verifies the account with a live call', function (): void {
     $account = $this->adapter->account($this->credentials);
 
-    expect($account->ref->externalId)->toBe('UC123')
+    expect($account->ref?->externalId)->toBe('UC123')
         ->and($this->gateway->calls[0])->toBe(['method' => 'account', 'cookie' => 'SID=abc']);
 });
 

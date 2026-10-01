@@ -131,3 +131,14 @@ it('clears the flag when a removed playlist comes back', function (): void {
 
     expect($playlist->refresh()->removed_at)->toBeNull();
 });
+
+it('serves playlist covers through the local proxy', function (): void {
+    $account = YouTubeMusicAccount::factory()->create();
+    $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1')];
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1');
+
+    resolve(SyncPlaylistsFromYouTubeMusicAction::class)->handle($account);
+
+    expect(Playlist::query()->where('youtube_playlist_id', 'PL1')->value('thumbnail_url'))
+        ->toBe(App\Services\Thumbnails\ThumbnailProxy::url('https://example.test/cover.jpg'));
+});

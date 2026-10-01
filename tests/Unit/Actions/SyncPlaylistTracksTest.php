@@ -117,3 +117,49 @@ it('reports no change and keeps the change date when nothing moved', function ()
     expect($changed)->toBeFalse()
         ->and($playlist->refresh()->last_changed_at)->toEqual($changedAt);
 });
+
+function trackLasting(?int $seconds, string $videoId = 'VID_D', ?string $thumbnailUrl = 'https://img.test/t.jpg'): RemoteTrack
+{
+    return new RemoteTrack(
+        ref: new App\Services\Music\Data\ProviderRef(App\Enums\Provider::YouTubeMusic, $videoId),
+        title: 'Timed',
+        artists: [new App\Services\Music\Data\RemoteArtist(null, 'Someone', App\Enums\ArtistRole::Main)],
+        album: null,
+        durationSeconds: $seconds,
+        isrc: null,
+        kind: App\Enums\SourceKind::Audio,
+        isExplicit: false,
+        isAvailable: true,
+        thumbnailUrl: $thumbnailUrl,
+    );
+}
+
+it('stores track durations as a clock', function (?int $seconds, ?string $clock): void {
+    $playlist = Playlist::factory()->create();
+
+    syncTracks($playlist, [trackLasting($seconds)]);
+
+    expect($playlist->tracks()->value('duration'))->toBe($clock);
+})->with([
+    'minutes' => [199, '3:19'],
+    'past an hour' => [3723, '1:02:03'],
+    'unknown' => [null, null],
+]);
+
+it('serves track thumbnails through the local proxy', function (): void {
+    $playlist = Playlist::factory()->create();
+
+    syncTracks($playlist, [trackLasting(199, thumbnailUrl: 'https://img.test/t.jpg')]);
+
+    expect($playlist->tracks()->value('thumbnail_url'))->toBe(App\Services\Thumbnails\ThumbnailProxy::url('https://img.test/t.jpg'));
+});
+
+it('stores the playlist length the same whatever the locale of the sync', function (): void {
+    app()->setLocale('fr_BE');
+    Carbon\Carbon::setLocale('fr_BE');
+    $playlist = Playlist::factory()->create();
+
+    syncTracks($playlist, [trackLasting(3600, 'VID_E'), trackLasting(720, 'VID_F')]);
+
+    expect($playlist->refresh()->duration)->toBe('1h 12m');
+});

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Illuminate\Support\Facades\Http;
-use Tests\Support\FakeProviderAdapter;
 use App\Enums\Provider;
 use App\Services\Music\ProviderRegistry;
 use App\Services\Music\YouTubeMusic\YouTubeMusicCredentials;
+use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Http;
+use Tests\Support\FakeProviderAdapter;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -40,5 +40,4 @@ abstract class TestCase extends BaseTestCase
     {
         return $this->app->make(FakeProviderAdapter::class);
     }
-
 }

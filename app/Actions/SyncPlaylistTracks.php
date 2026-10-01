@@ -144,13 +144,15 @@ final readonly class SyncPlaylistTracks
     }
 
     /**
-     * Total length in the app locale ("48 min", "1h 12m"); null when no
-     * track reports a duration.
+     * Total length ("48m", "1h 12m"), always in English like the label
+     * YouTube Music used to give, so the stored value never depends on the
+     * locale of whoever triggered the sync. Null when no track reports a
+     * duration.
      */
     private function playlistDuration(RemotePlaylist $data): ?string
     {
         $total = array_sum(array_map(fn (RemoteTrack $track): int => $track->durationSeconds ?? 0, $data->tracks));
 
-        return $total === 0 ? null : CarbonInterval::seconds($total)->cascade()->forHumans(['short' => true, 'parts' => 2]);
+        return $total === 0 ? null : CarbonInterval::seconds($total)->cascade()->locale('en')->forHumans(['short' => true, 'parts' => 2]);
     }
 }
