@@ -59,19 +59,24 @@ recreated by every sync, so enrichment has nothing durable to attach to.
 
 - **credits.fm**, public read routes, no key:
   - `POST /v1/resolve/batch` takes up to 50 `{name, artist}` pairs and
-    returns the ISRC per row.
-  - `POST /v1/resolve/track {name, artist, contribute: false}` returns
-    `isrc`, `iswc`, `match_status`, `songwriters[]` (name, IPI, role,
-    publishers), `performers[]` (name, MBID, role, attributes,
-    credit_type) and `sources`.
-  - `GET /v1/isrc/{isrc}?contribute=false` adds `release_date`, `upcs` and
-    `duration` (often null).
+    returns the ISRC per row. **It returns an ISRC even for nonsense** (a
+    made-up title and artist got `USJKL0700030`), so every ISRC is verified.
+  - `GET /v1/isrc/{isrc}?contribute=false` returns everything per
+    recording in one call: `recording_title`, `artist_names`,
+    `recording_artists` (with MBIDs), `iswc`, `release_date`,
+    `songwriters[]` (name, IPI, role, publishers), `performers[]` (name,
+    MBID, role, attributes, credit_type), `upcs`, and `duration` (often
+    null). `POST /v1/resolve/track` is not needed.
   - No genres, no audio format. Fuzzy name matching, no duration input.
   - A 503 from credits.fm means its database is down, not a rate limit.
 - **MusicBrainz**, 1 request/s per IP, a descriptive User-Agent required
   (a 503 means over the limit):
-  - `GET /ws/2/isrc/{isrc}?inc=genres+tags+artist-credits` returns a
-    **list** of recordings, each with its length.
+  - `GET /ws/2/isrc/{isrc}?inc=artist-credits` returns a **list** of
+    recordings, each with its length (ms), or 404. The ISRC resource
+    rejects `inc=genres`.
+  - `GET /ws/2/recording/{mbid}?inc=genres+tags+artist-credits+isrcs`
+    gives genres and tags with vote counts, `first-release-date` and all
+    ISRCs.
   - `GET /ws/2/recording?query=…` (search fallback, with a score).
   - `GET /ws/2/artist/{mbid}?inc=genres+tags`.
 - **Last.fm**, at most 5 requests/s averaged over 5 minutes, free key:
@@ -107,6 +112,10 @@ gets an explicit index. Columns in a unique key are `NOT NULL`.
 
 ### Object architecture
 
+Raw gateways plus pure mappers, as for YouTube Music: Actions depend on the
+gateway **interfaces** (they must store raw payloads), mappers turn payloads
+into Data objects for decisions and projection.
+
 ```
 app/Enums/MetadataSource.php             CreditsFm, MusicBrainz, LastFm, YouTubeMusic
 app/Enums/EnrichmentStatus.php           Done, NotFound, Failed
@@ -117,12 +126,11 @@ app/Support/MusicText.php                normalisation shared with plan 2's matc
 app/Exceptions/Metadata/                 MetadataSourceRateLimited (retryAfter),
                                          MetadataSourceUnavailable
 app/Services/Metadata/
-├── Contracts/  ResolvesRecordings, DescribesRecordings, DescribesContributors
-├── Data/       ResolvedRecording, RecordingDescription, ContributorDescription,
-│               Credit, WeightedTag, SimilarRecording
-├── CreditsFm/   {CreditsFmGateway, HttpCreditsFmGateway, RateLimitedCreditsFmGateway, CreditsFmSource}
-├── MusicBrainz/ {…Gateway, Http…, RateLimited…, MusicBrainzSource}
-└── LastFm/      {…Gateway, Http…, RateLimited…, LastFmSource}
+├── CallBudget.php   spends a named limiter (shared by every decorator)
+├── Data/       TrackQuery, RegistryRecording, Credit, WeightedTag
+├── CreditsFm/   {CreditsFmGateway, HttpCreditsFmGateway, RateLimitedCreditsFmGateway, CreditsFmMapper}
+├── MusicBrainz/ {…Gateway, Http…, RateLimited…, MusicBrainzMapper}
+└── LastFm/      {…Gateway, Http…, RateLimited…, LastFmMapper}   (D2)
 app/Services/Music/Contracts/DescribesAudioQuality.php   implemented by the YouTube Music adapter
 ```
 
@@ -186,20 +194,23 @@ recently verified first.
 
 1. `ResolveLibraryTracks` (chunks of 50):
    - credits.fm `resolve/batch`.
-   - Each ISRC is checked with MusicBrainz `isrc` lookup. Among its
+   - Each ISRC is checked with MusicBrainz `isrc` lookup (404 = unknown). Among its
      recordings, keep the one whose length is within 5 s of the source's
      duration and whose normalised artist matches. Result: MBID, confidence
      1.0.
-   - No such recording: keep the ISRC with confidence 0.6 when the
-     normalised title and artist match, otherwise reject.
+   - No such recording: credits.fm `isrc` detail; keep the ISRC with
+     confidence 0.6 when its normalised title and artist match the query,
+     otherwise reject.
    - No ISRC: MusicBrainz recording search, accepted with a score of at
      least 90, the same artist and a duration within 5 s (confidence 0.9).
    - Nothing: `not_found`.
    - Upserts the recording and the resolution. Then dispatches
      `EnrichRecording` once per source, and `CheckSourceQuality` (D2).
 2. `EnrichRecording(recording, source)` stores the raw payloads:
-   - credits.fm: `resolve/track` (credits) and `isrc` (release date).
-   - MusicBrainz: already fetched in step 1 (stored there).
+   - credits.fm (recording has an ISRC): `isrc` detail (credits, ISWC,
+     release date).
+   - MusicBrainz (recording has an MBID): `recording` lookup (genres, tags,
+     artists, ISRCs, first release date).
    - Last.fm (D2): `getInfo`, `getTopTags`, `getSimilar`.
    - Then dispatches `ProjectRecordingMetadata(recording)`.
 3. `ProjectRecordingMetadata` rebuilds the structured rows of that recording
@@ -213,19 +224,19 @@ recently verified first.
 
 **Triggers.**
 - `metadata:enrich {--refresh}`: the whole library.
-- After a playlist sync, the tracks without a resolution. The hook sits in
-  `SyncPlaylistsFromYouTubeMusicAction` today and moves to plan 2's import
-  action.
+- After a library sync completes, the tracks without a resolution. The hook
+  sits in the `SyncYouTubeMusicLibrary` job today and moves to plan 2's
+  import.
 - The existing daily schedule runs a `metadata:retry-due` command for due
   `failed`, `not_found` and stale rows. It stays daily so a scale-to-zero
   environment is not kept awake.
 
 **Call counts** for the first run (about 1 256 tracks, about 600 main
 artists):
-- credits.fm: about 26 batch calls, plus about 2 500 for credits and release
-  dates. At 2/s, about 20 min, in parallel with MusicBrainz.
-- MusicBrainz: about 1 256 ISRC lookups, a few hundred searches and about
-  600 artist lookups. At 1/s, about 40 to 50 min.
+- credits.fm: about 26 batch calls, plus about 1 256 `isrc` details. At
+  2/s, about 10 min, in parallel with MusicBrainz.
+- MusicBrainz: about 1 256 ISRC lookups, about 1 256 recording lookups, a
+  few hundred searches and about 600 artist lookups. At 1/s, about 1 h 15.
 - Last.fm: about 3 800 track calls and about 600 artist calls. At 4/s, about
   20 min.
 - YouTube Music: 1 256 `get_song` calls at about 350/h after the reserve,
@@ -306,7 +317,8 @@ skipped and logged once.
 Three plans, each shippable and useful alone:
 
 - **D1, data foundation.**
-  - All tables.
+  - The tables it fills (`similar_recordings` and `source_audio_qualities`
+    come with D2).
   - `MusicText`.
   - credits.fm and MusicBrainz sources with their limiters.
   - Resolution, recording and contributor description, projection.
