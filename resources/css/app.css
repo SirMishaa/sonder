@@ -359,3 +359,12 @@
         transition-duration: 0.01ms !important;
     }
 }
+
+/* Tailwind v4 leaves buttons with the default cursor; anything clickable
+   should say so. */
+@layer base {
+    button:not(:disabled),
+    [role='button']:not([aria-disabled='true']) {
+        cursor: pointer;
+    }
+}

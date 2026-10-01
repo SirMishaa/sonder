@@ -529,5 +529,6 @@
     "The listened time is longer than the listen itself.": "La durée écoutée dépasse la durée de l'écoute.",
     "Syncing “:title”…": "Synchronisation de « :title »…",
     "Fetching your playlists…": "Récupération de vos playlists…",
-    "Update connection": "Mettre à jour la connexion"
+    "Update connection": "Mettre à jour la connexion",
+    "Pause :title": "Mettre en pause :title"
 }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { trans } from 'laravel-vue-i18n';
-import { Play, Plus, Sparkles, X } from 'lucide-vue-next';
+import { Plus, Sparkles, X } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
-import Artwork from '@/components/music/Artwork.vue';
+import PlayableArtwork from '@/components/music/PlayableArtwork.vue';
 import { usePlayer } from '@/composables/usePlayer';
 import { useShortcuts } from '@/composables/useShortcuts';
 import { useToast } from '@/composables/useToast';
@@ -153,10 +153,22 @@ useShortcuts({
                 'is-leaving': suggestion.leaving,
             }"
         >
-            <Artwork
-                :src="suggestion.track.thumbnailUrl"
-                class="size-9 rounded"
-            />
+            <button
+                type="button"
+                class="group size-9 rounded disabled:opacity-60"
+                :aria-label="
+                    $t('Play :title', { title: suggestion.track.title })
+                "
+                :disabled="
+                    !suggestion.track.isAvailable || !suggestion.track.videoId
+                "
+                @click="play(suggestion)"
+            >
+                <PlayableArtwork
+                    :src="suggestion.track.thumbnailUrl"
+                    class="size-9 rounded"
+                />
+            </button>
             <div class="min-w-0">
                 <p class="truncate font-bold">{{ suggestion.track.title }}</p>
                 <p class="truncate text-[13px] text-dim">
@@ -181,20 +193,6 @@ useShortcuts({
                 </span>
             </div>
             <div class="flex gap-1.5">
-                <button
-                    type="button"
-                    class="action"
-                    :aria-label="
-                        $t('Play :title', { title: suggestion.track.title })
-                    "
-                    :disabled="
-                        !suggestion.track.isAvailable ||
-                        !suggestion.track.videoId
-                    "
-                    @click="play(suggestion)"
-                >
-                    <Play class="size-4 fill-current" />
-                </button>
                 <button
                     type="button"
                     class="action add"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import Artwork from '@/components/music/Artwork.vue';
+import PlayableArtwork from '@/components/music/PlayableArtwork.vue';
 import TrackMiniRow from '@/components/music/TrackMiniRow.vue';
 import PlayerDebugPanel from '@/components/shell/PlayerDebugPanel.vue';
 import { usePlayer } from '@/composables/usePlayer';
@@ -23,23 +23,31 @@ const debugOpen = ref(false);
             <h2 class="px-2 pb-2.5 text-[13.5px] font-bold">
                 {{ $t('Now playing') }}
             </h2>
-            <div
+            <button
                 v-if="player.current.value"
-                class="mb-4 grid grid-cols-[64px_1fr] gap-3 rounded-[10px] bg-raised p-2"
+                type="button"
+                class="group mb-4 grid w-full grid-cols-[64px_1fr] gap-3 rounded-[10px] bg-raised p-2 text-left"
+                :aria-label="
+                    $t(player.state.playing ? 'Pause :title' : 'Play :title', {
+                        title: player.current.value.title,
+                    })
+                "
+                @click="player.toggle()"
             >
-                <Artwork
+                <PlayableArtwork
                     :src="player.current.value.thumbnailUrl"
+                    :playing="player.state.playing"
                     class="size-16 rounded-md"
                 />
-                <div class="min-w-0 self-center">
-                    <p class="truncate font-bold">
+                <span class="min-w-0 self-center">
+                    <span class="block truncate font-bold">
                         {{ player.current.value.title }}
-                    </p>
-                    <p class="truncate text-[13px] text-dim">
+                    </span>
+                    <span class="block truncate text-[13px] text-dim">
                         {{ player.current.value.artists }}
-                    </p>
-                </div>
-            </div>
+                    </span>
+                </span>
+            </button>
             <p v-else class="mb-4 px-2 text-sm text-faint">
                 {{ $t('Nothing is playing.') }}
             </p>
