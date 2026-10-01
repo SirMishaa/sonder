@@ -137,6 +137,17 @@ producers), `works` (ISWC, grouping live/cover/remix versions, with a nullable
 payload), listener statistics over time, per-item remote ids for writing
 (sub-project C).
 
+**Amendment (2026-10-01, metadata enrichment).** Sub-project D ships before
+plan 2 and creates `recordings`, `contributors` and `recording_resolutions`
+(see `2026-10-01-metadata-enrichment-design.md`). They are the seed of this
+catalogue: plan 2 grows `recordings` into `tracks` and `contributors` into
+`artists` (rename, then add the columns above; `artists` keeps `ipi`), and
+turns `recording_resolutions` plus `source_audio_qualities` into
+`track_sources`, instead of creating parallel tables. Enrichment tables
+(`recording_tags`, `recording_contributors`, `similar_recordings`,
+`enrichments`…) follow the rename. `MusicText` from sub-project D is the
+normaliser behind `match_title` / `match_artist` / `normalized_name`.
+
 ### Object architecture
 
 ```
