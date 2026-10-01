@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\Metadata\MetadataSourceRateLimited;
 use App\Exceptions\Providers\ProviderRateLimited;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -30,4 +31,5 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         // Sonder's own call budget being spent is expected, not an incident.
         $exceptions->dontReport(ProviderRateLimited::class);
+        $exceptions->dontReport(MetadataSourceRateLimited::class);
     })->create();

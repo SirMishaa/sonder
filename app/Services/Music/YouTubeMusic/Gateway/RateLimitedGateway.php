@@ -6,6 +6,7 @@ namespace App\Services\Music\YouTubeMusic\Gateway;
 
 use App\Enums\Provider;
 use App\Exceptions\Providers\ProviderRateLimited;
+use App\Services\Metadata\EnrichmentTelemetry;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Arr;
@@ -56,27 +57,34 @@ final readonly class RateLimitedGateway implements YouTubeMusicGateway
         $limits = $this->limits(mb_substr(hash('sha256', $cookie), 0, 16));
 
         foreach ($limits as $limit) {
-            if ($this->limiter->tooManyAttempts($limit->key, $limit->maxAttempts)) {
-                throw new ProviderRateLimited(Provider::YouTubeMusic, $this->limiter->availableIn($limit->key));
+            if ($this->limiter->tooManyAttempts($limit['key'], $limit['maxAttempts'])) {
+                resolve(EnrichmentTelemetry::class)->refusal(self::LIMITER);
+
+                throw new ProviderRateLimited(Provider::YouTubeMusic, $this->limiter->availableIn($limit['key']));
             }
         }
 
         foreach ($limits as $limit) {
-            $this->limiter->hit($limit->key, $limit->decaySeconds);
+            $this->limiter->hit($limit['key'], $limit['decaySeconds']);
         }
     }
 
     /**
-     * @return list<Limit>
+     * @return list<array{key: string, maxAttempts: int, decaySeconds: int}>
      */
     private function limits(string $account): array
     {
         $limiter = $this->limiter->limiter(self::LIMITER)
             ?? throw new LogicException('The ['.self::LIMITER.'] rate limiter is not defined.');
 
-        return array_values(array_filter(
-            Arr::wrap($limiter($account)),
-            fn (mixed $limit): bool => $limit instanceof Limit,
-        ));
+        $limits = [];
+
+        foreach (Arr::wrap($limiter($account)) as $limit) {
+            if ($limit instanceof Limit && is_string($limit->key)) {
+                $limits[] = ['key' => $limit->key, 'maxAttempts' => $limit->maxAttempts, 'decaySeconds' => $limit->decaySeconds];
+            }
+        }
+
+        return $limits;
     }
 }

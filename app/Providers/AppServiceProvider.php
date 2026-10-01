@@ -6,6 +6,9 @@ namespace App\Providers;
 
 use App\Enums\Provider;
 use App\Models\User;
+use App\Services\Metadata\CallBudget;
+use App\Services\Metadata\EnrichmentTelemetry;
+use App\Services\Metadata\OpenTelemetryEnrichmentTelemetry;
 use App\Services\Music\ProviderRegistry;
 use App\Services\Music\YouTubeMusic\Gateway\RateLimitedGateway;
 use App\Services\Music\YouTubeMusic\Gateway\YouTubeMusicGateway;
@@ -29,6 +32,8 @@ final class AppServiceProvider extends ServiceProvider
             $this->app->make(CacheRateLimiter::class),
         ));
 
+        $this->app->bind(EnrichmentTelemetry::class, OpenTelemetryEnrichmentTelemetry::class);
+
         $this->app->singleton(ProviderRegistry::class, fn (): ProviderRegistry => (new ProviderRegistry($this->app))
             ->register(Provider::YouTubeMusic, YouTubeMusicAdapter::class, YouTubeMusicCredentials::class));
 
@@ -46,6 +51,16 @@ final class AppServiceProvider extends ServiceProvider
         RateLimiter::for(RateLimitedGateway::LIMITER, fn (string $account): array => [
             Limit::perMinute(30)->by('youtube-music:minute:'.$account),
             Limit::perHour(500)->by('youtube-music:hour:'.$account),
+        ]);
+
+        // credits.fm documents no limit: stay polite. MusicBrainz allows one
+        // request a second per IP and blocks clients that exceed it.
+        RateLimiter::for(CallBudget::CREDITS_FM, fn (string $key): array => [
+            Limit::perSecond(2)->by('credits-fm:second:'.$key),
+            Limit::perHour(3000)->by('credits-fm:hour:'.$key),
+        ]);
+        RateLimiter::for(CallBudget::MUSICBRAINZ, fn (string $key): array => [
+            Limit::perSecond(1)->by('musicbrainz:second:'.$key),
         ]);
     }
 
