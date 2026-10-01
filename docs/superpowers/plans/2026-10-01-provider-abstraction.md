@@ -47,12 +47,12 @@ app/Enums/Provider.php                                  provider identity (label
 app/Enums/SourceKind.php                                audio | video
 app/Enums/ArtistRole.php                                main | featured
 app/Enums/ProviderErrorCode.php                         normalised failure codes + translated messages
-app/Services/Music/Exceptions/ProviderException.php     interface every provider failure implements
-app/Services/Music/Exceptions/DescribesProviderFailure.php  trait: provider + userMessage()
-app/Services/Music/Exceptions/CredentialsRejected.php
-app/Services/Music/Exceptions/ProviderUnavailable.php
-app/Services/Music/Exceptions/ProviderRateLimited.php
-app/Services/Music/Exceptions/UnsupportedCapability.php
+app/Exceptions/Providers/ProviderException.php     interface every provider failure implements
+app/Exceptions/Providers/DescribesProviderFailure.php  trait: provider + userMessage()
+app/Exceptions/Providers/CredentialsRejected.php
+app/Exceptions/Providers/ProviderUnavailable.php
+app/Exceptions/Providers/ProviderRateLimited.php
+app/Exceptions/Providers/UnsupportedCapability.php
 app/Services/Music/Contracts/ProviderCredentials.php
 app/Services/Music/Contracts/ProviderAdapter.php
 app/Services/Music/Contracts/ReadsPlaylists.php
@@ -89,7 +89,7 @@ Modified: `bootstrap/app.php`, `app/Providers/AppServiceProvider.php`, `app/Mode
 
 **Files:**
 - Create: `app/Enums/Provider.php`, `app/Enums/SourceKind.php`, `app/Enums/ArtistRole.php`, `app/Enums/ProviderErrorCode.php`
-- Create: `app/Services/Music/Exceptions/{ProviderException,DescribesProviderFailure,CredentialsRejected,ProviderUnavailable,ProviderRateLimited,UnsupportedCapability}.php`
+- Create: `app/Exceptions/Providers/{ProviderException,DescribesProviderFailure,CredentialsRejected,ProviderUnavailable,ProviderRateLimited,UnsupportedCapability}.php`
 - Modify: `bootstrap/app.php` (dontReport), `lang/fr_BE.json`
 - Test: `tests/Unit/Services/Music/ProviderExceptionTest.php`
 
@@ -106,10 +106,10 @@ declare(strict_types=1);
 
 use App\Enums\Provider;
 use App\Enums\ProviderErrorCode;
-use App\Services\Music\Exceptions\CredentialsRejected;
-use App\Services\Music\Exceptions\ProviderException;
-use App\Services\Music\Exceptions\ProviderRateLimited;
-use App\Services\Music\Exceptions\ProviderUnavailable;
+use App\Exceptions\Providers\CredentialsRejected;
+use App\Exceptions\Providers\ProviderException;
+use App\Exceptions\Providers\ProviderRateLimited;
+use App\Exceptions\Providers\ProviderUnavailable;
 use Illuminate\Support\Facades\Exceptions;
 
 it('describes each failure with a code and a translated message naming the provider', function (ProviderException $exception, ProviderErrorCode $code, string $message): void {
@@ -271,14 +271,14 @@ enum ProviderErrorCode: string
 
 - [ ] **Step 4: Write the exception contract, trait and failures**
 
-`app/Services/Music/Exceptions/ProviderException.php`:
+`app/Exceptions/Providers/ProviderException.php`:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace App\Services\Music\Exceptions;
+namespace App\Exceptions\Providers;
 
 use App\Enums\Provider;
 use App\Enums\ProviderErrorCode;
@@ -310,14 +310,14 @@ interface ProviderException extends Throwable
 }
 ```
 
-`app/Services/Music/Exceptions/DescribesProviderFailure.php`:
+`app/Exceptions/Providers/DescribesProviderFailure.php`:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace App\Services\Music\Exceptions;
+namespace App\Exceptions\Providers;
 
 use App\Enums\Provider;
 
@@ -350,14 +350,14 @@ trait DescribesProviderFailure
 }
 ```
 
-`app/Services/Music/Exceptions/CredentialsRejected.php`:
+`app/Exceptions/Providers/CredentialsRejected.php`:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace App\Services\Music\Exceptions;
+namespace App\Exceptions\Providers;
 
 use App\Enums\Provider;
 use App\Enums\ProviderErrorCode;
@@ -386,14 +386,14 @@ final class CredentialsRejected extends RuntimeException implements ProviderExce
 }
 ```
 
-`app/Services/Music/Exceptions/ProviderUnavailable.php`:
+`app/Exceptions/Providers/ProviderUnavailable.php`:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace App\Services\Music\Exceptions;
+namespace App\Exceptions\Providers;
 
 use App\Enums\Provider;
 use App\Enums\ProviderErrorCode;
@@ -422,14 +422,14 @@ final class ProviderUnavailable extends RuntimeException implements ProviderExce
 }
 ```
 
-`app/Services/Music/Exceptions/ProviderRateLimited.php`:
+`app/Exceptions/Providers/ProviderRateLimited.php`:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace App\Services\Music\Exceptions;
+namespace App\Exceptions\Providers;
 
 use App\Enums\Provider;
 use App\Enums\ProviderErrorCode;
@@ -465,14 +465,14 @@ final class ProviderRateLimited extends RuntimeException implements ProviderExce
 }
 ```
 
-`app/Services/Music/Exceptions/UnsupportedCapability.php`:
+`app/Exceptions/Providers/UnsupportedCapability.php`:
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace App\Services\Music\Exceptions;
+namespace App\Exceptions\Providers;
 
 use App\Enums\Provider;
 use LogicException;
@@ -497,7 +497,7 @@ In `bootstrap/app.php`, replace the `withExceptions` body:
 ```php
     ->withExceptions(function (Exceptions $exceptions): void {
         // Sonder's own call budget being spent is expected, not an incident.
-        $exceptions->dontReport(App\Services\Music\Exceptions\ProviderRateLimited::class);
+        $exceptions->dontReport(App\Exceptions\Providers\ProviderRateLimited::class);
     })->create();
 ```
 
@@ -522,9 +522,9 @@ Expected: PASS (6 tests).
 
 ```bash
 vendor/bin/pint --dirty --format agent
-vendor/bin/phpstan analyze --level 8 app/Enums app/Services/Music/Exceptions tests/Unit/Services/Music/ProviderExceptionTest.php
+vendor/bin/phpstan analyze --level 8 app/Enums app/Exceptions/Providers tests/Unit/Services/Music/ProviderExceptionTest.php
 ./vendor/bin/pest --parallel
-git add app/Enums/Provider.php app/Enums/SourceKind.php app/Enums/ArtistRole.php app/Enums/ProviderErrorCode.php app/Services/Music/Exceptions bootstrap/app.php lang/fr_BE.json tests/Unit/Services/Music/ProviderExceptionTest.php
+git add app/Enums/Provider.php app/Enums/SourceKind.php app/Enums/ArtistRole.php app/Enums/ProviderErrorCode.php app/Exceptions/Providers bootstrap/app.php lang/fr_BE.json tests/Unit/Services/Music/ProviderExceptionTest.php
 git commit -m "feat(providers): add the provider enum and normalised, translated failures"
 ```
 
@@ -570,7 +570,7 @@ use App\Services\Music\Contracts\ProviderCredentials;
 use App\Services\Music\Contracts\ReadsPlaylists;
 use App\Services\Music\Data\ProviderRef;
 use App\Services\Music\Data\RemoteAccount;
-use App\Services\Music\Exceptions\UnsupportedCapability;
+use App\Exceptions\Providers\UnsupportedCapability;
 use App\Services\Music\ProviderRegistry;
 
 final class AccountOnlyAdapter implements ProviderAdapter
@@ -920,7 +920,7 @@ namespace App\Services\Music\Contracts;
 
 use App\Enums\Provider;
 use App\Services\Music\Data\RemoteAccount;
-use App\Services\Music\Exceptions\ProviderException;
+use App\Exceptions\Providers\ProviderException;
 
 /**
  * The minimum every provider integration offers. Further abilities are
@@ -955,7 +955,7 @@ namespace App\Services\Music\Contracts;
 
 use App\Services\Music\Data\RemotePlaylist;
 use App\Services\Music\Data\RemotePlaylistSummary;
-use App\Services\Music\Exceptions\ProviderException;
+use App\Exceptions\Providers\ProviderException;
 
 /**
  * Capability: list the account's playlists and read one with its tracks.
@@ -993,7 +993,7 @@ namespace App\Services\Music;
 use App\Enums\Provider;
 use App\Services\Music\Contracts\ProviderAdapter;
 use App\Services\Music\Contracts\ProviderCredentials;
-use App\Services\Music\Exceptions\UnsupportedCapability;
+use App\Exceptions\Providers\UnsupportedCapability;
 use Illuminate\Contracts\Container\Container;
 use LogicException;
 
@@ -1121,8 +1121,8 @@ Expected: PHPStan 0 errors (it must infer `capability()`/`require()` return type
 
 declare(strict_types=1);
 
-use App\Services\Music\Exceptions\CredentialsRejected;
-use App\Services\Music\Exceptions\ProviderUnavailable;
+use App\Exceptions\Providers\CredentialsRejected;
+use App\Exceptions\Providers\ProviderUnavailable;
 use App\Services\Music\YouTubeMusic\YouTubeMusicErrorTranslator;
 use Ytmusicapi\YTMusicServerError;
 use Ytmusicapi\YTMusicUserError;
@@ -1150,7 +1150,7 @@ it('classifies ytmusicapi failures', function (Throwable $failure, string $expec
 
 declare(strict_types=1);
 
-use App\Services\Music\Exceptions\ProviderRateLimited;
+use App\Exceptions\Providers\ProviderRateLimited;
 use App\Services\Music\YouTubeMusic\Gateway\RateLimitedGateway;
 use Illuminate\Cache\RateLimiter;
 use Tests\Support\FakeYouTubeMusicGateway;
@@ -1211,7 +1211,7 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
-use App\Services\Music\Exceptions\ProviderException;
+use App\Exceptions\Providers\ProviderException;
 use App\Services\Music\YouTubeMusic\Gateway\YouTubeMusicGateway;
 use RuntimeException;
 
@@ -1294,7 +1294,7 @@ declare(strict_types=1);
 
 namespace App\Services\Music\YouTubeMusic\Gateway;
 
-use App\Services\Music\Exceptions\ProviderException;
+use App\Exceptions\Providers\ProviderException;
 
 /**
  * Raw calls to YouTube Music's private API. Returns the untyped payloads of
@@ -1336,9 +1336,9 @@ declare(strict_types=1);
 namespace App\Services\Music\YouTubeMusic;
 
 use App\Enums\Provider;
-use App\Services\Music\Exceptions\CredentialsRejected;
-use App\Services\Music\Exceptions\ProviderException;
-use App\Services\Music\Exceptions\ProviderUnavailable;
+use App\Exceptions\Providers\CredentialsRejected;
+use App\Exceptions\Providers\ProviderException;
+use App\Exceptions\Providers\ProviderUnavailable;
 use Illuminate\Support\Str;
 use Throwable;
 use Ytmusicapi\YTMusicServerError;
@@ -1392,7 +1392,7 @@ declare(strict_types=1);
 namespace App\Services\Music\YouTubeMusic\Gateway;
 
 use App\Enums\Provider;
-use App\Services\Music\Exceptions\ProviderUnavailable;
+use App\Exceptions\Providers\ProviderUnavailable;
 use App\Services\Music\YouTubeMusic\CookielessSession;
 use App\Services\Music\YouTubeMusic\YouTubeMusicErrorTranslator;
 use Throwable;
@@ -1464,7 +1464,7 @@ declare(strict_types=1);
 namespace App\Services\Music\YouTubeMusic\Gateway;
 
 use App\Enums\Provider;
-use App\Services\Music\Exceptions\ProviderRateLimited;
+use App\Exceptions\Providers\ProviderRateLimited;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Arr;
@@ -1585,7 +1585,7 @@ declare(strict_types=1);
 use App\Enums\ArtistRole;
 use App\Enums\Provider;
 use App\Enums\SourceKind;
-use App\Services\Music\Exceptions\CredentialsRejected;
+use App\Exceptions\Providers\CredentialsRejected;
 use App\Services\Music\YouTubeMusic\YouTubeMusicMapper;
 
 $mapper = fn (): YouTubeMusicMapper => new YouTubeMusicMapper();
@@ -1767,7 +1767,7 @@ declare(strict_types=1);
 
 use App\Enums\Provider;
 use App\Services\Music\Contracts\ProviderCredentials;
-use App\Services\Music\Exceptions\CredentialsRejected;
+use App\Exceptions\Providers\CredentialsRejected;
 use App\Services\Music\YouTubeMusic\YouTubeMusicAdapter;
 use App\Services\Music\YouTubeMusic\YouTubeMusicCredentials;
 use App\Services\Music\YouTubeMusic\YouTubeMusicMapper;
@@ -1924,7 +1924,7 @@ use App\Services\Music\Data\RemoteArtist;
 use App\Services\Music\Data\RemotePlaylist;
 use App\Services\Music\Data\RemotePlaylistSummary;
 use App\Services\Music\Data\RemoteTrack;
-use App\Services\Music\Exceptions\CredentialsRejected;
+use App\Exceptions\Providers\CredentialsRejected;
 
 /**
  * Turns ytmusicapi's untyped payloads into Sonder's exchange data.
@@ -2152,7 +2152,7 @@ use App\Services\Music\Contracts\ProviderCredentials;
 use App\Services\Music\Contracts\ReadsPlaylists;
 use App\Services\Music\Data\RemoteAccount;
 use App\Services\Music\Data\RemotePlaylist;
-use App\Services\Music\Exceptions\CredentialsRejected;
+use App\Exceptions\Providers\CredentialsRejected;
 use App\Services\Music\YouTubeMusic\Gateway\YouTubeMusicGateway;
 use LogicException;
 
@@ -2353,9 +2353,9 @@ use App\Services\Music\Data\RemoteArtist;
 use App\Services\Music\Data\RemotePlaylist;
 use App\Services\Music\Data\RemotePlaylistSummary;
 use App\Services\Music\Data\RemoteTrack;
-use App\Services\Music\Exceptions\CredentialsRejected;
-use App\Services\Music\Exceptions\ProviderRateLimited;
-use App\Services\Music\Exceptions\ProviderUnavailable;
+use App\Exceptions\Providers\CredentialsRejected;
+use App\Exceptions\Providers\ProviderRateLimited;
+use App\Exceptions\Providers\ProviderUnavailable;
 use RuntimeException;
 
 /**
@@ -2533,7 +2533,7 @@ Apply in the four test files listed under **Files**:
 | `FakeYouTubeMusicClient::` | `FakeProviderAdapter::` |
 | `$this->fakeYouTubeMusic()` | `$this->fakeProvider()` |
 | `$client->calls[0]['cookie']` | `$client->calls[0]['credentials']['cookie']` |
-| `use App\Exceptions\YouTubeMusicException;` + `YouTubeMusicException::class` in `assertReported` | `use App\Services\Music\Exceptions\CredentialsRejected;` + `CredentialsRejected::class` |
+| `use App\Exceptions\YouTubeMusicException;` + `YouTubeMusicException::class` in `assertReported` | `use App\Exceptions\Providers\CredentialsRejected;` + `CredentialsRejected::class` |
 
 Add to `tests/Unit/Actions/VerifyYouTubeMusicCookieTest.php`:
 
@@ -2543,7 +2543,7 @@ it('leaves the cookie alone when YouTube Music cannot be reached', function (): 
     $this->fakeProvider()->unavailable = true;
 
     expect(fn () => resolve(VerifyYouTubeMusicCookie::class)->handle($account))
-        ->toThrow(App\Services\Music\Exceptions\ProviderUnavailable::class);
+        ->toThrow(App\Exceptions\Providers\ProviderUnavailable::class);
     expect($account->refresh()->cookie_expired_at)->toBeNull();
 });
 
@@ -2714,8 +2714,8 @@ Apply the Task 5 replacement table to every test file listed under **Files**, pl
 
 | Old | New |
 |---|---|
-| `use App\Exceptions\YouTubeMusicException;` / `YouTubeMusicException::class` | `use App\Services\Music\Exceptions\CredentialsRejected;` / `CredentialsRejected::class` |
-| `use App\Exceptions\YouTubeMusicRateLimitedException;` / its `::class` | `use App\Services\Music\Exceptions\ProviderRateLimited;` / `ProviderRateLimited::class` |
+| `use App\Exceptions\YouTubeMusicException;` / `YouTubeMusicException::class` | `use App\Exceptions\Providers\CredentialsRejected;` / `CredentialsRejected::class` |
+| `use App\Exceptions\YouTubeMusicRateLimitedException;` / its `::class` | `use App\Exceptions\Providers\ProviderRateLimited;` / `ProviderRateLimited::class` |
 | Track built with `new TrackData(videoId: …, artists: 'A, B', duration: '3:19', …)` in `SyncPlaylistTracksTest` | `FakeProviderAdapter::aTrack(title: …, videoId: …)` (artists `Ludwig Göransson`, 199 s → stored `duration` `3:19`) |
 | A test asserting the "signed out on empty library" behaviour of the action | delete it: the adapter owns that rule (covered in Task 4) |
 
