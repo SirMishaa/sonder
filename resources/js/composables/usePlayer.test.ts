@@ -9,6 +9,7 @@ import {
 import { createPlayer } from '@/composables/usePlayer';
 import { FakeTransport } from '@/lib/player/fakeTransport';
 import type { ListenPayload } from '@/lib/player/listenTracker';
+import type { QueueSnapshot, QueueSync } from '@/lib/player/queueSync';
 
 const SOURCE = { playlistId: 'PL1', title: 'Road trip' };
 
@@ -45,6 +46,7 @@ function setup(
     options: {
         storage?: ReturnType<typeof memoryStorage>;
         ready?: boolean;
+        sync?: QueueSync;
     } = {},
 ) {
     const sent: ListenPayload[] = [];
@@ -64,6 +66,7 @@ function setup(
         storage: options.storage ?? memoryStorage(),
         now: () => Date.now(),
         notify: (message) => notices.push(message),
+        sync: options.sync ?? null,
     });
     const transport = new FakeTransport();
     player.attachTransport(transport);
@@ -73,6 +76,48 @@ function setup(
     }
 
     return { player, transport, sent, unloaded, notices };
+}
+
+/** A server that numbers every save, starting after `version`. */
+function fakeSync(version = 0) {
+    const saved: QueueSnapshot[] = [];
+
+    return {
+        saved,
+        sync: {
+            save: async (snapshot: QueueSnapshot) => {
+                saved.push(
+                    JSON.parse(JSON.stringify(snapshot)) as QueueSnapshot,
+                );
+
+                return version + saved.length;
+            },
+        },
+    };
+}
+
+function remoteQueue(
+    tracks: App.Data.TrackData[],
+    version: number,
+): App.Data.PlayerQueueData {
+    return {
+        tracks: tracks.map((item, position) => ({
+            key: `${item.videoId}#${position}`,
+            videoId: item.videoId,
+            title: item.title,
+            artists: item.artists,
+            album: null,
+            duration: '3:00',
+            durationSeconds: 180,
+            thumbnailUrl: null,
+            playlistId: 'PL2',
+            queued: false,
+        })),
+        index: 0,
+        source: { playlistId: 'PL2', title: 'From the phone' },
+        origin: 'playlist',
+        version,
+    };
 }
 
 /** Plays `seconds` of media with the wall clock moving in step. */
@@ -90,6 +135,89 @@ beforeEach(() => {
 
 afterEach(() => {
     vi.useRealTimers();
+});
+
+describe('queue sync', () => {
+    it('saves the queue a second after it last changed', async () => {
+        const { saved, sync } = fakeSync();
+        const { player } = setup({ sync });
+
+        player.playTracks([track('a'), track('b')], 0, SOURCE);
+        await vi.advanceTimersByTimeAsync(500);
+        player.queueNext(track('c'), 2, SOURCE);
+        await vi.advanceTimersByTimeAsync(999);
+
+        expect(saved).toHaveLength(0);
+
+        await vi.advanceTimersByTimeAsync(1);
+
+        expect(saved).toHaveLength(1);
+        expect(saved[0]?.tracks.map((item) => item.videoId)).toEqual([
+            'a',
+            'c',
+            'b',
+        ]);
+    });
+
+    it('does not save when only device settings change', async () => {
+        const { saved, sync } = fakeSync();
+        const { player } = setup({ sync });
+        player.playTracks([track('a')], 0, SOURCE);
+        await vi.advanceTimersByTimeAsync(1000);
+
+        player.setVolume(20);
+        player.toggleQueue();
+        await vi.advanceTimersByTimeAsync(1000);
+
+        expect(saved).toHaveLength(1);
+    });
+
+    it('takes the server queue when another device saved a newer one', () => {
+        const { player, transport } = setup({ ready: false });
+        player.playTracks([track('a')], 0, SOURCE);
+
+        player.hydrate(remoteQueue([track('x'), track('y')], 4));
+        transport.becomeReady();
+
+        expect(player.current.value?.videoId).toBe('x');
+        expect(player.state.source?.title).toBe('From the phone');
+        expect(transport.loads.at(-1)).toMatchObject({
+            videoId: 'x',
+            autoplay: false,
+        });
+    });
+
+    it('keeps and saves its own queue when the server copy is not newer', async () => {
+        const storage = memoryStorage();
+        const { saved, sync } = fakeSync(4);
+        const first = setup({ storage, sync });
+        first.player.playTracks([track('a'), track('b')], 0, SOURCE);
+        await vi.advanceTimersByTimeAsync(1000);
+        first.player.next();
+        first.player.handlePageHide();
+
+        const { player } = setup({ storage, sync, ready: false });
+        player.hydrate(remoteQueue([track('x')], 5));
+        await vi.advanceTimersByTimeAsync(1000);
+
+        expect(player.current.value?.videoId).toBe('b');
+        expect(saved.at(-1)?.index).toBe(1);
+    });
+
+    it('keeps a window of tracks around the current one', async () => {
+        const { saved, sync } = fakeSync();
+        const { player } = setup({ sync });
+        const many = Array.from({ length: 500 }, (_, position) =>
+            track(`v${position}`),
+        );
+
+        player.playTracks(many, 400, SOURCE);
+        await vi.advanceTimersByTimeAsync(1000);
+
+        const kept = saved[0];
+        expect(kept?.tracks).toHaveLength(300);
+        expect(kept?.tracks[kept.index]?.videoId).toBe('v400');
+    });
 });
 
 describe('usePlayer', () => {

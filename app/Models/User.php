@@ -55,6 +55,14 @@ final class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * @return HasOne<PlayerQueue, $this>
+     */
+    public function playerQueue(): HasOne
+    {
+        return $this->hasOne(PlayerQueue::class);
+    }
+
+    /**
      * @return HasMany<Listen, $this>
      */
     public function listens(): HasMany

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\ListenController;
+use App\Http\Controllers\PlayerQueueController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistRefreshController;
 use App\Http\Controllers\SessionController;
@@ -48,6 +49,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('listens', [ListenController::class, 'store'])
         ->middleware('throttle:120,1')
         ->name('listen.store');
+
+    // Player Queue...
+    Route::put('player/queue', [PlayerQueueController::class, 'update'])
+        ->middleware('throttle:60,1')
+        ->name('player-queue.update');
 });
 
 Route::middleware('auth')->group(function (): void {

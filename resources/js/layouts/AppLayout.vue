@@ -56,6 +56,6 @@ useShortcuts({
 
         <QueuePanel />
         <CommandPalette />
-        <PlayerHost />
+        <PlayerHost :saved-queue="page.props.playerQueue" />
     </div>
 </template>

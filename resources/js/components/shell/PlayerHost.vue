@@ -11,6 +11,8 @@ import { createYouTubeTransport } from '@/lib/player/youtubeTransport';
 const props = withDefaults(
     defineProps<{
         createTransport?: (element: HTMLElement) => PlayerTransport;
+        /** The queue saved on the server, handed over once per app load. */
+        savedQueue?: App.Data.PlayerQueueData | null;
     }>(),
     { createTransport: createYouTubeTransport },
 );
@@ -21,6 +23,7 @@ let transport: PlayerTransport | null = null;
 
 onMounted(() => {
     window.addEventListener('pagehide', player.handlePageHide);
+    player.hydrate(props.savedQueue);
 
     if (mount.value) {
         transport = props.createTransport(mount.value);

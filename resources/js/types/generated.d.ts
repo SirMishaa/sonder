@@ -25,6 +25,13 @@ artistCount: number,
 totalHours: number,
 topArtists: App.Data.ArtistTallyData[],
 };
+export type PlayerQueueData = {
+tracks: App.Data.QueueTrackData[],
+index: number,
+source: App.Data.QueueSourceData | null,
+origin: App.Enums.ListenOrigin,
+version: number,
+};
 export type PlaylistData = {
 id: string,
 title: string,
@@ -47,6 +54,22 @@ export type PlaylistSyncStateData = {
 lastCheckedAt: string,
 lastChangedAt: string | null,
 removedAt: string | null,
+};
+export type QueueSourceData = {
+playlistId: string | null,
+title: string,
+};
+export type QueueTrackData = {
+key: string,
+videoId: string | null,
+title: string,
+artists: string,
+album: string | null,
+duration: string | null,
+durationSeconds: number,
+thumbnailUrl: string | null,
+playlistId: string | null,
+queued: boolean,
 };
 export type SampledTrackData = {
 track: App.Data.TrackData,

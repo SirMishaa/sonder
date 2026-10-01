@@ -6,11 +6,13 @@ namespace App\Http\Middleware;
 
 use App\Data\LibraryData;
 use App\Data\LibraryPlaylistData;
+use App\Data\PlayerQueueData;
 use App\Data\YouTubeMusicSyncData;
 use App\Enums\YouTubeMusicSyncStatus;
 use App\Models\Playlist;
 use App\Models\YouTubeMusicSync;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 final class HandleInertiaRequests extends Middleware
@@ -50,7 +52,20 @@ final class HandleInertiaRequests extends Middleware
                 ->whereNotNull('cookie_expired_at')
                 ->exists() ?? false,
             'library' => fn (): ?LibraryData => $this->library($request),
+            'playerQueue' => $request->user() !== null
+                ? Inertia::once(fn (): ?PlayerQueueData => $this->playerQueue($request))
+                : null,
         ];
+    }
+
+    /**
+     * Read once per app load: afterwards the browser holds the queue.
+     */
+    private function playerQueue(Request $request): ?PlayerQueueData
+    {
+        $queue = $request->user()?->playerQueue()->first();
+
+        return $queue !== null ? PlayerQueueData::fromModel($queue) : null;
     }
 
     private function library(Request $request): ?LibraryData

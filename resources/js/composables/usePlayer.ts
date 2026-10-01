@@ -11,6 +11,8 @@ import {
     startListen,
 } from '@/lib/player/listenTracker';
 import type { Listen } from '@/lib/player/listenTracker';
+import { createQueueSync } from '@/lib/player/queueSync';
+import type { QueueSnapshot, QueueSync } from '@/lib/player/queueSync';
 import type { PlaybackState, PlayerTransport } from '@/lib/player/transport';
 
 /**
@@ -49,6 +51,8 @@ export type PlayerDeps = {
     storage?: Pick<Storage, 'getItem' | 'setItem'> | null;
     now?: () => number;
     notify?: (message: string) => void;
+    /** Saves the queue to the server; without it the queue stays local. */
+    sync?: QueueSync | null;
 };
 
 type PlayerState = {
@@ -77,13 +81,20 @@ type PersistedState = Pick<
     | 'source'
     | 'origin'
     | 'queueOpen'
->;
+> & {
+    /** The server version this copy was last saved as or taken from. */
+    syncedVersion: number;
+    /** Changed since that version and not yet saved. */
+    dirty: boolean;
+};
 
 const STORAGE_KEY = 'sonder.player.v1';
 const POLL_MS = 250;
 const RESTART_THRESHOLD_SECONDS = 3;
 const FALLBACK_SECONDS = 210;
 const MAX_STORED_TRACKS = 300;
+const KEPT_BEHIND = 50;
+const SYNC_DELAY_MS = 1000;
 const MAX_DEBUG_ENTRIES = 200;
 const AD_DURATION_TOLERANCE_SECONDS = 5;
 
@@ -199,14 +210,51 @@ export function createPlayer(deps: PlayerDeps) {
         }
     }
 
+    // The queue as last saved to the server, to skip saves that change nothing.
+    let syncedVersion = 0;
+    let lastSaved: string | null = null;
+    let saveTimer: ReturnType<typeof setTimeout> | null = null;
+    let saving = false;
+
+    /**
+     * The stored part of the queue: a window of tracks around the current
+     * one, so a long playlist still restores where it was.
+     */
+    function snapshot(): QueueSnapshot {
+        const start = Math.max(
+            0,
+            Math.min(
+                state.index - KEPT_BEHIND,
+                state.queue.length - MAX_STORED_TRACKS,
+            ),
+        );
+
+        return {
+            tracks: state.queue
+                .slice(start, start + MAX_STORED_TRACKS)
+                .map((item) => ({
+                    ...item,
+                    // Tracks restored from an older stored queue lack these.
+                    playlistId: item.playlistId ?? null,
+                    queued: item.queued ?? false,
+                })),
+            index: state.index < 0 ? -1 : state.index - start,
+            source: state.source,
+            origin: state.origin,
+        };
+    }
+
     function persist(): void {
         if (!deps.storage) {
             return;
         }
 
+        const kept = snapshot();
         const saved: PersistedState = {
-            queue: state.queue.slice(0, MAX_STORED_TRACKS),
-            index: state.index,
+            queue: kept.tracks,
+            index: kept.index,
+            syncedVersion,
+            dirty: JSON.stringify(kept) !== lastSaved,
             elapsed: Math.floor(state.elapsed),
             volume: state.volume,
             muted: state.muted,
@@ -244,10 +292,88 @@ export function createPlayer(deps: PlayerDeps) {
             state.source = saved.source ?? null;
             state.origin = saved.origin ?? state.origin;
             state.queueOpen = saved.queueOpen ?? false;
+            syncedVersion = saved.syncedVersion ?? 0;
             dedupeUpcoming();
+            lastSaved =
+                saved.dirty === false ? JSON.stringify(snapshot()) : null;
         } catch {
             // A corrupt entry simply starts an empty player.
         }
+    }
+
+    function scheduleSave(): void {
+        if (!deps.sync) {
+            return;
+        }
+
+        if (saveTimer !== null) {
+            clearTimeout(saveTimer);
+        }
+
+        saveTimer = setTimeout(() => void save(), SYNC_DELAY_MS);
+    }
+
+    async function save(): Promise<void> {
+        saveTimer = null;
+
+        if (!deps.sync) {
+            return;
+        }
+
+        if (saving) {
+            scheduleSave();
+
+            return;
+        }
+
+        const kept = snapshot();
+        const json = JSON.stringify(kept);
+
+        if (json === lastSaved) {
+            return;
+        }
+
+        saving = true;
+        const version = await deps.sync.save(kept);
+        saving = false;
+
+        if (version === null) {
+            log('error', 'the queue could not be saved');
+
+            return;
+        }
+
+        syncedVersion = version;
+        lastSaved = json;
+        persist();
+    }
+
+    /**
+     * Takes the server's queue when another device saved a newer one since
+     * this browser last synced; otherwise saves the local queue if it changed.
+     * Called once, before the transport attaches.
+     */
+    function hydrate(
+        remote: App.Data.PlayerQueueData | null | undefined,
+    ): void {
+        if (remote && remote.version > syncedVersion) {
+            const sameTrack =
+                remote.tracks[remote.index]?.key === current.value?.key;
+
+            state.queue = remote.tracks;
+            state.index = remote.index;
+            state.source = remote.source;
+            state.origin = remote.origin;
+            state.elapsed = sameTrack ? state.elapsed : 0;
+            syncedVersion = remote.version;
+            lastSaved = JSON.stringify(snapshot());
+            log('info', `queue taken from the server (v${remote.version})`);
+            persist();
+
+            return;
+        }
+
+        scheduleSave();
     }
 
     /** Keeps the first upcoming copy of each video, dropping the repeats. */
@@ -750,7 +876,10 @@ export function createPlayer(deps: PlayerDeps) {
             state.origin,
             state.queueOpen,
         ],
-        persist,
+        () => {
+            persist();
+            scheduleSave();
+        },
         { deep: true },
     );
 
@@ -763,6 +892,7 @@ export function createPlayer(deps: PlayerDeps) {
         upNext,
         diagnostics,
         attachTransport,
+        hydrate,
         playTracks,
         playNext,
         queueNext,
@@ -816,6 +946,7 @@ function getDefaultPlayer(): Player {
             sender: createListenSender(),
             storage: browserStorage(),
             notify: (message) => toast(trans(message)),
+            sync: createQueueSync(),
         });
     }
 
