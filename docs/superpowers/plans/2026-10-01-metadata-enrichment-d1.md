@@ -31,7 +31,173 @@
 - A track whose source duration is unknown (`duration_seconds` null) → the duration check is skipped for the ISRC path, but a search hit needs a score of 100 (Task 6 test "accepts a search hit without a duration only at full score").
 - A YouTube title "Artist - Title" uploaded by a fan channel, and a real title containing " - " → both readings are tried, the verified one wins (Task 2 dataset + Task 6 test "tries the title both ways").
 - Re-running the pipeline on the same recording → projection rebuilds the same rows, no duplicates (Task 8 test "projects twice without duplicating").
-- A service returning 503 or 429 → the job is released, the attempt is not counted, no `failed` row is written (Task 9 test "releases on a rate limit without recording a failure").
+- A 429 (any source) or a MusicBrainz 503 → the job is released, the attempt is not counted, no `failed` row is written; a credits.fm 503 is an outage (Task 9 tests "releases on a rate limit without recording a failure" and A17's end-to-end 429 test).
+
+## Amendments after plan review (binding)
+
+A review of this plan (2026-10-01) found defects. **Where an amendment and a task disagree, the amendment wins.** Each amendment names the task it changes.
+
+**A1 · Global constraints.**
+- Static analysis is the project's own config: `vendor/bin/phpstan analyze <files>`, which runs at `level: max` and includes `tests`. Do not use `--level 8`.
+- `composer test:type-coverage` (100 %) must pass, so every closure needs typed parameters and a return type.
+- Narrow test runs use `vendor/bin/pest --tia --parallel <one path>`. Paratest takes a single path, so run each path separately.
+- Read config with `config()->string('…')` / `config()->integer('…')`, never `(string) config(...)`.
+- Never read an offset of a `mixed` value: narrow it with `is_array()` / `is_string()` first.
+
+**A2 · Task 1, RecordingFactory.** The ISRC must be exactly 12 characters: `'isrc' => fake()->regexify('[A-Z]{2}[A-Z0-9]{3}[0-9]{7}')`.
+
+**A3 · Task 1, column rename.** `recording_contributors.attributes` collides with `Model::$attributes`. Name it `credit_attributes`, and use that name everywhere:
+- migration: `$table->json('credit_attributes');`
+- `RecordingContributor`: fillable, cast `'credit_attributes' => 'array'`, `@property-read list<string> $credit_attributes`
+- `ProjectEnrichment`: `['credit_attributes' => $credit->attributes]`
+
+**A4 · Task 1, the last good payload survives a failed refresh.** `Enrichment::payloadFor()` filters `->whereNotNull('payload')` instead of `->where('status', EnrichmentStatus::Done)`. In `EnrichmentTest`, "keeps the last good payload…" expects `Enrichment::payloadFor(...)` to be `['a' => 1]`.
+
+**A5 · Task 2, partial release dates.** MusicBrainz and credits.fm send `2012`, `2012-06` or `2012-06-27`, but the `date` column accepts only the full form. Add `app/Support/ReleaseDate.php`, created test-first in Task 2:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Support;
+
+/**
+ * Registry release dates come as a year, a month or a day; the database
+ * stores a date, so a partial one is pinned to its first day.
+ */
+final class ReleaseDate
+{
+    public static function normalize(mixed $value): ?string
+    {
+        if (! is_string($value) || preg_match('/^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?$/', $value, $parts) !== 1) {
+            return null;
+        }
+
+        return sprintf('%s-%s-%s', $parts[1], ($parts[2] ?? '') !== '' ? $parts[2] : '01', ($parts[3] ?? '') !== '' ? $parts[3] : '01');
+    }
+}
+```
+
+Test, in `tests/Unit/Support/ReleaseDateTest.php`:
+
+```php
+it('pins partial release dates to their first day', function (mixed $raw, ?string $date): void {
+    expect(ReleaseDate::normalize($raw))->toBe($date);
+})->with([
+    ['2012-06-27', '2012-06-27'],
+    ['2012-06', '2012-06-01'],
+    ['2012', '2012-01-01'],
+    ['', null],
+    [null, null],
+    ['June 2012', null],
+]);
+```
+
+The mappers use it: `releaseDate: ReleaseDate::normalize($payload['release_date'] ?? null)` and `firstReleaseDate: ReleaseDate::normalize($payload['first-release-date'] ?? null)`.
+
+**A6 · Task 2, artist splitting.** In `firstArtist`, the separator pattern becomes `'/\s*(?:,|&|\bx\b|\b(?:feat|ft)\b\.?)\s*/iu'`. Add the dataset row `['Feather Lane', 'Feather Lane']`.
+
+Band names that contain `&` or `,` ("Simon & Garfunkel") are handled in A7: the registry artist is also compared with the full source artist string.
+
+**A7 · Tasks 5–6, resolution rules.**
+- `RegistryRecording` gets `public ?string $disambiguation = null` as its last parameter. `MusicBrainzMapper::recording()` fills it.
+- `ResolveRecordings::creditsArtist(RegistryRecording $recording, string $artist, string $sourceArtists): bool` also accepts `MusicText::sameArtist($credited['name'], $sourceArtists)`. Callers pass `$track->artists`.
+- A search hit is accepted only when all of these hold:
+  - its `disambiguation` names no version (`/\b(live|instrumental|karaoke|acoustic|demo)\b/i`) that the source title does not also name;
+  - when the source duration is known, the hit's duration is known too and within 5 s;
+  - when the source duration is unknown, its score is 100;
+  - the title and the artist match.
+- `recordingFor()` looks up by MBID first (`Recording::query()->where('mbid', …)->first()`). Only without such a row does it adopt an ISRC-only row (setting its `mbid`), and only then does it create one with `createOrFirst(['mbid' => …])`.
+- `handle([])` returns `[]` without calling credits.fm.
+- `recordMiss()` takes the first candidate's query through `$candidates[0]['query'] ?? new TrackQuery($track->title, $track->artists)`.
+- **Batch answers are reused.** Every reading's ISRC is stored per track as `Enrichment::store(Enrichment::SOURCE, $track->key(), MetadataSource::CreditsFm, 'resolve', Done, ['readings' => [['title' => …, 'artist' => …, 'isrc' => …], …]])`. Before calling `resolveBatch`, `handle()` reads these payloads (fetched less than a day ago) and only sends the readings it has no answer for. A job released halfway through therefore does not ask credits.fm again.
+
+Task 6 test changes:
+- "falls back to a confident MusicBrainz search" uses an in-test payload: the fixture's second recording without its `disambiguation`, so it expects `99a92728…`.
+- New: `it('skips live and instrumental search hits')` with the raw fixture and duration 257 → `NotFound`.
+- New: `it('keeps the isrc path when the source duration is unknown')`: duration `null`, ISRC confirmed by `musicbrainz-isrc` → `Resolved`, confidence 1.0.
+- New: `it('does not ask credits.fm again for readings it already answered')`: run `handle()` twice for the same track, and expect `$this->creditsFm->calls` to contain `resolve_batch` once.
+
+**A8 · Task 9, no livelock on MusicBrainz's one call a second.**
+- `ResolveLibraryTracks` stores `public readonly int $queuedAt` (`now()->getTimestamp()`) in its constructor.
+- `handle()` drops the tracks whose `RecordingResolution` already has status `Resolved` or `NotFound` with `updated_at >= $queuedAt`. When none is left, it returns.
+- With A7's batch reuse, each release costs only the MusicBrainz calls still owed.
+
+New test: create the job, `travel(1)->seconds()`, create a `Resolved` resolution for its track, run `handle()`, and expect `$this->creditsFm->calls` to be `[]`.
+
+**A9 · Tasks 1, 9, 10: queued means pending.**
+- Add `case Pending = 'pending';` to `ResolutionStatus`.
+- `QueueTrackResolution` creates, for every video it queues, a `Pending` resolution (`createOrFirst` on provider and external id, with `query_title`/`query_artist` from the track and `next_attempt_at = now()->addDay()`). A video queued and not yet run is therefore never queued twice, and a lost job is retried the next day.
+- `RetryDueMetadataCommand` sets `next_attempt_at = now()->addDay()` on every row it dispatches, so a job still waiting is not dispatched again the next day.
+- `RecordEnrichmentCoverage` counts `Pending` under backlog `unresolved`.
+
+**A10 · Task 9, one description per artist.** `EnrichContributor` implements `ShouldBeUnique`, with `uniqueId(): string` returning `"{$this->contributorId}:{$this->source->value}"` and `public int $uniqueFor = 3600;`. Test: dispatch it twice under `Queue::fake()` and expect `Queue::assertPushed(EnrichContributor::class, 1)`.
+
+**A11 · Task 5, tests never reach a real service.** At the end of Task 5, in `tests/Pest.php` `beforeEach`, add:
+- `app()->instance(CreditsFmGateway::class, new FakeCreditsFmGateway());`
+- `app()->instance(MusicBrainzGateway::class, new FakeMusicBrainzGateway());`
+
+Tests that need their own fake still override it.
+
+**A12 · Task 10, post-sync hook.** In `SyncYouTubeMusicLibrary::handle()`, after the `Completed` update and its broadcast (not inside the `try`), add:
+
+```php
+        try {
+            resolve(QueueTrackResolution::class)->handle($sync->youtubeMusicAccount);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+```
+
+A completed sync never fails because of enrichment.
+
+**A13 · Task 8 test fixes.**
+- Read tag weights from the table, not `->pivot`:
+
+  ```php
+  DB::table('recording_tags')->join('tags', 'tags.id', '=', 'recording_tags.tag_id')
+      ->where('recording_id', $recording->id)
+      ->where('slug', 'symphonic rock')
+      ->value('weight')
+  ```
+
+  It must equal `100` (4 votes, the most in `musicbrainz-recording.json`). `art rock` must equal `25`.
+- The same goes for `ProjectContributorTagsTest`: read `contributor_tags` with `DB::table`.
+- "reuses a name-only contributor…" uses an in-test credits.fm payload: `['isrc' => …, 'recording_title' => 'X', 'artist_names' => ['Y'], 'performers' => [['name' => 'Session Player', 'role' => 'guitar', 'credit_type' => 'performer', 'attributes' => []]]]`, projected on two recordings. It expects one `Session Player` contributor.
+
+**A14 · Tasks 4–5, configuration and typing.**
+- `config/services.php`: `'user_agent' => 'Sonder/1.0 ( '.(env('MUSICBRAINZ_CONTACT') ?: 'set MUSICBRAINZ_CONTACT').' )'`.
+- Gateways read config with `config()->string(...)`.
+- The mappers narrow every payload value before reading it. The rule is a pair of private helpers per mapper:
+
+  ```php
+  /** @return array<array-key, mixed> */
+  private static function map(mixed $value): array
+  {
+      return is_array($value) ? $value : [];
+  }
+
+  /** @return list<array<array-key, mixed>> */
+  private static function rows(mixed $value): array
+  {
+      return array_values(array_filter(self::map($value), is_array(...)));
+  }
+  ```
+
+  Every `(array) ($x['k'] ?? [])` becomes `self::rows($x['k'] ?? null)`. Every nested read (`$credit['artist']['id']`) becomes `self::map($credit['artist'] ?? null)['id'] ?? null` passed to `self::string(...)`. Counts go through `is_int($v) ? $v : 0`.
+
+**A15 · Task 3, `bootstrap/app.php`.** Add `use App\Exceptions\Metadata\MetadataSourceRateLimited;` there.
+
+**A16 · Task 10, typing and imports.**
+- `RetryDueMetadataCommand` drops the unused `MetadataSource` import.
+- Its chunk closure is typed `function (Collection $chunk) use (&$retried): void`, with `@param Collection<int, RecordingResolution> $chunk`.
+- In `QueueTrackResolution`, the `when`/`whereHas` closures are typed `fn (Builder $query): Builder` with `@param Builder<Track>`, and `fn (Builder $playlists): Builder`.
+
+**A17 · Review Focus item 5, reworded, and a test for it.**
+- A 429 (credits.fm or MusicBrainz) or a 503 from MusicBrainz releases the job, without counting an attempt and without writing a `failed` row.
+- A 503 from credits.fm is an outage: it counts toward `maxExceptions`.
+- New Task 9 test: `Http::fake(['api.credits.fm/*' => Http::response('', 429, ['Retry-After' => '7'])])`, bind the **real** `CreditsFmGateway` (`app()->forgetInstance(CreditsFmGateway::class)` after A11's fake), run `EnrichRecording` with fake queue interactions, then `assertReleased(7)` and expect no `Enrichment` row.
 
 ---
 
