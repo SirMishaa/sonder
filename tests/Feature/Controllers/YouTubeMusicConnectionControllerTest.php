@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use App\Enums\YouTubeMusicSyncStatus;
-use App\Exceptions\YouTubeMusicException;
+use App\Exceptions\Providers\CredentialsRejected;
 use App\Models\User;
 use App\Models\YouTubeMusicAccount;
 use App\Models\YouTubeMusicSync;
 use Database\Factories\YouTubeMusicAccountFactory;
 use Illuminate\Support\Facades\Exceptions;
-use Tests\Support\FakeYouTubeMusicClient;
+use Tests\Support\FakeProviderAdapter;
 
 it('renders the connection page', function (): void {
     $response = $this->actingAs(User::factory()->create())
@@ -84,7 +84,7 @@ it('refuses to show another user\'s sync', function (): void {
 
 it('reports a cookie that YouTube Music refuses', function (): void {
     $user = User::factory()->create();
-    $this->fakeYouTubeMusic()->shouldFail = true;
+    $this->fakeProvider()->shouldFail = true;
     Exceptions::fake();
 
     $response = $this->actingAs($user)
@@ -97,7 +97,7 @@ it('reports a cookie that YouTube Music refuses', function (): void {
 
     expect(YouTubeMusicAccount::query()->count())->toBe(0);
 
-    Exceptions::assertReported(YouTubeMusicException::class);
+    Exceptions::assertReported(CredentialsRejected::class);
 });
 
 it('rejects a cookie missing the required parts', function (string $cookie): void {
@@ -146,8 +146,11 @@ it('keeps guests out', function (): void {
 it('clears the expired flag when a fresh cookie is pasted', function (): void {
     $user = User::factory()->create();
     $account = YouTubeMusicAccount::factory()->for($user)->expired()->create();
-    $this->fakeYouTubeMusic()->playlists = [FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
-    $this->fakeYouTubeMusic()->tracks['PL1'] = FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
+    $this->fakeProvider()->playlists = [FakeProviderAdapter::aPlaylistSummary(id: 'PL1')];
+    $this->fakeProvider()->tracks['PL1'] = FakeProviderAdapter::aPlaylist(id: 'PL1');
+    // Transitional (plan 1, task 5): the inline sync still runs on the legacy client.
+    $this->fakeYouTubeMusic()->playlists = [Tests\Support\FakeYouTubeMusicClient::aPlaylistSummary(id: 'PL1')];
+    $this->fakeYouTubeMusic()->tracks['PL1'] = Tests\Support\FakeYouTubeMusicClient::aPlaylist(id: 'PL1');
 
     $this->actingAs($user)->post(route('youtube-music-connection.store'), [
         'cookie' => YouTubeMusicAccountFactory::cookie(),

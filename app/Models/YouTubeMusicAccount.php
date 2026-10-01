@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\Provider;
+use App\Services\Music\Contracts\ProviderCredentials;
+use App\Services\Music\ProviderRegistry;
 use Carbon\CarbonInterface;
 use Database\Factories\YouTubeMusicAccountFactory;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -94,5 +97,21 @@ final class YouTubeMusicAccount extends Model
         }
 
         $this->forceFill(['cookie_expired_at' => now()])->save();
+    }
+
+    /**
+     * The provider this (legacy, YouTube Music only) account belongs to.
+     */
+    public function provider(): Provider
+    {
+        return Provider::YouTubeMusic;
+    }
+
+    /**
+     * The stored cookie as the provider's typed credentials.
+     */
+    public function credentials(): ProviderCredentials
+    {
+        return resolve(ProviderRegistry::class)->credentials($this->provider(), ['cookie' => $this->cookie]);
     }
 }

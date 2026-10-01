@@ -3,17 +3,16 @@
 declare(strict_types=1);
 
 use App\Actions\ConnectYouTubeMusicAccount;
-use App\Exceptions\YouTubeMusicException;
+use App\Exceptions\Providers\CredentialsRejected;
 use App\Models\User;
 use App\Models\YouTubeMusicAccount;
-use App\Services\YouTubeMusic\Client;
 use Database\Factories\YouTubeMusicAccountFactory;
-use Tests\Support\FakeYouTubeMusicClient;
+use Tests\Support\FakeProviderAdapter;
 
 it('stores a verified cookie against the user', function (): void {
     $user = User::factory()->create();
     $cookie = YouTubeMusicAccountFactory::cookie();
-    $this->fakeYouTubeMusic()->account = FakeYouTubeMusicClient::anAccount('Mishaa');
+    $this->fakeProvider()->account = FakeProviderAdapter::anAccount('Mishaa');
 
     $account = resolve(ConnectYouTubeMusicAccount::class)->handle($user, $cookie);
 
@@ -26,10 +25,10 @@ it('stores a verified cookie against the user', function (): void {
 it('verifies the cookie against YouTube Music before storing it', function (): void {
     // Refusing a dead cookie here beats failing on every later page view.
     $user = User::factory()->create();
-    $this->fakeYouTubeMusic()->shouldFail = true;
+    $this->fakeProvider()->shouldFail = true;
 
     expect(fn () => resolve(ConnectYouTubeMusicAccount::class)->handle($user, YouTubeMusicAccountFactory::cookie()))
-        ->toThrow(YouTubeMusicException::class);
+        ->toThrow(CredentialsRejected::class);
 
     expect(YouTubeMusicAccount::query()->count())->toBe(0);
 });
@@ -45,15 +44,14 @@ it('replaces the cookie instead of adding a second account', function (): void {
         ->and($account->cookie)->toBe($replacement);
 });
 
-it('passes the cookie straight through to the client', function (): void {
+it('passes the cookie straight through to the provider', function (): void {
     $user = User::factory()->create();
     $cookie = YouTubeMusicAccountFactory::cookie();
 
     resolve(ConnectYouTubeMusicAccount::class)->handle($user, $cookie);
 
-    $client = resolve(Client::class);
-    assert($client instanceof FakeYouTubeMusicClient);
+    $client = $this->fakeProvider();
 
     expect($client->calls)->toHaveCount(1)
-        ->and($client->calls[0]['cookie'])->toBe($cookie);
+        ->and($client->calls[0]['credentials']['cookie'])->toBe($cookie);
 });

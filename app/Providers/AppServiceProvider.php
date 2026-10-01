@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Enums\Provider;
 use App\Models\User;
+use App\Services\Music\ProviderRegistry;
 use App\Services\Music\YouTubeMusic\Gateway\RateLimitedGateway;
+use App\Services\Music\YouTubeMusic\Gateway\YouTubeMusicGateway;
+use App\Services\Music\YouTubeMusic\Gateway\YtmusicapiGateway;
+use App\Services\Music\YouTubeMusic\YouTubeMusicAdapter;
+use App\Services\Music\YouTubeMusic\YouTubeMusicCredentials;
 use App\Services\YouTubeMusic\CachedClient;
 use App\Services\YouTubeMusic\Client;
 use App\Services\YouTubeMusic\RateLimitedClient;
@@ -29,6 +35,14 @@ final class AppServiceProvider extends ServiceProvider
             new RateLimitedClient(new YtmusicapiClient(), $this->app->make(CacheRateLimiter::class)),
             $this->app->make(Repository::class),
         ));
+
+        $this->app->bind(YouTubeMusicGateway::class, fn (): YouTubeMusicGateway => new RateLimitedGateway(
+            $this->app->make(YtmusicapiGateway::class),
+            $this->app->make(CacheRateLimiter::class),
+        ));
+
+        $this->app->singleton(ProviderRegistry::class, fn (): ProviderRegistry => (new ProviderRegistry($this->app))
+            ->register(Provider::YouTubeMusic, YouTubeMusicAdapter::class, YouTubeMusicCredentials::class));
 
         Gate::define('viewInertiaDevTools', fn (User $user): bool => $user->email === 'mishaa.pro@proton.me');
 
