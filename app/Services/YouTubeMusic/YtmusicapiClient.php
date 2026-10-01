@@ -99,7 +99,7 @@ final readonly class YtmusicapiClient implements Client
     private function call(string $cookie, callable $callback): mixed
     {
         try {
-            return $callback(new YTMusic($cookie));
+            return $callback(new YTMusic($cookie, requests_session: CookielessSession::create()));
         } catch (Throwable $throwable) {
             throw YouTubeMusicException::unreachable($throwable);
         }

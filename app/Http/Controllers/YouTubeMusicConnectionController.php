@@ -37,7 +37,9 @@ final readonly class YouTubeMusicConnectionController
             $account = $action->handle($user, $request->string('cookie')->value());
         } catch (YouTubeMusicRateLimitedException $exception) {
             return back()->withErrors(['cookie' => __('Sonder is pacing its calls to YouTube Music. Try again in :seconds seconds.', ['seconds' => $exception->retryAfter])]);
-        } catch (YouTubeMusicException) {
+        } catch (YouTubeMusicException $exception) {
+            report($exception);
+
             return back()->withErrors([
                 'cookie' => __('YouTube Music rejected this cookie. Make sure you are signed in, and copy the header again.'),
             ]);

@@ -32,7 +32,9 @@ final readonly class PlaylistRefreshController
             $refresh->handle($playlist);
         } catch (YouTubeMusicRateLimitedException $exception) {
             return back()->withErrors(['refresh' => __('Sonder is pacing its calls to YouTube Music. Try again in :seconds seconds.', ['seconds' => $exception->retryAfter])]);
-        } catch (YouTubeMusicException) {
+        } catch (YouTubeMusicException $exception) {
+            report($exception);
+
             return back()->withErrors([
                 'refresh' => __('YouTube Music refused the request. The stored cookie may have expired.'),
             ]);

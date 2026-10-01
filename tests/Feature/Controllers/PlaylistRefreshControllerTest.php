@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\YouTubeMusicException;
 use App\Models\Playlist;
 use App\Models\User;
 use App\Models\YouTubeMusicAccount;
+use Illuminate\Support\Facades\Exceptions;
 use Tests\Support\FakeYouTubeMusicClient;
 
 /**
@@ -61,10 +63,13 @@ it('reports a YouTube Music failure instead of crashing', function (): void {
     $user = User::factory()->create();
     refreshablePlaylist($user);
     $this->fakeYouTubeMusic()->shouldFail = true;
+    Exceptions::fake();
 
     $response = $this->actingAs($user)->post(route('playlist-refresh.store', 'PL1'));
 
     $response->assertSessionHasErrors('refresh');
+
+    Exceptions::assertReported(YouTubeMusicException::class);
 });
 
 it('sends guests to the login page', function (): void {
