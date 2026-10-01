@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use App\Enums\YouTubeMusicSyncStatus;
+use App\Exceptions\YouTubeMusicException;
 use App\Models\User;
 use App\Models\YouTubeMusicAccount;
 use App\Models\YouTubeMusicSync;
 use Database\Factories\YouTubeMusicAccountFactory;
+use Illuminate\Support\Facades\Exceptions;
 use Tests\Support\FakeYouTubeMusicClient;
 
 it('renders the connection page', function (): void {
@@ -83,6 +85,7 @@ it('refuses to show another user\'s sync', function (): void {
 it('reports a cookie that YouTube Music refuses', function (): void {
     $user = User::factory()->create();
     $this->fakeYouTubeMusic()->shouldFail = true;
+    Exceptions::fake();
 
     $response = $this->actingAs($user)
         ->fromRoute('youtube-music-connection.create')
@@ -93,6 +96,8 @@ it('reports a cookie that YouTube Music refuses', function (): void {
     $response->assertRedirect()->assertSessionHasErrors('cookie');
 
     expect(YouTubeMusicAccount::query()->count())->toBe(0);
+
+    Exceptions::assertReported(YouTubeMusicException::class);
 });
 
 it('rejects a cookie missing the required parts', function (string $cookie): void {

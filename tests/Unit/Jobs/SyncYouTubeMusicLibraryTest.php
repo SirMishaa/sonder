@@ -5,11 +5,13 @@ declare(strict_types=1);
 use App\Actions\SyncPlaylistsFromYouTubeMusicAction;
 use App\Enums\YouTubeMusicSyncStatus;
 use App\Events\YouTubeMusicSyncUpdated;
+use App\Exceptions\YouTubeMusicException;
 use App\Jobs\SyncYouTubeMusicLibrary;
 use App\Models\Playlist;
 use App\Models\YouTubeMusicAccount;
 use App\Models\YouTubeMusicSync;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Exceptions;
 use Tests\Support\FakeYouTubeMusicClient;
 
 it('syncs the library and marks the sync completed', function (): void {
@@ -46,6 +48,7 @@ it('marks the sync failed when YouTube Music cannot be reached', function (): vo
     $account = YouTubeMusicAccount::factory()->create();
     $sync = YouTubeMusicSync::factory()->for($account, 'youtubeMusicAccount')->create();
     $this->fakeYouTubeMusic()->shouldFail = true;
+    Exceptions::fake();
 
     (new SyncYouTubeMusicLibrary($sync->id, $account->id))
         ->handle(resolve(SyncPlaylistsFromYouTubeMusicAction::class));
@@ -58,6 +61,7 @@ it('marks the sync failed when YouTube Music cannot be reached', function (): vo
 
     // Syncing, Failed.
     Event::assertDispatchedTimes(YouTubeMusicSyncUpdated::class, 2);
+    Exceptions::assertReported(YouTubeMusicException::class);
 });
 
 it('flags the cookie when a sync cannot reach YouTube Music', function (): void {
