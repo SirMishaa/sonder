@@ -1,0 +1,350 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Actions;
+
+use App\Enums\EnrichmentStatus;
+use App\Enums\MetadataSource;
+use App\Enums\ResolutionMethod;
+use App\Enums\ResolutionStatus;
+use App\Models\Enrichment;
+use App\Models\Recording;
+use App\Models\RecordingResolution;
+use App\Services\Metadata\CreditsFm\CreditsFmGateway;
+use App\Services\Metadata\CreditsFm\CreditsFmMapper;
+use App\Services\Metadata\Data\RegistryRecording;
+use App\Services\Metadata\Data\TrackQuery;
+use App\Services\Metadata\Data\TrackToResolve;
+use App\Services\Metadata\EnrichmentTelemetry;
+use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
+use App\Services\Metadata\MusicBrainz\MusicBrainzMapper;
+use App\Support\MusicText;
+
+final readonly class ResolveRecordings
+{
+    public const int MAX_TRACKS = 25;
+
+    private const int DURATION_TOLERANCE_SECONDS = 5;
+
+    private const string VERSION_MARKERS = '/\b(live|instrumental|karaoke|acoustic|demo)\b/i';
+
+    public function __construct(
+        private CreditsFmGateway $creditsFm,
+        private MusicBrainzGateway $musicBrainz,
+        private EnrichmentTelemetry $telemetry,
+    ) {}
+
+    /**
+     * Matches provider tracks to registry recordings and records every
+     * outcome. Rate limits propagate so the caller can retry the batch:
+     * tracks already resolved keep their resolution, and credits.fm's
+     * answers are kept a day so a retry does not ask again.
+     *
+     * @param  list<TrackToResolve>  $tracks  at most MAX_TRACKS
+     * @return list<Recording>
+     */
+    public function handle(array $tracks): array
+    {
+        if ($tracks === []) {
+            return [];
+        }
+
+        $candidates = $this->candidates($tracks);
+        $resolved = [];
+
+        foreach ($tracks as $index => $track) {
+            $recording = $this->resolve($track, $candidates[$index] ?? []);
+
+            if ($recording instanceof Recording) {
+                $resolved[$recording->id] = $recording;
+            }
+        }
+
+        return array_values($resolved);
+    }
+
+    /**
+     * Every reading of every track with the ISRC credits.fm gave it, asking
+     * credits.fm only about the tracks it has not answered in the last day.
+     *
+     * @param  list<TrackToResolve>  $tracks
+     * @return array<int, list<array{query: TrackQuery, isrc: string|null}>>
+     */
+    private function candidates(array $tracks): array
+    {
+        $candidates = [];
+        $toAsk = [];
+
+        foreach ($tracks as $index => $track) {
+            $stored = $this->storedReadings($track);
+
+            if ($stored !== null) {
+                $candidates[$index] = $stored;
+
+                continue;
+            }
+
+            foreach (MusicText::queries($track->title, $track->artists) as $query) {
+                $toAsk[] = ['track' => $index, 'query' => $query];
+            }
+        }
+
+        if ($toAsk === []) {
+            return $candidates;
+        }
+
+        $isrcs = $this->creditsFm->resolveBatch(array_column($toAsk, 'query'));
+
+        foreach ($toAsk as $position => $reading) {
+            $candidates[$reading['track']][] = ['query' => $reading['query'], 'isrc' => $isrcs[$position] ?? null];
+        }
+
+        foreach ($tracks as $index => $track) {
+            if (! isset($candidates[$index])) {
+                continue;
+            }
+
+            Enrichment::store(Enrichment::SOURCE, $track->key(), MetadataSource::CreditsFm, 'resolve', EnrichmentStatus::Done, [
+                'readings' => array_map(fn (array $candidate): array => [
+                    'title' => $candidate['query']->title,
+                    'artist' => $candidate['query']->artist,
+                    'isrc' => $candidate['isrc'],
+                ], $candidates[$index]),
+            ]);
+        }
+
+        return $candidates;
+    }
+
+    /**
+     * @return list<array{query: TrackQuery, isrc: string|null}>|null
+     */
+    private function storedReadings(TrackToResolve $track): ?array
+    {
+        $stored = Enrichment::query()
+            ->where('subject_type', Enrichment::SOURCE)
+            ->where('subject_key', $track->key())
+            ->where('source', MetadataSource::CreditsFm)
+            ->where('endpoint', 'resolve')
+            ->where('fetched_at', '>=', now()->subDay())
+            ->first()
+            ?->payload;
+
+        $readings = is_array($stored['readings'] ?? null) ? $stored['readings'] : [];
+        $candidates = [];
+
+        foreach ($readings as $reading) {
+            if (is_array($reading) && is_string($reading['title'] ?? null) && is_string($reading['artist'] ?? null)) {
+                $isrc = $reading['isrc'] ?? null;
+                $candidates[] = ['query' => new TrackQuery($reading['title'], $reading['artist']), 'isrc' => is_string($isrc) ? $isrc : null];
+            }
+        }
+
+        return $candidates === [] ? null : $candidates;
+    }
+
+    /**
+     * @param  list<array{query: TrackQuery, isrc: string|null}>  $candidates
+     */
+    private function resolve(TrackToResolve $track, array $candidates): ?Recording
+    {
+        foreach ($candidates as $candidate) {
+            if ($candidate['isrc'] === null) {
+                continue;
+            }
+
+            $confirmed = $this->confirmedByMusicBrainz($track, $candidate['query'], $candidate['isrc']);
+
+            if ($confirmed instanceof RegistryRecording) {
+                return $this->record($track, $candidate['query'], ResolutionMethod::CreditsFm, 1.0, $confirmed, $candidate['isrc']);
+            }
+
+            if ($this->confirmedByCreditsFm($track, $candidate['query'], $candidate['isrc'])) {
+                return $this->record($track, $candidate['query'], ResolutionMethod::CreditsFm, 0.6, null, $candidate['isrc']);
+            }
+        }
+
+        foreach ($candidates as $candidate) {
+            $found = $this->searchMusicBrainz($track, $candidate['query']);
+
+            if ($found instanceof RegistryRecording) {
+                return $this->record($track, $candidate['query'], ResolutionMethod::MusicBrainzSearch, 0.9, $found, $found->isrcs[0] ?? null);
+            }
+        }
+
+        $this->recordMiss($track, $candidates[0]['query'] ?? new TrackQuery($track->title, $track->artists));
+
+        return null;
+    }
+
+    private function confirmedByMusicBrainz(TrackToResolve $track, TrackQuery $query, string $isrc): ?RegistryRecording
+    {
+        $payload = $this->musicBrainz->isrc($isrc);
+        Enrichment::store(Enrichment::SOURCE, $track->key(), MetadataSource::MusicBrainz, "isrc:{$isrc}", $payload === null ? EnrichmentStatus::NotFound : EnrichmentStatus::Done, $payload);
+
+        if ($payload === null) {
+            return null;
+        }
+
+        foreach (MusicBrainzMapper::recordings($payload) as $recording) {
+            if ($this->sameDuration($track->durationSeconds, $recording->durationSeconds) && $this->creditsArtist($recording, $query->artist, $track->artists)) {
+                return $recording;
+            }
+        }
+
+        return null;
+    }
+
+    private function confirmedByCreditsFm(TrackToResolve $track, TrackQuery $query, string $isrc): bool
+    {
+        $payload = $this->creditsFm->isrc($isrc);
+        Enrichment::store(Enrichment::SOURCE, $track->key(), MetadataSource::CreditsFm, "isrc:{$isrc}", $payload === null ? EnrichmentStatus::NotFound : EnrichmentStatus::Done, $payload);
+
+        if ($payload === null) {
+            return false;
+        }
+
+        $detail = CreditsFmMapper::detail($payload);
+
+        return MusicText::sameTitle($detail->title, $query->title)
+            && array_any($detail->artists, fn (string $artist): bool => MusicText::sameArtist($artist, $query->artist) || MusicText::sameArtist($artist, $track->artists));
+    }
+
+    private function searchMusicBrainz(TrackToResolve $track, TrackQuery $query): ?RegistryRecording
+    {
+        $payload = $this->musicBrainz->searchRecordings($query);
+        Enrichment::store(Enrichment::SOURCE, $track->key(), MetadataSource::MusicBrainz, 'search', EnrichmentStatus::Done, $payload);
+
+        foreach (MusicBrainzMapper::recordings($payload) as $recording) {
+            if ($this->acceptableSearchHit($track, $query, $recording)) {
+                return $recording;
+            }
+        }
+
+        return null;
+    }
+
+    private function acceptableSearchHit(TrackToResolve $track, TrackQuery $query, RegistryRecording $recording): bool
+    {
+        if ($this->namesAnotherVersion($recording->disambiguation, $track->title)) {
+            return false;
+        }
+
+        $durationOk = $track->durationSeconds === null
+            ? $recording->score === 100
+            : ($recording->score ?? 0) >= 90
+                && $recording->durationSeconds !== null
+                && $this->sameDuration($track->durationSeconds, $recording->durationSeconds);
+
+        return $durationOk
+            && $this->creditsArtist($recording, $query->artist, $track->artists)
+            && MusicText::sameTitle($recording->title, $query->title);
+    }
+
+    /**
+     * A "live" or "instrumental" recording is another version unless the
+     * source title says the same.
+     */
+    private function namesAnotherVersion(?string $disambiguation, string $sourceTitle): bool
+    {
+        if ($disambiguation === null || preg_match_all(self::VERSION_MARKERS, $disambiguation, $markers) < 1) {
+            return false;
+        }
+
+        return array_any($markers[1], fn (string $marker): bool => preg_match('/\b'.preg_quote($marker, '/').'\b/i', $sourceTitle) !== 1);
+    }
+
+    private function sameDuration(?int $source, ?int $registry): bool
+    {
+        return $source === null || $registry === null || abs($source - $registry) <= self::DURATION_TOLERANCE_SECONDS;
+    }
+
+    private function creditsArtist(RegistryRecording $recording, string $artist, string $sourceArtists): bool
+    {
+        return array_any($recording->artists, fn (array $credited): bool => MusicText::sameArtist($credited['name'], $artist)
+            || MusicText::sameArtist($credited['name'], $sourceArtists));
+    }
+
+    private function record(TrackToResolve $track, TrackQuery $query, ResolutionMethod $method, float $confidence, ?RegistryRecording $registry, ?string $isrc): Recording
+    {
+        $recording = $this->recordingFor($registry, $isrc, $query, $track->durationSeconds);
+
+        RecordingResolution::query()->updateOrCreate(
+            ['provider' => $track->provider, 'external_id' => $track->externalId],
+            [
+                'recording_id' => $recording->id,
+                'status' => ResolutionStatus::Resolved,
+                'method' => $method,
+                'confidence' => $confidence,
+                'query_title' => $query->title,
+                'query_artist' => $query->artist,
+                'attempts' => 0,
+                'resolved_at' => now(),
+                'next_attempt_at' => EnrichmentStatus::Done->nextAttemptAt(),
+            ],
+        );
+
+        $this->telemetry->resolution(ResolutionStatus::Resolved, $method, $confidence);
+
+        return $recording;
+    }
+
+    private function recordMiss(TrackToResolve $track, TrackQuery $query): void
+    {
+        RecordingResolution::query()->updateOrCreate(
+            ['provider' => $track->provider, 'external_id' => $track->externalId],
+            [
+                'recording_id' => null,
+                'status' => ResolutionStatus::NotFound,
+                'method' => null,
+                'confidence' => null,
+                'query_title' => $query->title,
+                'query_artist' => $query->artist,
+                'resolved_at' => null,
+                'next_attempt_at' => EnrichmentStatus::NotFound->nextAttemptAt(),
+            ],
+        );
+
+        $this->telemetry->resolution(ResolutionStatus::NotFound, null, null);
+    }
+
+    /**
+     * By MusicBrainz id first; otherwise adopts a recording known only by
+     * this ISRC; otherwise creates one.
+     */
+    private function recordingFor(?RegistryRecording $registry, ?string $isrc, TrackQuery $query, ?int $duration): Recording
+    {
+        $values = [
+            'title' => $registry->title ?? $query->title,
+            'artist_name' => $registry->artists[0]['name'] ?? $query->artist,
+            'duration_seconds' => $registry->durationSeconds ?? $duration,
+        ];
+
+        $isrcOnly = fn (): ?Recording => $isrc === null ? null : Recording::query()->whereNull('mbid')->where('isrc', $isrc)->first();
+
+        if (! $registry instanceof RegistryRecording) {
+            return $isrcOnly() ?? Recording::query()->create([...$values, 'isrc' => $isrc]);
+        }
+
+        $byMbid = Recording::query()->where('mbid', $registry->mbid)->first();
+
+        if ($byMbid instanceof Recording) {
+            if ($byMbid->isrc === null && $isrc !== null) {
+                $byMbid->update(['isrc' => $isrc]);
+            }
+
+            return $byMbid;
+        }
+
+        $adopted = $isrcOnly();
+
+        if ($adopted instanceof Recording) {
+            $adopted->update(['mbid' => $registry->mbid, ...$values]);
+
+            return $adopted;
+        }
+
+        return Recording::query()->createOrFirst(['mbid' => $registry->mbid], [...$values, 'isrc' => $isrc]);
+    }
+}
