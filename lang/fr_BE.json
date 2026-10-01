@@ -523,5 +523,11 @@
     "Suggestions for :playlist": "Suggestions pour :playlist",
     ":provider could not be reached. Try again in a few minutes.": ":provider est injoignable. Réessayez dans quelques minutes.",
     ":provider refused these credentials. Make sure you are signed in, then connect the account again.": ":provider a refusé ces identifiants. Vérifiez que vous êtes connecté, puis reconnectez le compte.",
-    "Sonder is pacing its calls to :provider. Try again in :seconds seconds.": "Sonder espace ses appels à :provider. Réessayez dans :seconds secondes."
+    "Sonder is pacing its calls to :provider. Try again in :seconds seconds.": "Sonder espace ses appels à :provider. Réessayez dans :seconds secondes.",
+    "Your library can't be synced until you paste a fresh one.": "Votre bibliothèque ne peut pas être synchronisée tant que vous n'en collez pas un nouveau.",
+    "Don't have an account?": "Pas encore de compte ?",
+    "The listened time is longer than the listen itself.": "La durée écoutée dépasse la durée de l'écoute.",
+    "Syncing “:title”…": "Synchronisation de « :title »…",
+    "Fetching your playlists…": "Récupération de vos playlists…",
+    "Update connection": "Mettre à jour la connexion"
 }

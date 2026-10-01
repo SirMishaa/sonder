@@ -118,8 +118,10 @@ const progress = () =>
                 >
                     {{
                         state.currentPlaylistTitle
-                            ? `Syncing “${state.currentPlaylistTitle}”…`
-                            : 'Fetching your playlists…'
+                            ? $t('Syncing “:title”…', {
+                                  title: state.currentPlaylistTitle,
+                              })
+                            : $t('Fetching your playlists…')
                     }}
                 </p>
             </Transition>

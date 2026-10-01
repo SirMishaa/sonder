@@ -166,7 +166,7 @@ const steps = [
 
             <div class="flex items-center gap-3">
                 <Button :disabled="processing" data-test="connect-button">
-                    {{ account ? 'Update connection' : 'Connect' }}
+                    {{ account ? $t('Update connection') : $t('Connect') }}
                 </Button>
 
                 <Button
