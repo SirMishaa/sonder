@@ -1,0 +1,97 @@
+{
+  "tracks": {
+    "track": [
+      {
+        "name": "NICOLE KIDMAN",
+        "duration": "181",
+        "playcount": "2056383",
+        "listeners": "191737",
+        "mbid": "7c959127-f934-4ea8-ae27-99b2533cbf9e",
+        "url": "https://www.last.fm/music/AD%C3%89LA/_/NICOLE+KIDMAN",
+        "streamable": {
+          "#text": "0",
+          "fulltrack": "0"
+        },
+        "artist": {
+          "name": "ADÉLA",
+          "mbid": "7a683b8b-0c84-4bbe-a9d9-89bb5b4cfb4a",
+          "url": "https://www.last.fm/music/AD%C3%89LA"
+        }
+      },
+      {
+        "name": "Ain't In LA",
+        "duration": "184",
+        "playcount": "3477205",
+        "listeners": "250334",
+        "mbid": "266f1d7d-f524-4d7a-9fe2-fd20eb87d714",
+        "url": "https://www.last.fm/music/AD%C3%89LA/_/Ain%27t+In+LA",
+        "streamable": {
+          "#text": "0",
+          "fulltrack": "0"
+        },
+        "artist": {
+          "name": "ADÉLA",
+          "mbid": "7a683b8b-0c84-4bbe-a9d9-89bb5b4cfb4a",
+          "url": "https://www.last.fm/music/AD%C3%89LA"
+        }
+      },
+      {
+        "name": "the cure",
+        "duration": "297",
+        "playcount": "15090271",
+        "listeners": "878847",
+        "mbid": "0f0097d9-5e12-4c76-8fbb-3409641c0bb4",
+        "url": "https://www.last.fm/music/Olivia+Rodrigo/_/the+cure",
+        "streamable": {
+          "#text": "0",
+          "fulltrack": "0"
+        },
+        "artist": {
+          "name": "Olivia Rodrigo",
+          "mbid": "6925db17-f35e-42f3-a4eb-84ee6bf5d4b0",
+          "url": "https://www.last.fm/music/Olivia+Rodrigo"
+        }
+      },
+      {
+        "name": "Patient Zero",
+        "duration": "312",
+        "playcount": "764143",
+        "listeners": "86716",
+        "mbid": "320a8f7b-9035-49f9-b32c-c92546d395b9",
+        "url": "https://www.last.fm/music/Taylor+Swift/_/Patient+Zero",
+        "streamable": {
+          "#text": "0",
+          "fulltrack": "0"
+        },
+        "artist": {
+          "name": "Taylor Swift",
+          "mbid": "20244d07-534f-4eff-b4d4-930878889970",
+          "url": "https://www.last.fm/music/Taylor+Swift"
+        }
+      },
+      {
+        "name": "stupid song",
+        "duration": "209",
+        "playcount": "11305481",
+        "listeners": "758551",
+        "mbid": "4ae47768-e426-43fe-85c9-1ddbea12d1c7",
+        "url": "https://www.last.fm/music/Olivia+Rodrigo/_/stupid+song",
+        "streamable": {
+          "#text": "0",
+          "fulltrack": "0"
+        },
+        "artist": {
+          "name": "Olivia Rodrigo",
+          "mbid": "6925db17-f35e-42f3-a4eb-84ee6bf5d4b0",
+          "url": "https://www.last.fm/music/Olivia+Rodrigo"
+        }
+      }
+    ],
+    "@attr": {
+      "page": "1",
+      "perPage": "200",
+      "totalPages": "50",
+      "total": "10000"
+    }
+  }
+}

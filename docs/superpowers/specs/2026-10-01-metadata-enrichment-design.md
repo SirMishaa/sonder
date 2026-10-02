@@ -324,10 +324,15 @@ Three plans, each shippable and useful alone:
   - Resolution, recording and contributor description, projection.
   - The commands and the post-sync hook.
   - Metrics, spans and logs.
-- **D2, more sources.**
-  - Last.fm (tags, similar, listeners).
-  - YouTube Music audio format, with the `DescribesAudioQuality` capability
-    and the background reserve on `RateLimitedGateway`.
+- **D2, more sources.** Split on 2026-10-02:
+  - **D2a**, Last.fm (tags, similar, listeners), extended with resolution of
+    the tracks the registries miss, a popularity history, similar artists
+    and daily charts: see `2026-10-02-lastfm-enrichment-design.md`, which
+    supersedes this spec where they differ (the `recordings` identity rule).
+  - **D2b**, YouTube Music audio format, with the `DescribesAudioQuality`
+    capability and the background reserve on `RateLimitedGateway`.
+  - **D2c**, an audio features spike (tempo, energy, valence, danceability)
+    for the mood mode.
 - **D3, seeing it.**
   - The Info tab, the player bar badge and the info endpoint.
   - The Grafana dashboard and the alert.

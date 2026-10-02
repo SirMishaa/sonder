@@ -1,0 +1,94 @@
+{
+  "similartracks": {
+    "track": [
+      {
+        "name": "Six Feet Underground",
+        "playcount": 194702,
+        "mbid": "5a5bfc61-f79f-4317-a73a-f185a170d3ec",
+        "match": 1,
+        "url": "https://www.last.fm/music/Lord+of+the+Lost/_/Six+Feet+Underground",
+        "streamable": {
+          "#text": "0",
+          "fulltrack": "0"
+        },
+        "duration": 311,
+        "artist": {
+          "name": "Lord of the Lost",
+          "mbid": "8cf95123-5023-4257-933e-4d7ebbc5d8a2",
+          "url": "https://www.last.fm/music/Lord+of+the+Lost"
+        }
+      },
+      {
+        "name": "Blood for Blood",
+        "playcount": 124817,
+        "mbid": "efd186bb-1ed6-455e-a748-5908a710d0c2",
+        "match": 0.907239,
+        "url": "https://www.last.fm/music/Lord+of+the+Lost/_/Blood+for+Blood",
+        "streamable": {
+          "#text": "0",
+          "fulltrack": "0"
+        },
+        "duration": 255,
+        "artist": {
+          "name": "Lord of the Lost",
+          "mbid": "8cf95123-5023-4257-933e-4d7ebbc5d8a2",
+          "url": "https://www.last.fm/music/Lord+of+the+Lost"
+        }
+      },
+      {
+        "name": "Going Under",
+        "playcount": 16739320,
+        "match": 0.402383,
+        "url": "https://www.last.fm/music/Evanescence/_/Going+Under",
+        "streamable": {
+          "#text": "0",
+          "fulltrack": "0"
+        },
+        "duration": 214,
+        "artist": {
+          "name": "Evanescence",
+          "mbid": "f4a31f0a-51dd-4fa7-986d-3095c40c5ed9",
+          "url": "https://www.last.fm/music/Evanescence"
+        }
+      },
+      {
+        "name": "Lost Boys",
+        "playcount": 1295819,
+        "mbid": "11c7dfad-8c54-4372-8776-bfd52929d8b9",
+        "match": 0.347266,
+        "url": "https://www.last.fm/music/The+69+Eyes/_/Lost+Boys",
+        "streamable": {
+          "#text": "0",
+          "fulltrack": "0"
+        },
+        "duration": 201,
+        "artist": {
+          "name": "The 69 Eyes",
+          "mbid": "ba1384a7-8b0e-4ea6-bf0c-f1ec17a06d14",
+          "url": "https://www.last.fm/music/The+69+Eyes"
+        }
+      },
+      {
+        "name": "Der Schwarze Engel (Herr Der Krähen)",
+        "playcount": 5542,
+        "mbid": "6b61b6ea-e35e-356c-b865-7f47063474aa",
+        "match": 0.338676,
+        "url": "https://www.last.fm/music/Schwarzer+Engel/_/Der+Schwarze+Engel+(Herr+Der+Kr%C3%A4hen)",
+        "streamable": {
+          "#text": "0",
+          "fulltrack": "0"
+        },
+        "duration": 250,
+        "artist": {
+          "name": "Schwarzer Engel",
+          "mbid": "3941dcef-a5f6-4573-add8-6201a33a8083",
+          "url": "https://www.last.fm/music/Schwarzer+Engel"
+        }
+      }
+    ],
+    "@attr": {
+      "artist": "Lord of the Lost",
+      "track": "Loreley"
+    }
+  }
+}

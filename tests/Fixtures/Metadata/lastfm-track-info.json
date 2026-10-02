@@ -1,0 +1,66 @@
+{
+  "track": {
+    "name": "Mr. Loverman",
+    "mbid": "42d93601-eb08-454a-b8e2-32eccb695547",
+    "url": "https://www.last.fm/music/Ricky+Montgomery/_/Mr.+Loverman",
+    "duration": "216000",
+    "streamable": {
+      "#text": "0",
+      "fulltrack": "0"
+    },
+    "listeners": "833437",
+    "playcount": "10346073",
+    "artist": {
+      "name": "Ricky Montgomery",
+      "mbid": "c1f1cf38-1fee-4106-871d-ac392a28b91a",
+      "url": "https://www.last.fm/music/Ricky+Montgomery"
+    },
+    "album": {
+      "artist": "Various Artists",
+      "title": "Dank Songs",
+      "url": "https://www.last.fm/music/Various+Artists/Dank+Songs",
+      "image": [
+        {
+          "#text": "https://lastfm-img.freetls.fastly.net/i/u/34s/644de2b6e52c67e2f0c0e5a503be9747.png",
+          "size": "small"
+        },
+        {
+          "#text": "https://lastfm-img.freetls.fastly.net/i/u/64s/644de2b6e52c67e2f0c0e5a503be9747.png",
+          "size": "medium"
+        },
+        {
+          "#text": "https://lastfm-img.freetls.fastly.net/i/u/174s/644de2b6e52c67e2f0c0e5a503be9747.png",
+          "size": "large"
+        },
+        {
+          "#text": "https://lastfm-img.freetls.fastly.net/i/u/300x300/644de2b6e52c67e2f0c0e5a503be9747.png",
+          "size": "extralarge"
+        }
+      ]
+    },
+    "toptags": {
+      "tag": [
+        {
+          "name": "banana fish",
+          "url": "https://www.last.fm/tag/banana+fish"
+        },
+        {
+          "name": "indie",
+          "url": "https://www.last.fm/tag/indie"
+        },
+        {
+          "name": "pop",
+          "url": "https://www.last.fm/tag/pop"
+        },
+        {
+          "name": "indie pop",
+          "url": "https://www.last.fm/tag/indie+pop"
+        },
+        {
+          "name": "ash",
+          "url": "https://www.last.fm/tag/ash"
+        }
+      ]
+    }
+  }
+}

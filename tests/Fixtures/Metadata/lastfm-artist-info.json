@@ -1,0 +1,65 @@
+{
+  "artist": {
+    "name": "Lord of the Lost",
+    "mbid": "8cf95123-5023-4257-933e-4d7ebbc5d8a2",
+    "url": "https://www.last.fm/music/Lord+of+the+Lost",
+    "streamable": "0",
+    "ontour": "0",
+    "stats": {
+      "listeners": "171227",
+      "playcount": "8932613"
+    },
+    "similar": {
+      "artist": [
+        {
+          "name": "Chris Harms",
+          "url": "https://www.last.fm/music/Chris+Harms"
+        },
+        {
+          "name": "Mono Inc.",
+          "url": "https://www.last.fm/music/Mono+Inc."
+        },
+        {
+          "name": "Hell Boulevard",
+          "url": "https://www.last.fm/music/Hell+Boulevard"
+        },
+        {
+          "name": "Gothminister",
+          "url": "https://www.last.fm/music/Gothminister"
+        },
+        {
+          "name": "Scarlet Dorn",
+          "url": "https://www.last.fm/music/Scarlet+Dorn"
+        }
+      ]
+    },
+    "tags": {
+      "tag": [
+        {
+          "name": "Gothic Rock",
+          "url": "https://www.last.fm/tag/Gothic+Rock"
+        },
+        {
+          "name": "Gothic Metal",
+          "url": "https://www.last.fm/tag/Gothic+Metal"
+        },
+        {
+          "name": "german",
+          "url": "https://www.last.fm/tag/german"
+        },
+        {
+          "name": "glam rock",
+          "url": "https://www.last.fm/tag/glam+rock"
+        },
+        {
+          "name": "industrial metal",
+          "url": "https://www.last.fm/tag/industrial+metal"
+        }
+      ]
+    },
+    "bio": {
+      "summary": "",
+      "content": ""
+    }
+  }
+}

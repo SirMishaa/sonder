@@ -1,0 +1,60 @@
+{
+  "toptags": {
+    "tag": [
+      {
+        "count": 100,
+        "name": "banana fish",
+        "url": "https://www.last.fm/tag/banana+fish"
+      },
+      {
+        "count": 25,
+        "name": "indie",
+        "url": "https://www.last.fm/tag/indie"
+      },
+      {
+        "count": 17,
+        "name": "pop",
+        "url": "https://www.last.fm/tag/pop"
+      },
+      {
+        "count": 17,
+        "name": "indie pop",
+        "url": "https://www.last.fm/tag/indie+pop"
+      },
+      {
+        "count": 8,
+        "name": "ash",
+        "url": "https://www.last.fm/tag/ash"
+      },
+      {
+        "count": 8,
+        "name": "indie rock",
+        "url": "https://www.last.fm/tag/indie+rock"
+      },
+      {
+        "count": 8,
+        "name": "eiji",
+        "url": "https://www.last.fm/tag/eiji"
+      },
+      {
+        "count": 2,
+        "name": "satoru",
+        "url": "https://www.last.fm/tag/satoru"
+      },
+      {
+        "count": 2,
+        "name": "mlm",
+        "url": "https://www.last.fm/tag/mlm"
+      },
+      {
+        "count": 2,
+        "name": "suguru",
+        "url": "https://www.last.fm/tag/suguru"
+      }
+    ],
+    "@attr": {
+      "artist": "Ricky Montgomery",
+      "track": "Mr. Loverman"
+    }
+  }
+}

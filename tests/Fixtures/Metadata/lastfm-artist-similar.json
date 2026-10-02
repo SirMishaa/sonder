@@ -1,0 +1,43 @@
+{
+  "similarartists": {
+    "artist": [
+      {
+        "name": "Chris Harms",
+        "mbid": "9d1cce6f-f53d-42bd-84ed-42eff6b78d86",
+        "match": "1",
+        "url": "https://www.last.fm/music/Chris+Harms",
+        "streamable": "0"
+      },
+      {
+        "name": "Mono Inc.",
+        "match": "0.829689",
+        "url": "https://www.last.fm/music/Mono+Inc.",
+        "streamable": "0"
+      },
+      {
+        "name": "Hell Boulevard",
+        "mbid": "ff5ac337-dba5-43fe-8bbe-cdee3d6848e9",
+        "match": "0.629376",
+        "url": "https://www.last.fm/music/Hell+Boulevard",
+        "streamable": "0"
+      },
+      {
+        "name": "Gothminister",
+        "mbid": "07f59ab8-32ff-48ad-a9ff-866078e1a2d5",
+        "match": "0.488542",
+        "url": "https://www.last.fm/music/Gothminister",
+        "streamable": "0"
+      },
+      {
+        "name": "Scarlet Dorn",
+        "mbid": "3620656d-637a-4642-9ed8-62c6b9ef0918",
+        "match": "0.474175",
+        "url": "https://www.last.fm/music/Scarlet+Dorn",
+        "streamable": "0"
+      }
+    ],
+    "@attr": {
+      "artist": "Lord of the Lost"
+    }
+  }
+}

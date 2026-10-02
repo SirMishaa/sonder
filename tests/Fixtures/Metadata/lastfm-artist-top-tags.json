@@ -1,0 +1,59 @@
+{
+  "toptags": {
+    "tag": [
+      {
+        "count": 100,
+        "name": "Gothic Rock",
+        "url": "https://www.last.fm/tag/Gothic+Rock"
+      },
+      {
+        "count": 79,
+        "name": "Gothic Metal",
+        "url": "https://www.last.fm/tag/Gothic+Metal"
+      },
+      {
+        "count": 30,
+        "name": "german",
+        "url": "https://www.last.fm/tag/german"
+      },
+      {
+        "count": 29,
+        "name": "glam rock",
+        "url": "https://www.last.fm/tag/glam+rock"
+      },
+      {
+        "count": 5,
+        "name": "industrial metal",
+        "url": "https://www.last.fm/tag/industrial+metal"
+      },
+      {
+        "count": 5,
+        "name": "Gothic",
+        "url": "https://www.last.fm/tag/Gothic"
+      },
+      {
+        "count": 4,
+        "name": "new gothic rock",
+        "url": "https://www.last.fm/tag/new+gothic+rock"
+      },
+      {
+        "count": 1,
+        "name": "metal",
+        "url": "https://www.last.fm/tag/metal"
+      },
+      {
+        "count": 1,
+        "name": "rock",
+        "url": "https://www.last.fm/tag/rock"
+      },
+      {
+        "count": 1,
+        "name": "industrial",
+        "url": "https://www.last.fm/tag/industrial"
+      }
+    ],
+    "@attr": {
+      "artist": "Lord of the Lost"
+    }
+  }
+}
