@@ -23,6 +23,7 @@ use App\Services\Music\YouTubeMusic\YouTubeMusicAdapter;
 use App\Services\Music\YouTubeMusic\YouTubeMusicCredentials;
 use Illuminate\Cache\RateLimiter as CacheRateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -76,6 +77,19 @@ final class AppServiceProvider extends ServiceProvider
         RateLimiter::for(CallBudget::MUSICBRAINZ, fn (string $key): array => [
             Limit::perSecond(1)->by('musicbrainz:second:'.$key),
         ]);
+
+        $this->registerDevCommands();
+    }
+
+    /**
+     * Processes started by `php artisan dev`, on top of Pail, Vite and Reverb.
+     * Each one restarts on its own when it crashes.
+     */
+    private function registerDevCommands(): void
+    {
+        DevCommands::artisan('octane:start --watch --server=frankenphp --port=8003 --caddyfile=Caddyfile', 'server');
+        DevCommands::artisan('queue:listen --tries=1 --timeout=0 --queue=default,enrichment', 'queue');
+        DevCommands::artisan('typescript:transform --watch', 'types');
     }
 
     /**
