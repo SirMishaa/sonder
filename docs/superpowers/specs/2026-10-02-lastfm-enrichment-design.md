@@ -53,6 +53,7 @@ listener counts, similar tracks and artists, and charts.
 | Extras | `artist.getSimilar`, a popularity history, daily chart snapshots. |
 | Charts followed | Global (`chart.getTopTracks`), Belgium, France, United States (`geo.getTopTracks`), top 200 each. |
 | Cadence | Popularity (`getInfo`) weekly, tags and similar every 90 days, charts daily. |
+| Retention | Popularity samples and chart snapshots are kept indefinitely: about 100 000 samples (10 MB) and 290 000 chart entries (40 MB) a year, and Last.fm offers no history to rebuild a lost reading. Pruning can come later. |
 | Tag noise | Keep at most 20 tags per subject, weight ≥ 5. The raw answer stays in `enrichments`, so the filter can change without calling again. |
 
 ## What Last.fm returns (verified 2026-10-02)
