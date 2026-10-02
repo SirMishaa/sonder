@@ -18,8 +18,10 @@ final readonly class QueueTrackResolution
      * Queues the library's YouTube Music videos for resolution, one job per
      * ResolveRecordings::MAX_TRACKS distinct videos, marking each one
      * pending. Without $refresh, only videos never queued before.
+     * $unresolved queues only the videos not found or still pending, now
+     * rather than when they are due.
      */
-    public function handle(?YouTubeMusicAccount $account = null, bool $refresh = false): int
+    public function handle(?YouTubeMusicAccount $account = null, bool $refresh = false, bool $unresolved = false): int
     {
         $tracks = Track::query()
             ->whereNotNull('youtube_video_id')
@@ -27,7 +29,14 @@ final readonly class QueueTrackResolution
                 'playlist',
                 fn (Builder $playlists): Builder => $playlists->where('youtube_music_account_id', $account->id),
             ))
-            ->when(! $refresh, fn (Builder $query): Builder => $query->whereNotIn(
+            ->when($unresolved, fn (Builder $query): Builder => $query->whereIn(
+                'youtube_video_id',
+                RecordingResolution::query()
+                    ->where('provider', Provider::YouTubeMusic)
+                    ->whereIn('status', [ResolutionStatus::NotFound, ResolutionStatus::Pending])
+                    ->select('external_id'),
+            ))
+            ->when(! $refresh && ! $unresolved, fn (Builder $query): Builder => $query->whereNotIn(
                 'youtube_video_id',
                 RecordingResolution::query()->where('provider', Provider::YouTubeMusic)->select('external_id'),
             ))

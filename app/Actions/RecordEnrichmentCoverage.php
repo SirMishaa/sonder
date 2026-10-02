@@ -6,13 +6,17 @@ namespace App\Actions;
 
 use App\Enums\CreditType;
 use App\Enums\EnrichmentStatus;
+use App\Enums\MetadataSource;
 use App\Enums\Provider;
 use App\Enums\ResolutionStatus;
 use App\Models\Enrichment;
 use App\Models\Recording;
 use App\Models\RecordingResolution;
+use App\Models\SimilarRecording;
 use App\Models\Track;
 use App\Services\Metadata\EnrichmentTelemetry;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 
 final readonly class RecordEnrichmentCoverage
@@ -40,6 +44,24 @@ final readonly class RecordEnrichmentCoverage
         $this->telemetry->coverage('resolved', $videos === 0 ? 0.0 : $resolved / $videos);
         $this->telemetry->coverage('credits', DB::table('recording_contributors')->where('credit_type', '!=', CreditType::Artist->value)->distinct()->count('recording_id') / $recordings);
         $this->telemetry->coverage('genres', DB::table('recording_tags')->join('tags', 'tags.id', '=', 'recording_tags.tag_id')->where('tags.is_genre', true)->distinct()->count('recording_id') / $recordings);
+
+        $lastFmTagged = Recording::query()
+            ->where(fn (Builder $query): Builder => $query
+                ->whereExists(fn (QueryBuilder $tags): QueryBuilder => $tags->select(DB::raw(1))
+                    ->from('recording_tags')
+                    ->whereColumn('recording_tags.recording_id', 'recordings.id')
+                    ->where('recording_tags.source', MetadataSource::LastFm->value))
+                ->orWhereExists(fn (QueryBuilder $artists): QueryBuilder => $artists->select(DB::raw(1))
+                    ->from('recording_contributors')
+                    ->join('contributor_tags', 'contributor_tags.contributor_id', '=', 'recording_contributors.contributor_id')
+                    ->whereColumn('recording_contributors.recording_id', 'recordings.id')
+                    ->where('recording_contributors.credit_type', CreditType::Artist->value)
+                    ->where('contributor_tags.source', MetadataSource::LastFm->value)))
+            ->count();
+
+        $this->telemetry->coverage('lastfm_tags', $lastFmTagged / $recordings);
+        $this->telemetry->coverage('similar', SimilarRecording::query()->distinct()->count('recording_id') / $recordings);
+        $this->telemetry->coverage('popularity', Recording::query()->whereNotNull('lastfm_listeners')->count() / $recordings);
 
         $this->telemetry->backlog('failed', Enrichment::query()->where('status', EnrichmentStatus::Failed)->count() + $failed);
         $this->telemetry->backlog('not_found', $notFound);
