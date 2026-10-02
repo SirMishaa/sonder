@@ -13,10 +13,13 @@ use App\Models\Recording;
 use App\Models\RecordingResolution;
 use App\Services\Metadata\CreditsFm\CreditsFmGateway;
 use App\Services\Metadata\CreditsFm\CreditsFmMapper;
+use App\Services\Metadata\Data\LastFmTrack;
 use App\Services\Metadata\Data\RegistryRecording;
 use App\Services\Metadata\Data\TrackQuery;
 use App\Services\Metadata\Data\TrackToResolve;
 use App\Services\Metadata\EnrichmentTelemetry;
+use App\Services\Metadata\LastFm\LastFmGateway;
+use App\Services\Metadata\LastFm\LastFmMapper;
 use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
 use App\Services\Metadata\MusicBrainz\MusicBrainzMapper;
 use App\Support\MusicText;
@@ -39,6 +42,7 @@ final readonly class ResolveRecordings
     public function __construct(
         private CreditsFmGateway $creditsFm,
         private MusicBrainzGateway $musicBrainz,
+        private LastFmGateway $lastFm,
         private EnrichmentTelemetry $telemetry,
     ) {}
 
@@ -52,7 +56,8 @@ final readonly class ResolveRecordings
      * MusicBrainz answers in a fraction of a second), then asks credits.fm
      * about the others a few at a time with the time left, resolving each
      * answer as it comes. A run that got nothing done still asks once, so
-     * every run moves forward.
+     * every run moves forward. A track the registries miss is looked up on
+     * Last.fm last, and becomes a recording known by name.
      *
      * @param  list<TrackToResolve>  $tracks  at most MAX_TRACKS
      * @param  CarbonInterface|null  $until  stops between tracks and calls once past it; the rest stays unresolved
@@ -227,6 +232,16 @@ final readonly class ResolveRecordings
             }
         }
 
+        if ($this->lastFm->enabled()) {
+            foreach ($candidates as $candidate) {
+                $known = $this->knownToLastFm($track, $candidate['query']);
+
+                if ($known !== null) {
+                    return $this->recordByName($track, $candidate['query'], $known['track'], $known['payload']);
+                }
+            }
+        }
+
         $this->recordMiss($track, $candidates[0]['query'] ?? new TrackQuery($track->title, $track->artists));
 
         return null;
@@ -350,8 +365,25 @@ final readonly class ResolveRecordings
 
     private function record(TrackToResolve $track, TrackQuery $query, ResolutionMethod $method, float $confidence, ?RegistryRecording $registry, ?string $isrc): Recording
     {
-        $recording = $this->recordingFor($registry, $isrc, $query, $track->durationSeconds);
+        $current = RecordingResolution::query()
+            ->where('provider', $track->provider)
+            ->where('external_id', $track->externalId)
+            ->first()
+            ?->recording;
+        $nameOnly = $current instanceof Recording && $current->isNameOnly() ? $current : null;
 
+        $recording = $this->recordingFor($registry, $isrc, $query, $track->durationSeconds, $nameOnly);
+        $this->resolveTo($track, $query, $method, $confidence, $recording);
+
+        if ($nameOnly instanceof Recording && $nameOnly->id !== $recording->id && $nameOnly->resolutions()->doesntExist()) {
+            $nameOnly->delete();
+        }
+
+        return $recording;
+    }
+
+    private function resolveTo(TrackToResolve $track, TrackQuery $query, ResolutionMethod $method, float $confidence, Recording $recording): void
+    {
         RecordingResolution::query()->updateOrCreate(
             ['provider' => $track->provider, 'external_id' => $track->externalId],
             [
@@ -368,6 +400,47 @@ final readonly class ResolveRecordings
         );
 
         $this->telemetry->resolution(ResolutionStatus::Resolved, $method, $confidence);
+    }
+
+    /**
+     * Last.fm's corrected track when it is the same song: same title, same
+     * artist, and lengths within the tolerance when both are known.
+     *
+     * @return array{track: LastFmTrack, payload: array<string, mixed>}|null
+     */
+    private function knownToLastFm(TrackToResolve $track, TrackQuery $query): ?array
+    {
+        $payload = $this->ask($track, MetadataSource::LastFm, "track_info:{$query->artist}|{$query->title}", fn (): ?array => $this->lastFm->trackInfo($query));
+        $known = $payload === null ? null : LastFmMapper::track($payload);
+
+        if ($payload === null
+            || ! $known instanceof LastFmTrack
+            || ! MusicText::sameTitle($known->title, $query->title)
+            || ! (MusicText::sameArtist($known->artist, $query->artist) || MusicText::sameArtist($known->artist, $track->artists))
+            || ! $this->sameDuration($track->durationSeconds, $known->durationSeconds)) {
+            return null;
+        }
+
+        return ['track' => $known, 'payload' => $payload];
+    }
+
+    /**
+     * Resolves to the recording known by Last.fm's names, created when new,
+     * and keeps Last.fm's answer as its first popularity reading.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function recordByName(TrackToResolve $track, TrackQuery $query, LastFmTrack $known, array $payload): Recording
+    {
+        $recording = Recording::findByName($known->title, $known->artist)
+            ?? Recording::query()->create([
+                'title' => $known->title,
+                'artist_name' => $known->artist,
+                'duration_seconds' => $known->durationSeconds ?? $track->durationSeconds,
+            ]);
+
+        $this->resolveTo($track, $query, ResolutionMethod::LastFm, 0.5, $recording);
+        Enrichment::store(Enrichment::RECORDING, $recording->id, MetadataSource::LastFm, Enrichment::INFO, EnrichmentStatus::Done, $payload);
 
         return $recording;
     }
@@ -393,9 +466,9 @@ final readonly class ResolveRecordings
 
     /**
      * By MusicBrainz id first; otherwise adopts a recording known only by
-     * this ISRC; otherwise creates one.
+     * this ISRC, or the track's name-only recording; otherwise creates one.
      */
-    private function recordingFor(?RegistryRecording $registry, ?string $isrc, TrackQuery $query, ?int $duration): Recording
+    private function recordingFor(?RegistryRecording $registry, ?string $isrc, TrackQuery $query, ?int $duration, ?Recording $nameOnly): Recording
     {
         $values = [
             'title' => $registry->title ?? $query->title,
@@ -406,7 +479,9 @@ final readonly class ResolveRecordings
         $isrcOnly = fn (): ?Recording => $isrc === null ? null : Recording::query()->whereNull('mbid')->where('isrc', $isrc)->first();
 
         if (! $registry instanceof RegistryRecording) {
-            return $isrcOnly() ?? Recording::query()->create([...$values, 'isrc' => $isrc]);
+            return $isrcOnly()
+                ?? $this->adopt($nameOnly, [...$values, 'isrc' => $isrc])
+                ?? Recording::query()->create([...$values, 'isrc' => $isrc]);
         }
 
         $byMbid = Recording::query()->where('mbid', $registry->mbid)->first();
@@ -427,6 +502,20 @@ final readonly class ResolveRecordings
             return $adopted;
         }
 
-        return Recording::query()->createOrFirst(['mbid' => $registry->mbid], [...$values, 'isrc' => $isrc]);
+        return $this->adopt($nameOnly, [...$values, 'mbid' => $registry->mbid, 'isrc' => $isrc])
+            ?? Recording::query()->createOrFirst(['mbid' => $registry->mbid], [...$values, 'isrc' => $isrc]);
+    }
+
+    /**
+     * Gives the track's name-only recording the identity just found, when
+     * there is one.
+     *
+     * @param  array<string, int|string|null>  $values
+     */
+    private function adopt(?Recording $nameOnly, array $values): ?Recording
+    {
+        $nameOnly?->update($values);
+
+        return $nameOnly;
     }
 }

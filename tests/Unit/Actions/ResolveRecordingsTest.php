@@ -3,17 +3,21 @@
 declare(strict_types=1);
 
 use App\Actions\ResolveRecordings;
+use App\Enums\MetadataSource;
 use App\Enums\Provider;
 use App\Enums\ResolutionMethod;
 use App\Enums\ResolutionStatus;
+use App\Models\Enrichment;
 use App\Models\Recording;
 use App\Models\RecordingResolution;
 use App\Services\Metadata\CreditsFm\CreditsFmGateway;
 use App\Services\Metadata\Data\TrackToResolve;
 use App\Services\Metadata\EnrichmentTelemetry;
+use App\Services\Metadata\LastFm\LastFmGateway;
 use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
 use Tests\Support\FakeCreditsFmGateway;
 use Tests\Support\FakeEnrichmentTelemetry;
+use Tests\Support\FakeLastFmGateway;
 use Tests\Support\FakeMusicBrainzGateway;
 
 beforeEach(function (): void {
@@ -23,6 +27,8 @@ beforeEach(function (): void {
     app()->instance(CreditsFmGateway::class, $this->creditsFm);
     app()->instance(MusicBrainzGateway::class, $this->musicBrainz);
     app()->instance(EnrichmentTelemetry::class, $this->telemetry);
+    $this->lastFm = new FakeLastFmGateway();
+    app()->instance(LastFmGateway::class, $this->lastFm);
 });
 
 function survival(?int $duration = 258, string $title = 'Survival (Official Video)', string $artists = 'Muse'): TrackToResolve
@@ -262,7 +268,7 @@ it('stops asking credits.fm once past its deadline and keeps what it learned', f
     resolve(ResolveRecordings::class)->handle($tracks, until: now()->subSecond());
 
     expect(array_count_values($this->creditsFm->calls)['resolve_batch'] ?? 0)->toBe(1)
-        ->and(App\Models\Enrichment::query()->where('endpoint', 'resolve')->count())->toBe(6);
+        ->and(Enrichment::query()->where('endpoint', 'resolve')->count())->toBe(6);
 });
 
 it('resolves the tracks credits.fm already answered before asking it about more', function (): void {
@@ -291,4 +297,90 @@ it('asks credits.fm with the time left once the known tracks are resolved', func
 
     expect(array_count_values($this->creditsFm->calls)['resolve_batch'] ?? 0)->toBe(2)
         ->and(RecordingResolution::query()->count())->toBe(7);
+});
+
+/**
+ * What Last.fm answers about Survival, its length in milliseconds.
+ *
+ * @return array<string, mixed>
+ */
+function lastFmSurvival(string $artist = 'Muse', string $duration = '258000'): array
+{
+    return ['track' => ['name' => 'Survival', 'duration' => $duration, 'listeners' => '1000', 'playcount' => '5000', 'artist' => ['name' => $artist]]];
+}
+
+it('resolves through Last.fm what the registries miss', function (): void {
+    $this->lastFm->trackInfos['Muse|Survival'] = lastFmSurvival();
+
+    $recordings = resolve(ResolveRecordings::class)->handle([survival()]);
+    $resolution = RecordingResolution::query()->sole();
+
+    expect($recordings)->toHaveCount(1)
+        ->and($recordings[0]->isNameOnly())->toBeTrue()
+        ->and($recordings[0]->match_title)->toBe('survival')
+        ->and($resolution->status)->toBe(ResolutionStatus::Resolved)
+        ->and($resolution->method)->toBe(ResolutionMethod::LastFm)
+        ->and((float) $resolution->confidence)->toBe(0.5)
+        ->and(Enrichment::payloadFor(Enrichment::RECORDING, $recordings[0]->id, MetadataSource::LastFm, Enrichment::INFO))->toBe(lastFmSurvival());
+});
+
+it('refuses a Last.fm answer about another artist or a length too far off', function (string $artist, string $duration, ResolutionStatus $status): void {
+    $this->lastFm->trackInfos['Muse|Survival'] = lastFmSurvival($artist, $duration);
+
+    resolve(ResolveRecordings::class)->handle([survival()]);
+
+    expect(RecordingResolution::query()->sole()->status)->toBe($status);
+})->with([
+    'another artist' => ['Muse Tribute Band', '258000', ResolutionStatus::NotFound],
+    'too long' => ['Muse', '300000', ResolutionStatus::NotFound],
+    'unknown length' => ['Muse', '0', ResolutionStatus::Resolved],
+]);
+
+it('does not ask Last.fm without a key', function (): void {
+    $this->lastFm->enabled = false;
+
+    resolve(ResolveRecordings::class)->handle([survival()]);
+
+    expect($this->lastFm->calls)->toBe([])
+        ->and(RecordingResolution::query()->sole()->status)->toBe(ResolutionStatus::NotFound);
+});
+
+it('reuses the name-only recording for another video of the same song', function (): void {
+    $this->lastFm->trackInfos['Muse|Survival'] = lastFmSurvival();
+    $live = new TrackToResolve(Provider::YouTubeMusic, 'otherVideo1', 'Survival', 'Muse', 258);
+
+    $first = resolve(ResolveRecordings::class)->handle([survival()]);
+    $second = resolve(ResolveRecordings::class)->handle([$live]);
+
+    expect($second[0]->id)->toBe($first[0]->id)
+        ->and(Recording::query()->count())->toBe(1);
+});
+
+it('gives a name-only recording the identifiers found later', function (): void {
+    $this->lastFm->trackInfos['Muse|Survival'] = lastFmSurvival();
+    $nameOnly = resolve(ResolveRecordings::class)->handle([survival()])[0];
+    $this->travel(2)->days();
+    $this->creditsFm->isrcs['Muse|Survival'] = 'GBAHT1200434';
+    $this->musicBrainz->isrcs['GBAHT1200434'] = metadataFixture('musicbrainz-isrc');
+
+    $recording = resolve(ResolveRecordings::class)->handle([survival()])[0];
+
+    expect($recording->id)->toBe($nameOnly->id)
+        ->and($recording->mbid)->toBe('464d783d-1be7-4e1c-a75b-2b568eb20454')
+        ->and(RecordingResolution::query()->sole()->method)->toBe(ResolutionMethod::CreditsFm)
+        ->and(Recording::query()->count())->toBe(1);
+});
+
+it('moves to the recording that already holds the identifier and drops the orphan', function (): void {
+    $this->lastFm->trackInfos['Muse|Survival'] = lastFmSurvival();
+    $nameOnly = resolve(ResolveRecordings::class)->handle([survival()])[0];
+    $identified = Recording::factory()->create(['mbid' => '464d783d-1be7-4e1c-a75b-2b568eb20454', 'isrc' => 'GBAHT1200434']);
+    $this->travel(2)->days();
+    $this->creditsFm->isrcs['Muse|Survival'] = 'GBAHT1200434';
+    $this->musicBrainz->isrcs['GBAHT1200434'] = metadataFixture('musicbrainz-isrc');
+
+    $recording = resolve(ResolveRecordings::class)->handle([survival()])[0];
+
+    expect($recording->id)->toBe($identified->id)
+        ->and(Recording::query()->find($nameOnly->id))->toBeNull();
 });
