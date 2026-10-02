@@ -40,7 +40,11 @@ final class RetryDueMetadataCommand extends Command
             ->whereIn('subject_type', [Enrichment::RECORDING, Enrichment::CONTRIBUTOR])
             ->where('next_attempt_at', '<=', now())
             ->lazyById()
-            ->each(function (Enrichment $enrichment) use (&$retried, &$dispatched): void {
+            ->each(function (Enrichment $enrichment) use (&$retried, &$dispatched, $describeRecording): void {
+                if ($enrichment->source === MetadataSource::LastFm && ! in_array(MetadataSource::LastFm, $describeRecording->sources(), true)) {
+                    return;
+                }
+
                 $enrichment->update(['next_attempt_at' => now()->addDay()]);
                 $key = "{$enrichment->subject_type}:{$enrichment->subject_key}:{$enrichment->source->value}";
 

@@ -73,3 +73,11 @@ it('ranks chart entries by their position', function (): void {
         ->and($global[4]->rank)->toBe(5)
         ->and($belgium[0])->toEqual(new ChartPosition(1, "Ain't In LA", 'ADÉLA', 455, null));
 });
+
+it('reads a lone tag or similar track Last.fm sends as an object', function (): void {
+    $tags = LastFmMapper::tags(['toptags' => ['tag' => ['name' => 'chanson', 'count' => 100]]]);
+    $similar = LastFmMapper::similarTracks(['similartracks' => ['track' => ['name' => 'Bruxelles', 'match' => '0.4', 'artist' => ['name' => 'Dick Annegarn']]]]);
+
+    expect(tagNames($tags))->toBe(['chanson'])
+        ->and($similar)->toEqual([new SimilarTrack('Bruxelles', 'Dick Annegarn', 0.4)]);
+});

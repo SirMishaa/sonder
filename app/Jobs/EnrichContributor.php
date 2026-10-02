@@ -59,6 +59,8 @@ final class EnrichContributor implements ShouldBeUnique, ShouldQueue
         $contributor = Contributor::query()->find($this->contributorId);
 
         if ($contributor === null) {
+            Enrichment::query()->where('subject_type', Enrichment::CONTRIBUTOR)->where('subject_key', $this->contributorId)->delete();
+
             return;
         }
 

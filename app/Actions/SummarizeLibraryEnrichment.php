@@ -17,7 +17,9 @@ use App\Models\Track;
 use App\Models\YouTubeMusicAccount;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 
@@ -239,23 +241,28 @@ final readonly class SummarizeLibraryEnrichment
     }
 
     /**
-     * Recordings every description source has answered about, whatever the answer.
+     * Recordings every source able to describe them has answered about,
+     * whatever the answer: credits.fm needs an ISRC, MusicBrainz an MBID.
      *
      * @param  list<string>  $recordingIds
      */
     private function described(array $recordingIds): int
     {
-        $sources = array_map(fn (MetadataSource $source): string => $source->value, $this->describe->sources());
-
-        $answered = Enrichment::query()
+        $answered = fn (MetadataSource $source): Closure => fn (QueryBuilder $enrichments): QueryBuilder => $enrichments->select(DB::raw(1))
+            ->from('enrichments')
             ->where('subject_type', Enrichment::RECORDING)
-            ->whereIn('subject_key', $recordingIds)
-            ->whereIn('source', $sources)
-            ->select('subject_key')
-            ->groupBy('subject_key')
-            ->havingRaw('count(distinct source) = ?', [count($sources)]);
+            ->where('source', $source->value)
+            ->whereRaw('enrichments.subject_key = recordings.id::text');
+        $sources = $this->describe->sources();
 
-        return DB::query()->fromSub($answered, 'answered')->count();
+        return Recording::query()
+            ->whereIn('id', $recordingIds)
+            ->when(in_array(MetadataSource::CreditsFm, $sources, true), fn (Builder $query): Builder => $query
+                ->where(fn (Builder $query): Builder => $query->whereNull('isrc')->orWhereExists($answered(MetadataSource::CreditsFm))))
+            ->when(in_array(MetadataSource::MusicBrainz, $sources, true), fn (Builder $query): Builder => $query
+                ->where(fn (Builder $query): Builder => $query->whereNull('mbid')->orWhereExists($answered(MetadataSource::MusicBrainz))))
+            ->when(in_array(MetadataSource::LastFm, $sources, true), fn (Builder $query): Builder => $query->whereExists($answered(MetadataSource::LastFm)))
+            ->count();
     }
 
     private function state(bool $neverQueued, bool $working, bool $failed): LibraryEnrichmentState

@@ -155,3 +155,15 @@ it('waits for Last.fm only when it has a key', function (): void {
 
     expect(resolve(SummarizeLibraryEnrichment::class)->handle($this->account)->state)->toBe(LibraryEnrichmentState::Done);
 });
+
+it('is done once every source able to describe a recording has answered', function (): void {
+    app()->instance(LastFmGateway::class, new FakeLastFmGateway());
+    $nameOnly = resolvedTrack($this->playlist, 'video-aaaa1');
+    $nameOnly->update(['mbid' => null, 'isrc' => null]);
+    $mbidOnly = resolvedTrack($this->playlist, 'video-aaaa2');
+    $mbidOnly->update(['isrc' => null]);
+    describeWith($nameOnly, MetadataSource::LastFm);
+    describeWith($mbidOnly, MetadataSource::MusicBrainz, MetadataSource::LastFm);
+
+    expect(resolve(SummarizeLibraryEnrichment::class)->handle($this->account)->state)->toBe(LibraryEnrichmentState::Done);
+});

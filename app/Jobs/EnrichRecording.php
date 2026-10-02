@@ -54,6 +54,8 @@ final class EnrichRecording implements ShouldQueue
         $recording = Recording::query()->find($this->recordingId);
 
         if ($recording === null) {
+            Enrichment::query()->where('subject_type', Enrichment::RECORDING)->where('subject_key', $this->recordingId)->delete();
+
             return;
         }
 

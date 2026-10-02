@@ -148,13 +148,16 @@ final class LastFmMapper
     }
 
     /**
+     * A list of objects; Last.fm sends a lone item as the object itself.
+     *
      * @return list<array<array-key, mixed>>
      */
     private static function rows(mixed $value): array
     {
         $rows = [];
+        $items = self::map($value);
 
-        foreach (self::map($value) as $row) {
+        foreach (array_key_exists('name', $items) ? [$items] : $items as $row) {
             if (is_array($row)) {
                 $rows[] = $row;
             }

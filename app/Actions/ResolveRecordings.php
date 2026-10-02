@@ -8,7 +8,9 @@ use App\Enums\EnrichmentStatus;
 use App\Enums\MetadataSource;
 use App\Enums\ResolutionMethod;
 use App\Enums\ResolutionStatus;
+use App\Exceptions\Metadata\MetadataSourceUnavailable;
 use App\Models\Enrichment;
+use App\Models\PopularitySample;
 use App\Models\Recording;
 use App\Models\RecordingResolution;
 use App\Services\Metadata\CreditsFm\CreditsFmGateway;
@@ -24,6 +26,7 @@ use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
 use App\Services\Metadata\MusicBrainz\MusicBrainzMapper;
 use App\Support\MusicText;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\DB;
 
 final readonly class ResolveRecordings
 {
@@ -376,10 +379,26 @@ final readonly class ResolveRecordings
         $this->resolveTo($track, $query, $method, $confidence, $recording);
 
         if ($nameOnly instanceof Recording && $nameOnly->id !== $recording->id && $nameOnly->resolutions()->doesntExist()) {
-            $nameOnly->delete();
+            $this->dropNameOnly($nameOnly, $recording);
         }
 
         return $recording;
+    }
+
+    /**
+     * Deletes a name-only recording another one replaced: its popularity
+     * history moves to the replacement, its stored answers are forgotten.
+     */
+    private function dropNameOnly(Recording $nameOnly, Recording $replacement): void
+    {
+        DB::transaction(function () use ($nameOnly, $replacement): void {
+            PopularitySample::query()
+                ->where('subject_type', Enrichment::RECORDING)
+                ->where('subject_id', $nameOnly->id)
+                ->update(['subject_id' => $replacement->id]);
+            Enrichment::query()->where('subject_type', Enrichment::RECORDING)->where('subject_key', $nameOnly->id)->delete();
+            $nameOnly->delete();
+        });
     }
 
     private function resolveTo(TrackToResolve $track, TrackQuery $query, ResolutionMethod $method, float $confidence, Recording $recording): void
@@ -410,7 +429,13 @@ final readonly class ResolveRecordings
      */
     private function knownToLastFm(TrackToResolve $track, TrackQuery $query): ?array
     {
-        $payload = $this->ask($track, MetadataSource::LastFm, "track_info:{$query->artist}|{$query->title}", fn (): ?array => $this->lastFm->trackInfo($query));
+        try {
+            $payload = $this->ask($track, MetadataSource::LastFm, "track_info:{$query->artist}|{$query->title}", fn (): ?array => $this->lastFm->trackInfo($query));
+        } catch (MetadataSourceUnavailable) {
+            // Last.fm is the optional last step: an outage leaves a miss to retry, not a failed batch.
+            return null;
+        }
+
         $known = $payload === null ? null : LastFmMapper::track($payload);
 
         if ($payload === null

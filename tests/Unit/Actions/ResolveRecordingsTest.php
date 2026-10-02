@@ -7,7 +7,9 @@ use App\Enums\MetadataSource;
 use App\Enums\Provider;
 use App\Enums\ResolutionMethod;
 use App\Enums\ResolutionStatus;
+use App\Exceptions\Metadata\MetadataSourceUnavailable;
 use App\Models\Enrichment;
+use App\Models\PopularitySample;
 use App\Models\Recording;
 use App\Models\RecordingResolution;
 use App\Services\Metadata\CreditsFm\CreditsFmGateway;
@@ -383,4 +385,27 @@ it('moves to the recording that already holds the identifier and drops the orpha
 
     expect($recording->id)->toBe($identified->id)
         ->and(Recording::query()->find($nameOnly->id))->toBeNull();
+});
+
+it('records a miss when Last.fm is down instead of failing the batch', function (): void {
+    $this->lastFm->failure = new MetadataSourceUnavailable(MetadataSource::LastFm, 'error 11 on track_info');
+
+    resolve(ResolveRecordings::class)->handle([survival()]);
+
+    expect(RecordingResolution::query()->sole()->status)->toBe(ResolutionStatus::NotFound);
+});
+
+it('carries the dropped recording\'s popularity history over and forgets its answers', function (): void {
+    $this->lastFm->trackInfos['Muse|Survival'] = lastFmSurvival();
+    $nameOnly = resolve(ResolveRecordings::class)->handle([survival()])[0];
+    PopularitySample::record(Enrichment::RECORDING, $nameOnly->id, MetadataSource::LastFm, 1000, 5000, now());
+    $identified = Recording::factory()->create(['mbid' => '464d783d-1be7-4e1c-a75b-2b568eb20454', 'isrc' => 'GBAHT1200434']);
+    $this->travel(2)->days();
+    $this->creditsFm->isrcs['Muse|Survival'] = 'GBAHT1200434';
+    $this->musicBrainz->isrcs['GBAHT1200434'] = metadataFixture('musicbrainz-isrc');
+
+    resolve(ResolveRecordings::class)->handle([survival()]);
+
+    expect(PopularitySample::query()->sole()->subject_id)->toBe($identified->id)
+        ->and(Enrichment::query()->where('subject_type', Enrichment::RECORDING)->where('subject_key', $nameOnly->id)->exists())->toBeFalse();
 });

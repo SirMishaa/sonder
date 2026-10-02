@@ -119,3 +119,15 @@ it('queues the unresolved tracks on demand', function (): void {
 
     Queue::assertPushed(ResolveLibraryTracks::class, fn (ResolveLibraryTracks $job): bool => array_column($job->tracks, 'externalId') === ['video000001']);
 });
+
+it('forgets the answers about a recording that no longer exists and skips a source switched off', function (): void {
+    Queue::fake();
+    $gone = fake()->uuid();
+    Enrichment::factory()->create(['subject_key' => $gone, 'source' => MetadataSource::LastFm, 'endpoint' => 'info', 'next_attempt_at' => now()->subMinute()]);
+
+    Artisan::call('metadata:retry-due');
+    (new EnrichRecording($gone, MetadataSource::MusicBrainz))->handle();
+
+    Queue::assertNotPushed(EnrichRecording::class);
+    expect(Enrichment::query()->where('subject_key', $gone)->exists())->toBeFalse();
+});
