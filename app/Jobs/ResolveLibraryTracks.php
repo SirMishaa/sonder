@@ -12,9 +12,11 @@ use App\Enums\ResolutionStatus;
 use App\Exceptions\Metadata\MetadataSourceRateLimited;
 use App\Models\RecordingResolution;
 use App\Services\Metadata\Data\TrackToResolve;
+use App\Services\Metadata\EnrichmentTelemetry;
 use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /**
@@ -56,9 +58,19 @@ final class ResolveLibraryTracks implements ShouldQueue
 
     public function handle(): void
     {
+        $started = microtime(true);
+        $idleSeconds = $this->idleSince($started);
+        $before = count($this->unsettled());
+        $outcome = 'failed';
+
         try {
-            $this->resolveRun();
+            $outcome = $this->resolveRun();
         } finally {
+            $remaining = count($this->unsettled());
+
+            resolve(EnrichmentTelemetry::class)->resolutionRun($outcome, $before - $remaining, $remaining, microtime(true) - $started, $idleSeconds);
+            $this->markRunEnded();
+
             resolve(AnnounceEnrichmentProgress::class)->forVideos(array_column($this->tracks, 'externalId'));
         }
     }
@@ -82,7 +94,10 @@ final class ResolveLibraryTracks implements ShouldQueue
         resolve(AnnounceEnrichmentProgress::class)->forVideos(array_column($this->tracks, 'externalId'));
     }
 
-    private function resolveRun(): void
+    /**
+     * @return string what ended the run: done, budget, or rate_limited:<source>
+     */
+    private function resolveRun(): string
     {
         $pending = $this->unsettled();
 
@@ -92,17 +107,43 @@ final class ResolveLibraryTracks implements ShouldQueue
             } catch (MetadataSourceRateLimited $exception) {
                 $this->release($exception->retryAfter);
 
-                return;
+                return 'rate_limited:'.$exception->source->value;
             }
 
             if ($this->unsettled() !== []) {
                 $this->release(1);
 
-                return;
+                return 'budget';
             }
         }
 
         $this->describeResolved();
+
+        return 'done';
+    }
+
+    /**
+     * How long this job waited in the queue since its previous run ended.
+     */
+    private function idleSince(float $started): ?float
+    {
+        $ended = $this->runEndedKey() === null ? null : Cache::get($this->runEndedKey());
+
+        return is_float($ended) ? $started - $ended : null;
+    }
+
+    private function markRunEnded(): void
+    {
+        if ($this->runEndedKey() !== null) {
+            Cache::put($this->runEndedKey(), microtime(true), now()->addDay());
+        }
+    }
+
+    private function runEndedKey(): ?string
+    {
+        $uuid = $this->job?->uuid();
+
+        return $uuid === null ? null : "resolution-run-ended:{$uuid}";
     }
 
     /**

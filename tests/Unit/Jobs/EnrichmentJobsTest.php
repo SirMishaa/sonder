@@ -20,12 +20,14 @@ use App\Models\Recording;
 use App\Models\RecordingResolution;
 use App\Models\YouTubeMusicAccount;
 use App\Services\Metadata\CreditsFm\CreditsFmGateway;
+use App\Services\Metadata\EnrichmentTelemetry;
 use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\FakeCreditsFmGateway;
+use Tests\Support\FakeEnrichmentTelemetry;
 use Tests\Support\FakeMusicBrainzGateway;
 
 beforeEach(function (): void {
@@ -198,3 +200,32 @@ it('announces the library progress after every step', function (string $step): v
 
     Event::assertDispatched(LibraryEnrichmentUpdated::class, fn (LibraryEnrichmentUpdated $event): bool => $event->userId === $account->user_id);
 })->with(['resolution run', 'resolution giving up', 'description', 'description giving up', 'projection']);
+
+it('reports how each resolution run went', function (): void {
+    Queue::fake();
+    $telemetry = new FakeEnrichmentTelemetry();
+    app()->instance(EnrichmentTelemetry::class, $telemetry);
+    $batch = [
+        ...survivalBatch(),
+        ['provider' => Provider::YouTubeMusic->value, 'externalId' => 'hysteria000', 'title' => 'Hysteria', 'artists' => 'Muse', 'durationSeconds' => 227],
+    ];
+
+    (new ResolveLibraryTracks($batch, budgetSeconds: -1))->withFakeQueueInteractions()->handle();
+    (new ResolveLibraryTracks($batch))->withFakeQueueInteractions()->handle();
+
+    expect($telemetry->runs)->toBe([
+        ['outcome' => 'budget', 'settled' => 1, 'remaining' => 1],
+        ['outcome' => 'done', 'settled' => 1, 'remaining' => 0],
+    ]);
+});
+
+it('reports which source held a resolution run back', function (): void {
+    $telemetry = new FakeEnrichmentTelemetry();
+    app()->instance(EnrichmentTelemetry::class, $telemetry);
+    $this->creditsFm->isrcs['Muse|Survival'] = 'GBAHT1200434';
+    $this->musicBrainz->refuseAfterCalls = 0;
+
+    (new ResolveLibraryTracks(survivalBatch()))->withFakeQueueInteractions()->handle();
+
+    expect($telemetry->runs)->toBe([['outcome' => 'rate_limited:musicbrainz', 'settled' => 0, 'remaining' => 1]]);
+});

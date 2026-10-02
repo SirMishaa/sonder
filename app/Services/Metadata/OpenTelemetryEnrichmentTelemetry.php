@@ -52,6 +52,41 @@ final class OpenTelemetryEnrichmentTelemetry implements EnrichmentTelemetry
             ->add(1, ['limiter' => $limiter]);
     }
 
+    public function throttled(string $limiter, int $seconds): void
+    {
+        Meter::counter('sonder.rate_limit.throttled', 's', 'Seconds a worker slept to stay within a per-second limit')
+            ->add($seconds, ['limiter' => $limiter]);
+    }
+
+    public function resolutionRun(string $outcome, int $settled, int $remaining, float $seconds, ?float $idleSeconds): void
+    {
+        $kind = str_starts_with($outcome, 'rate_limited') ? 'rate_limited' : $outcome;
+
+        Meter::histogram('sonder.enrichment.resolution_run.duration', 's', 'Time one run of a resolution job took')
+            ->record($seconds, ['outcome' => $kind]);
+        Meter::counter('sonder.enrichment.resolution_run.settled', '{track}', 'Tracks a resolution run resolved or ruled out')
+            ->add($settled, ['outcome' => $kind]);
+
+        if ($idleSeconds !== null) {
+            Meter::histogram('sonder.enrichment.resolution_run.idle', 's', 'Time a resolution job waited in the queue between two runs')
+                ->record($idleSeconds);
+        }
+
+        Tracer::activeSpan()->setAttributes([
+            'sonder.enrichment.run.outcome' => $outcome,
+            'sonder.enrichment.run.settled' => $settled,
+            'sonder.enrichment.run.remaining' => $remaining,
+        ]);
+
+        Log::info('Resolution run', [
+            'outcome' => $outcome,
+            'settled' => $settled,
+            'remaining' => $remaining,
+            'seconds' => round($seconds, 2),
+            'idle_seconds' => $idleSeconds === null ? null : round($idleSeconds, 1),
+        ]);
+    }
+
     public function coverage(string $facet, float $ratio): void
     {
         Meter::gauge('sonder.enrichment.coverage', '1', 'Share of the library carrying a kind of metadata')

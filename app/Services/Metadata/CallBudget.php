@@ -69,6 +69,7 @@ final readonly class CallBudget
         }
 
         Sleep::for($wait)->seconds();
+        $this->telemetry->throttled($limiter, $wait);
 
         return $this->spend($limiter, $key);
     }

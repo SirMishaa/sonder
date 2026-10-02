@@ -44,6 +44,7 @@ it('waits out a short refusal instead of failing the call', function (): void {
         ->and($this->budget->await(CallBudget::MUSICBRAINZ))->toBeNull();
 
     Sleep::assertSleptTimes(1);
+    expect($this->telemetry->throttled)->toBe(['musicbrainz' => 1]);
 });
 
 it('gives up at once when the wait would be long', function (): void {

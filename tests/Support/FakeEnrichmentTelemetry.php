@@ -21,6 +21,12 @@ final class FakeEnrichmentTelemetry implements EnrichmentTelemetry
     /** @var list<string> */
     public array $refusals = [];
 
+    /** @var array<string, int> seconds slept per limiter */
+    public array $throttled = [];
+
+    /** @var list<array{outcome: string, settled: int, remaining: int}> */
+    public array $runs = [];
+
     /** @var array<string, float> */
     public array $coverage = [];
 
@@ -40,6 +46,16 @@ final class FakeEnrichmentTelemetry implements EnrichmentTelemetry
     public function refusal(string $limiter): void
     {
         $this->refusals[] = $limiter;
+    }
+
+    public function throttled(string $limiter, int $seconds): void
+    {
+        $this->throttled[$limiter] = ($this->throttled[$limiter] ?? 0) + $seconds;
+    }
+
+    public function resolutionRun(string $outcome, int $settled, int $remaining, float $seconds, ?float $idleSeconds): void
+    {
+        $this->runs[] = ['outcome' => $outcome, 'settled' => $settled, 'remaining' => $remaining];
     }
 
     public function coverage(string $facet, float $ratio): void
