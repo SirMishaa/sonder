@@ -18,6 +18,7 @@ import SonderWordmark from '@/components/brand/SonderWordmark.vue';
 import Artwork from '@/components/music/Artwork.vue';
 import Equalizer from '@/components/music/Equalizer.vue';
 import Waveform from '@/components/music/Waveform.vue';
+import EnrichmentStatus from '@/components/shell/EnrichmentStatus.vue';
 import SyncStatus from '@/components/shell/SyncStatus.vue';
 import {
     DropdownMenu,
@@ -244,17 +245,22 @@ useShortcuts({
                 <span class="font-medium text-faint">{{
                     library?.playlists.length ?? 0
                 }}</span>
-                <button
-                    type="button"
-                    class="ml-auto grid size-6 place-items-center rounded-md text-faint hover:bg-raised hover:text-paper"
-                    :aria-label="
-                        filterOpen ? $t('Clear filter') : $t('Filter playlists')
-                    "
-                    @click="toggleFilter"
-                >
-                    <X v-if="filterOpen" class="size-[15px]" />
-                    <ListFilter v-else class="size-[15px]" />
-                </button>
+                <div class="ml-auto flex items-center gap-0.5">
+                    <EnrichmentStatus />
+                    <button
+                        type="button"
+                        class="grid size-6 place-items-center rounded-md text-faint hover:bg-raised hover:text-paper"
+                        :aria-label="
+                            filterOpen
+                                ? $t('Clear filter')
+                                : $t('Filter playlists')
+                        "
+                        @click="toggleFilter"
+                    >
+                        <X v-if="filterOpen" class="size-[15px]" />
+                        <ListFilter v-else class="size-[15px]" />
+                    </button>
+                </div>
             </template>
             <span v-else class="h-px w-6 bg-line" />
         </div>

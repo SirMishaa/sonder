@@ -80,3 +80,17 @@ it('denies a guest', function (): void {
 
     $response->assertForbidden();
 });
+
+it('lets users follow only their own library enrichment', function (): void {
+    $owner = User::factory()->create();
+
+    $this->actingAs($owner)->postJson('/broadcasting/auth', [
+        'channel_name' => 'private-library-enrichment.'.$owner->id,
+        'socket_id' => '123.456',
+    ])->assertOk();
+
+    $this->actingAs(User::factory()->create())->postJson('/broadcasting/auth', [
+        'channel_name' => 'private-library-enrichment.'.$owner->id,
+        'socket_id' => '123.456',
+    ])->assertForbidden();
+});

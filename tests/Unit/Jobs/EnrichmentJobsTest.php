@@ -6,6 +6,7 @@ use App\Enums\EnrichmentStatus;
 use App\Enums\MetadataSource;
 use App\Enums\Provider;
 use App\Enums\ResolutionStatus;
+use App\Events\LibraryEnrichmentUpdated;
 use App\Exceptions\Metadata\MetadataSourceRateLimited;
 use App\Exceptions\Metadata\MetadataSourceUnavailable;
 use App\Jobs\EnrichContributor;
@@ -14,11 +15,14 @@ use App\Jobs\ProjectRecordingMetadata;
 use App\Jobs\ResolveLibraryTracks;
 use App\Models\Contributor;
 use App\Models\Enrichment;
+use App\Models\Playlist;
 use App\Models\Recording;
 use App\Models\RecordingResolution;
+use App\Models\YouTubeMusicAccount;
 use App\Services\Metadata\CreditsFm\CreditsFmGateway;
 use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\FakeCreditsFmGateway;
@@ -174,3 +178,23 @@ it('releases instead of running past its time budget', function (): void {
     $job->assertReleased(1);
     expect(RecordingResolution::query()->where('status', ResolutionStatus::NotFound)->count())->toBe(1);
 });
+
+it('announces the library progress after every step', function (string $step): void {
+    Queue::fake();
+    Event::fake([LibraryEnrichmentUpdated::class]);
+    $account = YouTubeMusicAccount::factory()->create();
+    libraryTrack(Playlist::factory()->for($account, 'youtubeMusicAccount')->create(), 'UcOUJM08bYk');
+    $recording = Recording::factory()->create(['isrc' => 'GBAHT1200434']);
+    RecordingResolution::factory()->create(['external_id' => 'UcOUJM08bYk', 'recording_id' => $recording->id]);
+
+    match ($step) {
+        'resolution run' => (new ResolveLibraryTracks(survivalBatch()))->handle(),
+        'resolution giving up' => (new ResolveLibraryTracks(survivalBatch()))->failed(new RuntimeException('gave up')),
+        'description' => (new EnrichRecording($recording->id, MetadataSource::CreditsFm))->handle(),
+        'description giving up' => (new EnrichRecording($recording->id, MetadataSource::CreditsFm))->failed(new RuntimeException('gave up')),
+        'projection' => (new ProjectRecordingMetadata($recording->id))->handle(),
+        default => throw new LogicException("Unknown step [{$step}]."),
+    };
+
+    Event::assertDispatched(LibraryEnrichmentUpdated::class, fn (LibraryEnrichmentUpdated $event): bool => $event->userId === $account->user_id);
+})->with(['resolution run', 'resolution giving up', 'description', 'description giving up', 'projection']);

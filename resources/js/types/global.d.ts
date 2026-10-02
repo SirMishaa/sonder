@@ -22,6 +22,7 @@ declare module '@inertiajs/core' {
             sidebarOpen: boolean;
             youtubeMusicCookieExpired: boolean;
             library: App.Data.LibraryData | null;
+            libraryEnrichment?: App.Data.LibraryEnrichmentData | null;
             playerQueue?: App.Data.PlayerQueueData | null;
             [key: string]: unknown;
         };

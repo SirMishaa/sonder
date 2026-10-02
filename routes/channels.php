@@ -11,3 +11,5 @@ Broadcast::channel('youtube-music-sync.{syncId}', function (User $user, string $
 
     return $sync !== null && $sync->isOwnedBy($user);
 });
+
+Broadcast::channel('library-enrichment.{userId}', fn (User $user, string $userId): bool => $user->id === $userId);

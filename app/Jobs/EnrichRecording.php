@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Actions\AnnounceEnrichmentProgress;
 use App\Actions\DescribeRecording;
 use App\Enums\EnrichmentStatus;
 use App\Enums\MetadataSource;
@@ -67,10 +68,14 @@ final class EnrichRecording implements ShouldQueue
         if ($status instanceof EnrichmentStatus) {
             ProjectRecordingMetadata::dispatch($recording->id);
         }
+
+        resolve(AnnounceEnrichmentProgress::class)->forRecording($recording->id);
     }
 
     public function failed(Throwable $exception): void
     {
         Enrichment::store(Enrichment::RECORDING, $this->recordingId, $this->source, DescribeRecording::endpoint($this->source), EnrichmentStatus::Failed, error: $exception->getMessage());
+
+        resolve(AnnounceEnrichmentProgress::class)->forRecording($this->recordingId);
     }
 }

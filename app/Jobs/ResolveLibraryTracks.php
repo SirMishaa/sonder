@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Actions\AnnounceEnrichmentProgress;
 use App\Actions\DescribeRecording;
 use App\Actions\ResolveRecordings;
 use App\Enums\Provider;
@@ -55,6 +56,34 @@ final class ResolveLibraryTracks implements ShouldQueue
 
     public function handle(): void
     {
+        try {
+            $this->resolveRun();
+        } finally {
+            resolve(AnnounceEnrichmentProgress::class)->forVideos(array_column($this->tracks, 'externalId'));
+        }
+    }
+
+    public function failed(Throwable $exception): void
+    {
+        $this->describeResolved();
+
+        foreach ($this->unsettled() as $track) {
+            RecordingResolution::query()->updateOrCreate(
+                ['provider' => $track->provider, 'external_id' => $track->externalId],
+                [
+                    'status' => ResolutionStatus::Failed,
+                    'query_title' => $track->title,
+                    'query_artist' => $track->artists,
+                    'next_attempt_at' => now()->addDay(),
+                ],
+            );
+        }
+
+        resolve(AnnounceEnrichmentProgress::class)->forVideos(array_column($this->tracks, 'externalId'));
+    }
+
+    private function resolveRun(): void
+    {
         $pending = $this->unsettled();
 
         if ($pending !== []) {
@@ -74,23 +103,6 @@ final class ResolveLibraryTracks implements ShouldQueue
         }
 
         $this->describeResolved();
-    }
-
-    public function failed(Throwable $exception): void
-    {
-        $this->describeResolved();
-
-        foreach ($this->unsettled() as $track) {
-            RecordingResolution::query()->updateOrCreate(
-                ['provider' => $track->provider, 'external_id' => $track->externalId],
-                [
-                    'status' => ResolutionStatus::Failed,
-                    'query_title' => $track->title,
-                    'query_artist' => $track->artists,
-                    'next_attempt_at' => now()->addDay(),
-                ],
-            );
-        }
     }
 
     /**

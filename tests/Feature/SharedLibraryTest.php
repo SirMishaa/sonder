@@ -27,3 +27,21 @@ it('shares no library when nothing is connected', function (): void {
 
     $response->assertInertia(fn (AssertableInertia $page) => $page->where('library', null));
 });
+
+it('hands the library enrichment summary to the browser once', function (): void {
+    $user = User::factory()->create();
+    $account = YouTubeMusicAccount::factory()->for($user)->create();
+    libraryTrack(Playlist::factory()->for($account, 'youtubeMusicAccount')->create(), 'video-aaaa1');
+
+    $response = $this->actingAs($user)->get(route('user-profile.edit'));
+
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('libraryEnrichment.state', 'idle')
+        ->where('libraryEnrichment.total', 1));
+});
+
+it('shares no enrichment summary when nothing is connected', function (): void {
+    $response = $this->actingAs(User::factory()->create())->get(route('user-profile.edit'));
+
+    $response->assertInertia(fn (AssertableInertia $page) => $page->where('libraryEnrichment', null));
+});

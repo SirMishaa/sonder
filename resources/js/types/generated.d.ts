@@ -10,6 +10,19 @@ playlists: App.Data.LibraryPlaylistData[],
 lastCheckedAt: string | null,
 activeSync: App.Data.YouTubeMusicSyncData | null,
 };
+export type LibraryEnrichmentData = {
+state: App.Enums.LibraryEnrichmentState,
+total: number,
+resolved: number,
+notFound: number,
+failed: number,
+pending: number,
+recordings: number,
+described: number,
+withGenre: number,
+updatedAt: string,
+recent: App.Data.RecentEnrichmentData[],
+};
 export type LibraryPlaylistData = {
 id: string,
 title: string,
@@ -71,6 +84,16 @@ thumbnailUrl: string | null,
 playlistId: string | null,
 queued: boolean,
 };
+export type RecentEnrichmentData = {
+videoId: string,
+title: string,
+artists: string,
+thumbnailUrl: string | null,
+genres: string[],
+creditCount: number,
+year: number | null,
+enrichedAt: string,
+};
 export type SampledTrackData = {
 track: App.Data.TrackData,
 playlistId: string,
@@ -98,11 +121,18 @@ errorMessage: string | null,
 }
 namespace Enums {
 export type ArtistRole = 'main' | 'featured';
+export type CreditType = 'artist' | 'songwriter' | 'publisher' | 'producer' | 'performer';
+export type EnrichmentStatus = 'done' | 'not_found' | 'failed';
+export type LibraryEnrichmentState = 'idle' | 'running' | 'paused' | 'done' | 'attention';
 export type ListenEndReason = 'ended' | 'skipped' | 'previous' | 'jumped' | 'replaced' | 'picked' | 'error' | 'abandoned';
 export type ListenOrigin = 'playlist' | 'search' | 'suggestion' | 'queue' | 'autoplay';
 export type Locale = 'fr_BE' | 'en_US';
+export type LookupOutcome = 'found' | 'not_found' | 'failed';
+export type MetadataSource = 'credits_fm' | 'musicbrainz' | 'lastfm' | 'youtube_music';
 export type Provider = 'youtube_music';
 export type ProviderErrorCode = 'credentials_rejected' | 'unavailable' | 'rate_limited';
+export type ResolutionMethod = 'credits_fm' | 'musicbrainz_search';
+export type ResolutionStatus = 'pending' | 'resolved' | 'not_found' | 'failed';
 export type SourceKind = 'audio' | 'video';
 export type YouTubeMusicSyncStatus = 'pending' | 'syncing' | 'completed' | 'failed';
 }

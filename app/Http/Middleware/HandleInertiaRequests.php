@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Actions\SummarizeLibraryEnrichment;
 use App\Data\LibraryData;
+use App\Data\LibraryEnrichmentData;
 use App\Data\LibraryPlaylistData;
 use App\Data\PlayerQueueData;
 use App\Data\YouTubeMusicSyncData;
@@ -52,6 +54,9 @@ final class HandleInertiaRequests extends Middleware
                 ->whereNotNull('cookie_expired_at')
                 ->exists() ?? false,
             'library' => fn (): ?LibraryData => $this->library($request),
+            'libraryEnrichment' => $request->user() !== null
+                ? Inertia::once(fn (): ?LibraryEnrichmentData => $this->libraryEnrichment($request))
+                : null,
             'playerQueue' => $request->user() !== null
                 ? Inertia::once(fn (): ?PlayerQueueData => $this->playerQueue($request))
                 : null,
@@ -66,6 +71,16 @@ final class HandleInertiaRequests extends Middleware
         $queue = $request->user()?->playerQueue()->first();
 
         return $queue !== null ? PlayerQueueData::fromModel($queue) : null;
+    }
+
+    /**
+     * Read once per app load: afterwards the websocket keeps it current.
+     */
+    private function libraryEnrichment(Request $request): ?LibraryEnrichmentData
+    {
+        $account = $request->user()?->youTubeMusicAccount()->first();
+
+        return $account !== null ? resolve(SummarizeLibraryEnrichment::class)->handle($account) : null;
     }
 
     private function library(Request $request): ?LibraryData
