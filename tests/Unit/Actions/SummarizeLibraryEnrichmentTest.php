@@ -103,13 +103,15 @@ it('reports a paused enrichment queue while work remains', function (): void {
     expect(resolve(SummarizeLibraryEnrichment::class)->handle($this->account)->state)->toBe(LibraryEnrichmentState::Paused);
 });
 
-it('lists the library tracks described last, with what was learned', function (): void {
+it('lists the library tracks something was learned about last', function (): void {
     $older = resolvedTrack($this->playlist, 'video-aaaa1');
     $latest = resolvedTrack($this->playlist, 'video-aaaa2');
-    $latest->update(['release_date' => '2012-06-01']);
-    resolvedTrack(Playlist::factory()->create(), 'video-other');
-    Enrichment::factory()->create(['subject_key' => $older->id, 'fetched_at' => now()->subMinutes(5)]);
-    Enrichment::factory()->create(['subject_key' => $latest->id, 'fetched_at' => now()->subMinute()]);
+    $described = resolvedTrack($this->playlist, 'video-aaaa3');
+    resolvedTrack($this->playlist, 'video-aaaa4');
+    Enrichment::factory()->create(['subject_key' => $described->id, 'fetched_at' => now()->subMinutes(3)]);
+    $older->update(['projected_at' => now()->subMinutes(5)]);
+    $latest->update(['release_date' => '2012-06-01', 'projected_at' => now()->subMinute()]);
+    resolvedTrack(Playlist::factory()->create(), 'video-other')->update(['projected_at' => now()]);
     $latest->tags()->attach(Tag::named('Alternative Rock', isGenre: true), ['source' => 'musicbrainz', 'weight' => 90]);
     $latest->tags()->attach(Tag::named('Rock', isGenre: true), ['source' => 'musicbrainz', 'weight' => 100]);
     $latest->tags()->attach(Tag::named('Stadium', isGenre: false), ['source' => 'musicbrainz', 'weight' => 100]);
@@ -117,11 +119,13 @@ it('lists the library tracks described last, with what was learned', function ()
 
     $recent = resolve(SummarizeLibraryEnrichment::class)->handle($this->account)->recent;
 
-    expect($recent)->toHaveCount(2)
+    expect($recent)->toHaveCount(3)
         ->and($recent[0]->videoId)->toBe('video-aaaa2')
         ->and($recent[0]->title)->toBe('Survival')
         ->and($recent[0]->genres)->toBe(['rock', 'alternative rock'])
         ->and($recent[0]->creditCount)->toBe(1)
         ->and($recent[0]->year)->toBe(2012)
-        ->and($recent[1]->videoId)->toBe('video-aaaa1');
+        ->and($recent[1]->videoId)->toBe('video-aaaa3')
+        ->and($recent[1]->genres)->toBe([])
+        ->and($recent[2]->videoId)->toBe('video-aaaa1');
 });

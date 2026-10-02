@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read CarbonInterface|null $release_date
  * @property-read int|null $lastfm_listeners
  * @property-read int|null $lastfm_playcount
+ * @property-read CarbonInterface|null $projected_at
  * @property-read CarbonInterface $created_at
  * @property-read CarbonInterface $updated_at
  */
@@ -46,6 +47,7 @@ final class Recording extends Model
         'release_date',
         'lastfm_listeners',
         'lastfm_playcount',
+        'projected_at',
     ];
 
     /**
@@ -59,6 +61,7 @@ final class Recording extends Model
             'release_date' => 'date',
             'lastfm_listeners' => 'integer',
             'lastfm_playcount' => 'integer',
+            'projected_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];

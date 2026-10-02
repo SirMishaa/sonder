@@ -15,8 +15,9 @@ use App\Models\Recording;
 use App\Models\RecordingResolution;
 use App\Models\Track;
 use App\Models\YouTubeMusicAccount;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 
@@ -83,26 +84,18 @@ final readonly class SummarizeLibraryEnrichment
     }
 
     /**
-     * The library tracks whose recordings were described last.
+     * The library tracks something was learned about last: a source described
+     * them, or their genres and credits were projected.
      *
      * @param  list<string>  $recordingIds
      * @return list<RecentEnrichmentData>
      */
     private function recent(YouTubeMusicAccount $account, array $recordingIds): array
     {
-        $describedAt = Enrichment::query()
-            ->where('subject_type', Enrichment::RECORDING)
-            ->whereIn('subject_key', $recordingIds)
-            ->whereNotNull('fetched_at')
-            ->toBase()
-            ->selectRaw('subject_key, max(fetched_at) as described_at')
-            ->groupBy('subject_key')
-            ->orderByDesc('described_at')
-            ->limit(self::RECENT)
-            ->pluck('described_at', 'subject_key');
+        $activity = $this->lastActivity($recordingIds);
 
         $recordings = Recording::query()
-            ->whereKey($describedAt->keys()->all())
+            ->whereKey(array_keys($activity))
             ->withCount('credits')
             ->get()
             ->keyBy('id');
@@ -121,14 +114,19 @@ final readonly class SummarizeLibraryEnrichment
         $genres = $this->genres(array_values($recordings->map(fn (Recording $recording): string => $recording->id)->all()));
         $recent = [];
 
-        foreach ($describedAt as $recordingId => $at) {
+        foreach ($activity as $recordingId => $at) {
             $recording = $recordings->get($recordingId);
+
+            if (! $recording instanceof Recording) {
+                continue;
+            }
+
             $track = $videos
                 ->where('recording_id', $recordingId)
                 ->map(fn (RecordingResolution $resolution): ?Track => $tracks->get($resolution->external_id))
                 ->first(fn (?Track $track): bool => $track !== null);
 
-            if (! $recording instanceof Recording || ! $track instanceof Track) {
+            if (! $track instanceof Track) {
                 continue;
             }
 
@@ -140,11 +138,57 @@ final readonly class SummarizeLibraryEnrichment
                 genres: $genres[$recordingId] ?? [],
                 creditCount: $recording->credits_count ?? 0,
                 year: $recording->release_date?->year,
-                enrichedAt: Date::parse(is_string($at) ? $at : 'now')->toIso8601String(),
+                enrichedAt: $at->toIso8601String(),
             );
         }
 
         return $recent;
+    }
+
+    /**
+     * The latest of each recording's description and projection, newest first.
+     *
+     * @param  list<string>  $recordingIds
+     * @return array<string, CarbonImmutable>
+     */
+    private function lastActivity(array $recordingIds): array
+    {
+        $activity = [];
+        $note = function (mixed $recordingId, mixed $at) use (&$activity): void {
+            if (! is_string($recordingId) || (! is_string($at) && ! $at instanceof CarbonInterface)) {
+                return;
+            }
+
+            $at = CarbonImmutable::parse($at);
+
+            if (! isset($activity[$recordingId]) || $at->greaterThan($activity[$recordingId])) {
+                $activity[$recordingId] = $at;
+            }
+        };
+
+        Enrichment::query()
+            ->where('subject_type', Enrichment::RECORDING)
+            ->whereIn('subject_key', $recordingIds)
+            ->whereNotNull('fetched_at')
+            ->toBase()
+            ->selectRaw('subject_key, max(fetched_at) as described_at')
+            ->groupBy('subject_key')
+            ->orderByDesc('described_at')
+            ->limit(self::RECENT)
+            ->get()
+            ->each(fn (object $row) => $note($row->subject_key ?? null, $row->described_at ?? null));
+
+        Recording::query()
+            ->whereKey($recordingIds)
+            ->whereNotNull('projected_at')
+            ->latest('projected_at')
+            ->limit(self::RECENT)
+            ->get(['id', 'projected_at'])
+            ->each(fn (Recording $recording) => $note($recording->id, $recording->projected_at));
+
+        uasort($activity, fn (CarbonImmutable $a, CarbonImmutable $b): int => $b <=> $a);
+
+        return array_slice($activity, 0, self::RECENT, preserve_keys: true);
     }
 
     /**

@@ -43,6 +43,7 @@ it('projects credits from both sources and fills the identity', function (): voi
     $recording->refresh();
     expect($recording->iswc)->toBe('T-912674410-3')
         ->and($recording->release_date?->toDateString())->toBe('2012-01-01')
+        ->and($recording->projected_at?->toDateTimeString())->toBe(now()->toDateTimeString())
         ->and(RecordingContributor::query()->where('credit_type', CreditType::Songwriter)->count())->toBe(1)
         ->and(RecordingContributor::query()->where('credit_type', CreditType::Artist)->orderBy('source')->get()->map(fn (RecordingContributor $credit): string => $credit->source->value)->all())->toBe(['credits_fm', 'musicbrainz']);
 });

@@ -46,10 +46,10 @@ final readonly class ProjectEnrichment
         $detail = $creditsFm === null ? null : CreditsFmMapper::detail($creditsFm);
 
         return DB::transaction(function () use ($recording, $credits, $tags, $detail, $registry): array {
-            $recording->update(array_filter([
+            $recording->update([...array_filter([
                 'iswc' => $recording->iswc ?? $detail?->iswc,
                 'release_date' => $recording->release_date ?? $detail->releaseDate ?? $registry?->firstReleaseDate,
-            ], fn (mixed $value): bool => $value !== null));
+            ], fn (mixed $value): bool => $value !== null), 'projected_at' => now()]);
 
             RecordingContributor::query()->where('recording_id', $recording->id)->delete();
             DB::table('recording_tags')->where('recording_id', $recording->id)->delete();
