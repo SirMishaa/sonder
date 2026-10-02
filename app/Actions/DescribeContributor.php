@@ -19,6 +19,16 @@ final readonly class DescribeContributor
     ) {}
 
     /**
+     * The endpoints a source is asked about a contributor with.
+     *
+     * @return list<string>
+     */
+    public static function endpoints(MetadataSource $source): array
+    {
+        return $source === MetadataSource::LastFm ? DescribeRecording::LASTFM_ENDPOINTS : ['artist'];
+    }
+
+    /**
      * The sources able to describe this contributor that never did:
      * MusicBrainz needs an MBID, Last.fm a key.
      *
@@ -45,10 +55,14 @@ final readonly class DescribeContributor
 
     /**
      * Fetches and stores what one source says about the contributor. Null
-     * when the source has no identifier to ask with.
+     * when the source has no identifier to ask with, or nothing is due.
      */
     public function handle(Contributor $contributor, MetadataSource $source): ?EnrichmentStatus
     {
+        if ($source === MetadataSource::LastFm) {
+            return $this->lastFm->enabled() ? $this->askLastFm($contributor) : null;
+        }
+
         if ($source !== MetadataSource::MusicBrainz || $contributor->mbid === null) {
             return null;
         }
@@ -58,5 +72,36 @@ final readonly class DescribeContributor
         Enrichment::store(Enrichment::CONTRIBUTOR, $contributor->id, $source, 'artist', $status, $payload);
 
         return $status;
+    }
+
+    /**
+     * Asks each Last.fm endpoint that is due, by name: done when one of them
+     * answered.
+     */
+    private function askLastFm(Contributor $contributor): ?EnrichmentStatus
+    {
+        $calls = [
+            Enrichment::INFO => fn (): ?array => $this->lastFm->artistInfo($contributor->name),
+            'top_tags' => fn (): ?array => $this->lastFm->artistTopTags($contributor->name),
+            'similar' => fn (): ?array => $this->lastFm->artistSimilar($contributor->name),
+        ];
+        $statuses = [];
+
+        foreach ($calls as $endpoint => $call) {
+            if (! Enrichment::isDue(Enrichment::CONTRIBUTOR, $contributor->id, MetadataSource::LastFm, $endpoint)) {
+                continue;
+            }
+
+            $payload = $call();
+            $status = $payload === null ? EnrichmentStatus::NotFound : EnrichmentStatus::Done;
+            Enrichment::store(Enrichment::CONTRIBUTOR, $contributor->id, MetadataSource::LastFm, $endpoint, $status, $payload);
+            $statuses[] = $status;
+        }
+
+        if ($statuses === []) {
+            return null;
+        }
+
+        return in_array(EnrichmentStatus::Done, $statuses, true) ? EnrichmentStatus::Done : EnrichmentStatus::NotFound;
     }
 }

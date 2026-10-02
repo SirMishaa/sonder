@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Actions\DescribeContributor;
-use App\Actions\ProjectContributorTags;
+use App\Actions\ProjectContributorMetadata;
 use App\Enums\EnrichmentStatus;
 use App\Enums\MetadataSource;
 use App\Exceptions\Metadata\MetadataSourceRateLimited;
@@ -71,12 +71,19 @@ final class EnrichContributor implements ShouldBeUnique, ShouldQueue
         }
 
         if ($status instanceof EnrichmentStatus) {
-            resolve(ProjectContributorTags::class)->handle($contributor);
+            resolve(ProjectContributorMetadata::class)->handle($contributor);
         }
     }
 
+    /**
+     * Marks as failed what this source still owes about the contributor.
+     */
     public function failed(Throwable $exception): void
     {
-        Enrichment::store(Enrichment::CONTRIBUTOR, $this->contributorId, $this->source, 'artist', EnrichmentStatus::Failed, error: $exception->getMessage());
+        foreach (DescribeContributor::endpoints($this->source) as $endpoint) {
+            if (Enrichment::isDue(Enrichment::CONTRIBUTOR, $this->contributorId, $this->source, $endpoint)) {
+                Enrichment::store(Enrichment::CONTRIBUTOR, $this->contributorId, $this->source, $endpoint, EnrichmentStatus::Failed, error: $exception->getMessage());
+            }
+        }
     }
 }

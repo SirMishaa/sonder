@@ -37,3 +37,15 @@ it('names the sources that never described a contributor', function (): void {
 
     expect(resolve(DescribeContributor::class)->undescribedSources($nameOnly))->toBe([]);
 });
+
+it('asks Last.fm about an artist by name, with or without an MBID', function (): void {
+    $lastFm = new FakeLastFmGateway();
+    app()->instance(LastFmGateway::class, $lastFm);
+    $contributor = Contributor::factory()->create(['name' => 'Lord of the Lost', 'mbid' => null]);
+    $lastFm->artistInfos['Lord of the Lost'] = metadataFixture('lastfm-artist-info');
+
+    $status = resolve(DescribeContributor::class)->handle($contributor, MetadataSource::LastFm);
+
+    expect($status)->toBe(EnrichmentStatus::Done)
+        ->and($lastFm->calls)->toBe(['artist_info:Lord of the Lost', 'artist_top_tags:Lord of the Lost', 'artist_similar:Lord of the Lost']);
+});
