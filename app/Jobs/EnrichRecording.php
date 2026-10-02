@@ -37,7 +37,7 @@ final class EnrichRecording implements ShouldQueue
 
     public function retryUntil(): DateTimeInterface
     {
-        return now()->plus(hours: 2);
+        return now()->plus(days: 1);
     }
 
     /**
