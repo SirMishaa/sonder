@@ -19,6 +19,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Local Worker Queues
+    |--------------------------------------------------------------------------
+    |
+    | The queues `php artisan dev` processes, each switched on or off from
+    | the environment. Enrichment is off by default: a local copy of
+    | production would spend credits.fm, MusicBrainz and the YouTube Music
+    | account's budgets again, against limiters production does not share.
+    | Run `php artisan queue:work --queue=enrichment --once` for a single job.
+    |
+    */
+
+    'dev_queues' => [
+        'default' => (bool) env('DEV_QUEUE_DEFAULT', true),
+        'enrichment' => (bool) env('DEV_QUEUE_ENRICHMENT', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Queue Connections
     |--------------------------------------------------------------------------
     |

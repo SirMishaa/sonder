@@ -88,8 +88,15 @@ final class AppServiceProvider extends ServiceProvider
     private function registerDevCommands(): void
     {
         DevCommands::artisan('octane:start --watch --server=frankenphp --port=8003 --caddyfile=Caddyfile', 'server');
-        DevCommands::artisan('queue:listen --tries=1 --timeout=0 --queue=default,enrichment', 'queue');
         DevCommands::artisan('typescript:transform --watch', 'types');
+
+        $queues = array_keys(array_filter(config()->array('queue.dev_queues')));
+
+        if ($queues === []) {
+            DevCommands::except('queue');
+        } else {
+            DevCommands::artisan('queue:listen --tries=1 --timeout=0 --queue='.implode(',', $queues), 'queue');
+        }
     }
 
     /**
