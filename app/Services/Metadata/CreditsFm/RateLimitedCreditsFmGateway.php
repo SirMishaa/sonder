@@ -9,7 +9,7 @@ use App\Exceptions\Metadata\MetadataSourceRateLimited;
 use App\Services\Metadata\CallBudget;
 
 /**
- * Spends the `credits-fm` budget before every call.
+ * Spends the `credits-fm` budget before every call, sleeping through a short wait.
  */
 final readonly class RateLimitedCreditsFmGateway implements CreditsFmGateway
 {
@@ -34,7 +34,7 @@ final readonly class RateLimitedCreditsFmGateway implements CreditsFmGateway
 
     private function spend(): void
     {
-        $wait = $this->budget->spend(CallBudget::CREDITS_FM);
+        $wait = $this->budget->await(CallBudget::CREDITS_FM);
 
         if ($wait !== null) {
             throw new MetadataSourceRateLimited(MetadataSource::CreditsFm, $wait);

@@ -34,7 +34,7 @@ final class ResolveLibraryTracks implements ShouldQueue
      * @param  list<array{provider: string, externalId: string, title: string, artists: string, durationSeconds: int|null}>  $tracks
      * @param  int  $budgetSeconds  how long one run may resolve before it hands the worker back
      */
-    public function __construct(public readonly array $tracks, public readonly int $budgetSeconds = 30)
+    public function __construct(public readonly array $tracks, public readonly int $budgetSeconds = 20)
     {
         $this->queuedAt = now()->getTimestamp();
         $this->onQueue('enrichment');

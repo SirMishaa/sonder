@@ -7,12 +7,13 @@ namespace App\Services\Metadata;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Sleep;
 use LogicException;
 
 /**
  * Spends one call of a named limiter (defined in AppServiceProvider). Over
- * budget, the call is refused at once rather than waited for: sleeping would
- * hold a queue worker.
+ * budget, a short wait is slept through in place; a long one is refused so
+ * the queue worker is not held.
  */
 final readonly class CallBudget
 {
@@ -26,18 +27,24 @@ final readonly class CallBudget
     ) {}
 
     /**
-     * @return int|null null when the call is allowed (and counted), else the seconds to wait
+     * @return int|null null when the call is allowed (and counted), else the seconds until every limit allows it
      */
     public function spend(string $limiter, string $key = 'global'): ?int
     {
         $limits = $this->limits($limiter, $key);
 
+        $wait = 0;
+
         foreach ($limits as $limit) {
             if ($this->limiter->tooManyAttempts($limit['key'], $limit['maxAttempts'])) {
-                $this->telemetry->refusal($limiter);
-
-                return max(1, $this->limiter->availableIn($limit['key']));
+                $wait = max($wait, 1, $this->limiter->availableIn($limit['key']));
             }
+        }
+
+        if ($wait > 0) {
+            $this->telemetry->refusal($limiter);
+
+            return $wait;
         }
 
         foreach ($limits as $limit) {
@@ -45,6 +52,25 @@ final readonly class CallBudget
         }
 
         return null;
+    }
+
+    /**
+     * Spends a call, sleeping through a wait of at most `$maxWaitSeconds`
+     * (a per-second limiter) instead of refusing it.
+     *
+     * @return int|null null when the call is allowed (and counted), else the seconds to wait
+     */
+    public function await(string $limiter, string $key = 'global', int $maxWaitSeconds = 2): ?int
+    {
+        $wait = $this->spend($limiter, $key);
+
+        if ($wait === null || $wait > $maxWaitSeconds) {
+            return $wait;
+        }
+
+        Sleep::for($wait)->seconds();
+
+        return $this->spend($limiter, $key);
     }
 
     /**

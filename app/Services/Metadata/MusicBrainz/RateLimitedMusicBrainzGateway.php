@@ -10,7 +10,8 @@ use App\Services\Metadata\CallBudget;
 use App\Services\Metadata\Data\TrackQuery;
 
 /**
- * Spends the `musicbrainz` budget (one call a second) before every call.
+ * Spends the `musicbrainz` budget (one call a second) before every call,
+ * sleeping through the wait for the next second.
  */
 final readonly class RateLimitedMusicBrainzGateway implements MusicBrainzGateway
 {
@@ -49,7 +50,7 @@ final readonly class RateLimitedMusicBrainzGateway implements MusicBrainzGateway
 
     private function spend(): void
     {
-        $wait = $this->budget->spend(CallBudget::MUSICBRAINZ);
+        $wait = $this->budget->await(CallBudget::MUSICBRAINZ);
 
         if ($wait !== null) {
             throw new MetadataSourceRateLimited(MetadataSource::MusicBrainz, $wait);

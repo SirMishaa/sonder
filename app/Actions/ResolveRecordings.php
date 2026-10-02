@@ -26,6 +26,12 @@ final readonly class ResolveRecordings
 {
     public const int MAX_TRACKS = 25;
 
+    /**
+     * credits.fm answers a pair in over a second, so it is asked a few at a
+     * time to keep each call well inside the HTTP timeout.
+     */
+    private const int CREDITS_FM_BATCH = 6;
+
     private const int DURATION_TOLERANCE_SECONDS = 5;
 
     private const string VERSION_MARKERS = '/\b(live|instrumental|karaoke|acoustic|demo)\b/i';
@@ -43,7 +49,7 @@ final readonly class ResolveRecordings
      * answers are kept a day so a retry does not ask again.
      *
      * @param  list<TrackToResolve>  $tracks  at most MAX_TRACKS
-     * @param  CarbonInterface|null  $until  stops between tracks once past it; the rest stays unresolved
+     * @param  CarbonInterface|null  $until  stops between calls once past it; the rest stays unresolved
      * @return list<Recording>
      */
     public function handle(array $tracks, ?CarbonInterface $until = null): array
@@ -52,11 +58,11 @@ final readonly class ResolveRecordings
             return [];
         }
 
-        $candidates = $this->candidates($tracks);
+        $candidates = $this->candidates($tracks, $until);
         $resolved = [];
 
-        foreach ($tracks as $index => $track) {
-            $recording = $this->resolve($track, $candidates[$index] ?? []);
+        foreach ($candidates as $index => $trackCandidates) {
+            $recording = $this->resolve($tracks[$index], $trackCandidates);
 
             if ($recording instanceof Recording) {
                 $resolved[$recording->id] = $recording;
@@ -72,12 +78,14 @@ final readonly class ResolveRecordings
 
     /**
      * Every reading of every track with the ISRC credits.fm gave it, asking
-     * credits.fm only about the tracks it has not answered in the last day.
+     * credits.fm only about the tracks it has not answered in the last day,
+     * a few tracks per call. Each answer is kept as it comes; once past
+     * `$until`, the tracks not asked yet are left out.
      *
      * @param  list<TrackToResolve>  $tracks
      * @return array<int, list<array{query: TrackQuery, isrc: string|null}>>
      */
-    private function candidates(array $tracks): array
+    private function candidates(array $tracks, ?CarbonInterface $until): array
     {
         $candidates = [];
         $toAsk = [];
@@ -87,31 +95,74 @@ final readonly class ResolveRecordings
 
             if ($stored !== null) {
                 $candidates[$index] = $stored;
-
-                continue;
-            }
-
-            foreach (MusicText::queries($track->title, $track->artists) as $query) {
-                $toAsk[] = ['track' => $index, 'query' => $query];
+            } else {
+                $toAsk[$index] = MusicText::queries($track->title, $track->artists);
             }
         }
 
-        if ($toAsk === []) {
-            return $candidates;
-        }
-
-        $isrcs = $this->creditsFm->resolveBatch(array_column($toAsk, 'query'));
-
-        foreach ($toAsk as $position => $reading) {
-            $candidates[$reading['track']][] = ['query' => $reading['query'], 'isrc' => $isrcs[$position] ?? null];
-        }
-
-        foreach ($tracks as $index => $track) {
-            if (! isset($candidates[$index])) {
-                continue;
+        foreach ($this->creditsFmBatches($toAsk) as $number => $batch) {
+            if ($number > 0 && $until !== null && now()->greaterThanOrEqualTo($until)) {
+                break;
             }
 
-            Enrichment::store(Enrichment::SOURCE, $track->key(), MetadataSource::CreditsFm, 'resolve', EnrichmentStatus::Done, [
+            $candidates += $this->askCreditsFm($tracks, $batch);
+        }
+
+        ksort($candidates);
+
+        return $candidates;
+    }
+
+    /**
+     * Groups the tracks to ask so a call carries at most CREDITS_FM_BATCH
+     * readings, a track's readings staying together.
+     *
+     * @param  array<int, list<TrackQuery>>  $toAsk
+     * @return list<array<int, list<TrackQuery>>>
+     */
+    private function creditsFmBatches(array $toAsk): array
+    {
+        $batches = [];
+        $batch = [];
+        $size = 0;
+
+        foreach ($toAsk as $index => $queries) {
+            if ($batch !== [] && $size + count($queries) > self::CREDITS_FM_BATCH) {
+                $batches[] = $batch;
+                $batch = [];
+                $size = 0;
+            }
+
+            $batch[$index] = $queries;
+            $size += count($queries);
+        }
+
+        if ($batch !== []) {
+            $batches[] = $batch;
+        }
+
+        return $batches;
+    }
+
+    /**
+     * Asks credits.fm one batch and keeps each track's readings a day.
+     *
+     * @param  list<TrackToResolve>  $tracks
+     * @param  array<int, list<TrackQuery>>  $batch
+     * @return array<int, list<array{query: TrackQuery, isrc: string|null}>>
+     */
+    private function askCreditsFm(array $tracks, array $batch): array
+    {
+        $isrcs = $this->creditsFm->resolveBatch(array_merge(...array_values($batch)));
+        $position = 0;
+        $candidates = [];
+
+        foreach ($batch as $index => $queries) {
+            foreach ($queries as $query) {
+                $candidates[$index][] = ['query' => $query, 'isrc' => $isrcs[$position++] ?? null];
+            }
+
+            Enrichment::store(Enrichment::SOURCE, $tracks[$index]->key(), MetadataSource::CreditsFm, 'resolve', EnrichmentStatus::Done, [
                 'readings' => array_map(fn (array $candidate): array => [
                     'title' => $candidate['query']->title,
                     'artist' => $candidate['query']->artist,

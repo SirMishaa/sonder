@@ -241,3 +241,26 @@ it('stops between tracks once past its deadline', function (): void {
     expect($recordings)->toBe([])
         ->and(RecordingResolution::query()->count())->toBe(1);
 });
+
+it('asks credits.fm in small batches', function (): void {
+    $tracks = array_map(
+        fn (int $index): TrackToResolve => new TrackToResolve(Provider::YouTubeMusic, sprintf('video%06d', $index), "Song {$index}", 'Muse', 200),
+        range(1, 7),
+    );
+
+    resolve(ResolveRecordings::class)->handle($tracks);
+
+    expect(array_count_values($this->creditsFm->calls)['resolve_batch'] ?? 0)->toBe(2);
+});
+
+it('stops asking credits.fm once past its deadline and keeps what it learned', function (): void {
+    $tracks = array_map(
+        fn (int $index): TrackToResolve => new TrackToResolve(Provider::YouTubeMusic, sprintf('video%06d', $index), "Song {$index}", 'Muse', 200),
+        range(1, 7),
+    );
+
+    resolve(ResolveRecordings::class)->handle($tracks, until: now()->subSecond());
+
+    expect(array_count_values($this->creditsFm->calls)['resolve_batch'] ?? 0)->toBe(1)
+        ->and(App\Models\Enrichment::query()->where('endpoint', 'resolve')->count())->toBe(6);
+});
