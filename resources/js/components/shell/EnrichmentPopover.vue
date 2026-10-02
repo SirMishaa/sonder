@@ -236,7 +236,7 @@ const legend = computed(() => [
                     <TransitionGroup
                         tag="ul"
                         name="feed"
-                        class="relative mt-2 grid gap-1"
+                        class="relative mt-2 grid grid-cols-[minmax(0,1fr)] gap-1"
                     >
                         <li
                             v-for="item in summary.recent"
@@ -361,8 +361,19 @@ const legend = computed(() => [
     }
 }
 
+/*
+ * Dense reading over busy artwork: the glass stays nearly opaque, its blur
+ * only softens what shows through the edges.
+ */
 .panel {
     transform-origin: var(--reka-popover-content-transform-origin);
+    background: linear-gradient(
+        180deg,
+        oklch(0.215 0.014 60 / 0.94),
+        oklch(0.175 0.013 60 / 0.97)
+    );
+    backdrop-filter: blur(18px) saturate(1.3);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
 }
 
 .panel[data-state='open'] {
@@ -550,6 +561,7 @@ const legend = computed(() => [
 
 .feed-item {
     display: flex;
+    min-width: 0;
     align-items: flex-start;
     gap: 10px;
     padding: 6px 8px;
