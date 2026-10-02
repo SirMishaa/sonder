@@ -51,3 +51,21 @@ it('gives one slug to spellings of the same tag', function (): void {
         ->and(MusicText::tagSlug(' hip hop '))->toBe('hip hop')
         ->and(MusicText::tagSlug('Drum & Bass'))->toBe('drum and bass');
 });
+
+it('builds the title match key without noise but with versions', function (string $title, string $key): void {
+    expect(MusicText::matchTitle($title))->toBe($key);
+})->with([
+    ['Survival (Official Video)', 'survival'],
+    ['Mr. Loverman', 'mr loverman'],
+    ['Was ist Heir Los (Live)', 'was ist heir los live'],
+    ['NICOLE KIDMAN', 'nicole kidman'],
+]);
+
+it('builds the artist match key from the first artist without its article', function (string $artists, string $key): void {
+    expect(MusicText::matchArtist($artists))->toBe($key);
+})->with([
+    ['The Bloodhound Gang', 'bloodhound gang'],
+    ['Egzod & Maestro Chives', 'egzod'],
+    ['ADÉLA', 'adela'],
+    ['Muse - Topic', 'muse'],
+]);

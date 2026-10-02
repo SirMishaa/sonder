@@ -86,6 +86,24 @@ final class MusicText
         return $left !== '' && $left === self::normalize(self::cleanTitle($b));
     }
 
+    /**
+     * The title as recordings are matched across sources: noise removed,
+     * version markers ("live", "remix") kept.
+     */
+    public static function matchTitle(string $title): string
+    {
+        return self::normalize(self::cleanTitle($title));
+    }
+
+    /**
+     * The first artist as recordings are matched across sources, without a
+     * leading "the".
+     */
+    public static function matchArtist(string $artists): string
+    {
+        return self::withoutArticle(self::normalize(self::firstArtist($artists)));
+    }
+
     public static function tagSlug(string $name): string
     {
         return self::normalize($name);

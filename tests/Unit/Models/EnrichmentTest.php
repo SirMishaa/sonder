@@ -30,3 +30,25 @@ it('asks again for a missing answer after thirty days', function (): void {
 
     expect($enrichment->next_attempt_at?->toIso8601String())->toBe(now()->addDays(30)->toIso8601String());
 });
+
+it('refreshes popularity weekly and the rest every ninety days', function (): void {
+    expect(EnrichmentStatus::Done->nextAttemptAt(Enrichment::INFO)->toIso8601String())->toBe(now()->addDays(7)->toIso8601String())
+        ->and(EnrichmentStatus::Done->nextAttemptAt('top_tags')->toIso8601String())->toBe(now()->addDays(90)->toIso8601String())
+        ->and(EnrichmentStatus::NotFound->nextAttemptAt(Enrichment::INFO)->toIso8601String())->toBe(now()->addDays(30)->toIso8601String());
+});
+
+it('is due when never asked, failed, or older than its cadence, whatever next_attempt_at says', function (): void {
+    expect(Enrichment::isDue(Enrichment::RECORDING, 'r1', MetadataSource::LastFm, Enrichment::INFO))->toBeTrue();
+
+    Enrichment::store(Enrichment::RECORDING, 'r1', MetadataSource::LastFm, Enrichment::INFO, EnrichmentStatus::Done, ['track' => []]);
+    Enrichment::store(Enrichment::RECORDING, 'r1', MetadataSource::LastFm, 'top_tags', EnrichmentStatus::Failed, error: 'boom');
+    Enrichment::query()->where('endpoint', Enrichment::INFO)->update(['next_attempt_at' => now()->subYear()]);
+
+    expect(Enrichment::isDue(Enrichment::RECORDING, 'r1', MetadataSource::LastFm, Enrichment::INFO))->toBeFalse()
+        ->and(Enrichment::isDue(Enrichment::RECORDING, 'r1', MetadataSource::LastFm, 'top_tags'))->toBeTrue()
+        ->and(Enrichment::fetchedAt(Enrichment::RECORDING, 'r1', MetadataSource::LastFm, Enrichment::INFO)?->toIso8601String())->toBe(now()->toIso8601String());
+
+    $this->travel(8)->days();
+
+    expect(Enrichment::isDue(Enrichment::RECORDING, 'r1', MetadataSource::LastFm, Enrichment::INFO))->toBeTrue();
+});

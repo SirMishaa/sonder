@@ -41,6 +41,11 @@ final class Enrichment extends Model
 
     public const string SOURCE = 'source';
 
+    /**
+     * The endpoint of a popularity reading, refreshed weekly.
+     */
+    public const string INFO = 'info';
+
     protected $fillable = [
         'subject_type',
         'subject_key',
@@ -84,10 +89,45 @@ final class Enrichment extends Model
             'payload' => $failed ? $enrichment->payload : $payload,
             'error' => $error,
             'fetched_at' => $failed ? $enrichment->fetched_at : now(),
-            'next_attempt_at' => $status->nextAttemptAt(),
+            'next_attempt_at' => $status->nextAttemptAt($endpoint),
         ]);
 
         return $enrichment;
+    }
+
+    /**
+     * Whether a source should be asked about this endpoint again: never
+     * answered, last attempt failed, or its answer older than its cadence.
+     * `next_attempt_at` is not read: it is moved forward when a job is
+     * queued, before the job runs.
+     */
+    public static function isDue(string $subjectType, string $subjectKey, MetadataSource $source, string $endpoint): bool
+    {
+        $enrichment = self::query()
+            ->where('subject_type', $subjectType)
+            ->where('subject_key', $subjectKey)
+            ->where('source', $source)
+            ->where('endpoint', $endpoint)
+            ->first();
+
+        return ! $enrichment instanceof self
+            || $enrichment->status === EnrichmentStatus::Failed
+            || $enrichment->fetched_at === null
+            || $enrichment->status->nextAttemptAt($endpoint, $enrichment->fetched_at)->isPast();
+    }
+
+    /**
+     * When the last answer of a source about this endpoint was fetched.
+     */
+    public static function fetchedAt(string $subjectType, string $subjectKey, MetadataSource $source, string $endpoint): ?CarbonInterface
+    {
+        return self::query()
+            ->where('subject_type', $subjectType)
+            ->where('subject_key', $subjectKey)
+            ->where('source', $source)
+            ->where('endpoint', $endpoint)
+            ->first()
+            ?->fetched_at;
     }
 
     /**

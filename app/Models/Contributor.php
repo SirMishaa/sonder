@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property-read string $normalized_name
  * @property-read string|null $mbid
  * @property-read string|null $ipi
+ * @property-read int|null $lastfm_listeners
+ * @property-read int|null $lastfm_playcount
  */
 final class Contributor extends Model
 {
@@ -27,14 +29,14 @@ final class Contributor extends Model
 
     use HasUuids;
 
-    protected $fillable = ['name', 'normalized_name', 'mbid', 'ipi'];
+    protected $fillable = ['name', 'normalized_name', 'mbid', 'ipi', 'lastfm_listeners', 'lastfm_playcount'];
 
     /**
      * @return array<string, string>
      */
     public function casts(): array
     {
-        return ['id' => 'string'];
+        return ['id' => 'string', 'lastfm_listeners' => 'integer', 'lastfm_playcount' => 'integer'];
     }
 
     /**
