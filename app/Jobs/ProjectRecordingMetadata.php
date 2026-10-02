@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Actions\AnnounceEnrichmentProgress;
+use App\Actions\DescribeContributor;
 use App\Actions\ProjectEnrichment;
-use App\Enums\MetadataSource;
 use App\Models\Recording;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -44,8 +44,12 @@ final class ProjectRecordingMetadata implements ShouldQueue
             return;
         }
 
+        $describe = resolve(DescribeContributor::class);
+
         foreach (resolve(ProjectEnrichment::class)->handle($recording) as $contributor) {
-            EnrichContributor::dispatch($contributor->id, MetadataSource::MusicBrainz);
+            foreach ($describe->undescribedSources($contributor) as $source) {
+                EnrichContributor::dispatch($contributor->id, $source);
+            }
         }
 
         resolve(AnnounceEnrichmentProgress::class)->forRecording($recording->id);

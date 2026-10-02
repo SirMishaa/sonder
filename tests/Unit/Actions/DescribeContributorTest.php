@@ -7,7 +7,9 @@ use App\Enums\EnrichmentStatus;
 use App\Enums\MetadataSource;
 use App\Models\Contributor;
 use App\Models\Enrichment;
+use App\Services\Metadata\LastFm\LastFmGateway;
 use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
+use Tests\Support\FakeLastFmGateway;
 use Tests\Support\FakeMusicBrainzGateway;
 
 it('stores the MusicBrainz artist of a contributor with an mbid', function (): void {
@@ -20,4 +22,18 @@ it('stores the MusicBrainz artist of a contributor with an mbid', function (): v
     expect(resolve(DescribeContributor::class)->handle($muse, MetadataSource::MusicBrainz))->toBe(EnrichmentStatus::Done)
         ->and(Enrichment::payloadFor(Enrichment::CONTRIBUTOR, $muse->id, MetadataSource::MusicBrainz, 'artist'))->not->toBeNull()
         ->and(resolve(DescribeContributor::class)->handle($nameOnly, MetadataSource::MusicBrainz))->toBeNull();
+});
+
+it('names the sources that never described a contributor', function (): void {
+    app()->instance(LastFmGateway::class, new FakeLastFmGateway());
+    $withMbid = Contributor::factory()->create();
+    $nameOnly = Contributor::factory()->create(['mbid' => null]);
+    Enrichment::store(Enrichment::CONTRIBUTOR, $withMbid->id, MetadataSource::MusicBrainz, 'artist', EnrichmentStatus::Done, ['id' => 'x']);
+
+    expect(resolve(DescribeContributor::class)->undescribedSources($withMbid))->toBe([MetadataSource::LastFm])
+        ->and(resolve(DescribeContributor::class)->undescribedSources($nameOnly))->toBe([MetadataSource::LastFm]);
+
+    app()->instance(LastFmGateway::class, new FakeLastFmGateway(enabled: false));
+
+    expect(resolve(DescribeContributor::class)->undescribedSources($nameOnly))->toBe([]);
 });

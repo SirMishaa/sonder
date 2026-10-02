@@ -8,8 +8,10 @@ use App\Enums\EnrichmentStatus;
 use App\Enums\MetadataSource;
 use App\Models\Contributor;
 use App\Models\Enrichment;
+use App\Models\PopularitySample;
 use App\Models\Recording;
 use App\Models\RecordingContributor;
+use App\Models\SimilarRecording;
 use App\Models\Tag;
 use Illuminate\Support\Facades\DB;
 
@@ -87,8 +89,57 @@ it('reuses a name-only contributor instead of creating it again', function (): v
         ->and(RecordingContributor::query()->count())->toBe(2);
 });
 
-it('names the main artists still to describe', function (): void {
-    $toDescribe = resolve(ProjectEnrichment::class)->handle(describedSurvival());
+it('names the main artists', function (): void {
+    $artists = resolve(ProjectEnrichment::class)->handle(describedSurvival());
 
-    expect(array_map(fn (Contributor $contributor): ?string => $contributor->mbid, $toDescribe))->toBe(['9c9f1380-2516-4fc9-a3e6-f9f61941d090']);
+    expect(array_map(fn (Contributor $contributor): ?string => $contributor->mbid, $artists))->toContain('9c9f1380-2516-4fc9-a3e6-f9f61941d090');
+});
+
+function withLastFm(Recording $recording): Recording
+{
+    Enrichment::store(Enrichment::RECORDING, $recording->id, MetadataSource::LastFm, Enrichment::INFO, EnrichmentStatus::Done, metadataFixture('lastfm-track-info'));
+    Enrichment::store(Enrichment::RECORDING, $recording->id, MetadataSource::LastFm, 'top_tags', EnrichmentStatus::Done, metadataFixture('lastfm-track-top-tags'));
+    Enrichment::store(Enrichment::RECORDING, $recording->id, MetadataSource::LastFm, 'similar', EnrichmentStatus::Done, metadataFixture('lastfm-track-similar'));
+
+    return $recording;
+}
+
+it('projects Last.fm tags beside MusicBrainz ones', function (): void {
+    $recording = withLastFm(describedSurvival());
+
+    resolve(ProjectEnrichment::class)->handle($recording);
+
+    expect(DB::table('recording_tags')->where('recording_id', $recording->id)->where('source', 'lastfm')->count())->toBe(7)
+        ->and(DB::table('recording_tags')->where('recording_id', $recording->id)->where('source', 'musicbrainz')->exists())->toBeTrue()
+        ->and(recordingTagWeight($recording, 'indie'))->toBe(25);
+});
+
+it('projects similar tracks and popularity, one sample per reading', function (): void {
+    $recording = withLastFm(Recording::factory()->create());
+
+    resolve(ProjectEnrichment::class)->handle($recording);
+    resolve(ProjectEnrichment::class)->handle($recording);
+
+    expect(SimilarRecording::query()->where('recording_id', $recording->id)->count())->toBe(5)
+        ->and(SimilarRecording::query()->orderByDesc('match')->first()?->title)->toBe('Six Feet Underground')
+        ->and($recording->fresh()?->lastfm_listeners)->toBe(833437)
+        ->and(PopularitySample::query()->count())->toBe(1);
+
+    $this->travel(8)->days();
+    Enrichment::store(Enrichment::RECORDING, $recording->id, MetadataSource::LastFm, Enrichment::INFO, EnrichmentStatus::Done, metadataFixture('lastfm-track-info'));
+    resolve(ProjectEnrichment::class)->handle($recording);
+
+    expect(PopularitySample::query()->count())->toBe(2);
+});
+
+it('credits the Last.fm artist only when MusicBrainz credits none', function (): void {
+    $nameOnly = withLastFm(Recording::factory()->create(['mbid' => null, 'isrc' => null]));
+    $registered = withLastFm(describedSurvival());
+
+    $nameOnlyArtists = resolve(ProjectEnrichment::class)->handle($nameOnly);
+    resolve(ProjectEnrichment::class)->handle($registered);
+
+    expect(array_map(fn (Contributor $contributor): string => $contributor->name, $nameOnlyArtists))->toBe(['Ricky Montgomery'])
+        ->and(RecordingContributor::query()->where('recording_id', $nameOnly->id)->where('source', 'lastfm')->count())->toBe(1)
+        ->and(RecordingContributor::query()->where('recording_id', $registered->id)->where('source', 'lastfm')->exists())->toBeFalse();
 });
