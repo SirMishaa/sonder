@@ -18,6 +18,7 @@ final class LibraryEnrichmentData extends Data
     /**
      * @param  int  $described  resolved recordings every source has answered about
      * @param  int  $withGenre  resolved recordings carrying at least one genre
+     * @param  int  $withTags  resolved recordings carrying a tag of their own or of their main artist
      * @param  string  $updatedAt  ISO 8601
      * @param  list<RecentEnrichmentData>  $recent  the tracks described last, newest first
      */
@@ -31,6 +32,7 @@ final class LibraryEnrichmentData extends Data
         public int $recordings,
         public int $described,
         public int $withGenre,
+        public int $withTags,
         public string $updatedAt,
         public array $recent = [],
     ) {}

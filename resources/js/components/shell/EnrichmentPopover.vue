@@ -10,11 +10,12 @@ import { computed, ref, watch } from 'vue';
 import Artwork from '@/components/music/Artwork.vue';
 import LiveNumber from '@/components/shell/LiveNumber.vue';
 import { useRelativeTime } from '@/composables/useRelativeTime';
+import { formatCompactNumber } from '@/lib/i18n';
 
 /**
  * The cloud in the sidebar's Playlists header: how far the library's
  * metadata got, from matching each track to a recording to fetching its
- * genres and credits.
+ * genres, tags and credits.
  */
 type Props = {
     summary: App.Data.LibraryEnrichmentData;
@@ -132,7 +133,7 @@ const legend = computed(() => [
                 <p class="mt-1.5 text-[12.5px] leading-snug text-dim">
                     <template v-if="summary.state === 'running'">{{
                         $t(
-                            'Matching your tracks, then fetching their genres and credits.',
+                            'Matching your tracks, then fetching their genres, tags and credits.',
                         )
                     }}</template>
                     <template v-else-if="summary.state === 'paused'">{{
@@ -227,6 +228,15 @@ const legend = computed(() => [
                             />
                         </dd>
                     </div>
+                    <div class="stage">
+                        <dt>{{ $t('With tags') }}</dt>
+                        <dd>
+                            <LiveNumber
+                                :value="summary.withTags"
+                                class="text-paper"
+                            />
+                        </dd>
+                    </div>
                 </dl>
 
                 <section v-if="summary.recent.length" class="feed mt-4">
@@ -271,10 +281,21 @@ const legend = computed(() => [
                                             )
                                         }}
                                     </template>
+                                    <template v-if="item.listeners">
+                                        <i class="dot" />{{
+                                            $t(':count listeners', {
+                                                count: formatCompactNumber(
+                                                    item.listeners,
+                                                ),
+                                            })
+                                        }}
+                                    </template>
                                 </p>
                                 <p
-                                    v-if="item.genres.length"
-                                    class="mt-1 flex gap-1 overflow-hidden"
+                                    v-if="
+                                        item.genres.length || item.tags.length
+                                    "
+                                    class="mt-1 flex items-center gap-1 overflow-hidden"
                                 >
                                     <span
                                         v-for="genre in item.genres"
@@ -282,6 +303,23 @@ const legend = computed(() => [
                                         class="genre"
                                         >{{ genre }}</span
                                     >
+                                    <span
+                                        v-if="item.tags.length"
+                                        class="moods"
+                                        :class="{
+                                            'ml-0.5': item.genres.length,
+                                        }"
+                                    >
+                                        <template
+                                            v-for="(tag, index) in item.tags"
+                                            :key="tag"
+                                        >
+                                            <i v-if="index" class="dot" />
+                                            <span class="truncate">{{
+                                                tag
+                                            }}</span>
+                                        </template>
+                                    </span>
                                 </p>
                             </div>
                         </li>
@@ -536,6 +574,19 @@ const legend = computed(() => [
     background: oklch(0.8 0.15 68 / 0.1);
     box-shadow: inset 0 0 0 1px oklch(0.8 0.15 68 / 0.28);
     transition-duration: 120ms;
+}
+
+.moods {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+    font-size: 11px;
+    line-height: 16px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--color-faint);
 }
 
 .genre {

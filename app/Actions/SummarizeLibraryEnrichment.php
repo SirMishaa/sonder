@@ -6,6 +6,7 @@ namespace App\Actions;
 
 use App\Data\LibraryEnrichmentData;
 use App\Data\RecentEnrichmentData;
+use App\Enums\CreditType;
 use App\Enums\LibraryEnrichmentState;
 use App\Enums\MetadataSource;
 use App\Enums\Provider;
@@ -71,6 +72,18 @@ final readonly class SummarizeLibraryEnrichment
             ->whereIn('recording_tags.recording_id', $recordingIds)
             ->distinct()
             ->count('recording_tags.recording_id');
+        $withTags = Recording::query()
+            ->whereIn('id', $recordingIds)
+            ->where(fn (Builder $query): Builder => $query
+                ->whereExists(fn (QueryBuilder $tags): QueryBuilder => $tags->select(DB::raw(1))
+                    ->from('recording_tags')
+                    ->whereColumn('recording_tags.recording_id', 'recordings.id'))
+                ->orWhereExists(fn (QueryBuilder $artists): QueryBuilder => $artists->select(DB::raw(1))
+                    ->from('recording_contributors')
+                    ->join('contributor_tags', 'contributor_tags.contributor_id', '=', 'recording_contributors.contributor_id')
+                    ->whereColumn('recording_contributors.recording_id', 'recordings.id')
+                    ->where('recording_contributors.credit_type', CreditType::Artist->value)))
+            ->count();
 
         return new LibraryEnrichmentData(
             state: $this->state($byStatus->isEmpty(), $pending > 0 || $described < count($recordingIds), $failed > 0),
@@ -82,6 +95,7 @@ final readonly class SummarizeLibraryEnrichment
             recordings: count($recordingIds),
             described: $described,
             withGenre: $withGenre,
+            withTags: $withTags,
             updatedAt: now()->toIso8601String(),
             recent: $this->recent($account, $recordingIds),
         );
@@ -116,7 +130,9 @@ final readonly class SummarizeLibraryEnrichment
             ->get()
             ->keyBy('youtube_video_id');
 
-        $genres = $this->genres(array_values($recordings->map(fn (Recording $recording): string => $recording->id)->all()));
+        $ids = array_values($recordings->map(fn (Recording $recording): string => $recording->id)->all());
+        $genres = $this->strongestTags($ids, genres: true, limit: 3);
+        $tags = $this->strongestTags($ids, genres: false, limit: 2);
         $recent = [];
 
         foreach ($activity as $recordingId => $at) {
@@ -141,6 +157,8 @@ final readonly class SummarizeLibraryEnrichment
                 artists: $track->artists,
                 thumbnailUrl: $track->thumbnail_url,
                 genres: $genres[$recordingId] ?? [],
+                tags: $tags[$recordingId] ?? [],
+                listeners: $recording->lastfm_listeners,
                 creditCount: $recording->credits_count ?? 0,
                 year: $recording->release_date?->year,
                 enrichedAt: $at->toIso8601String(),
@@ -210,34 +228,35 @@ final readonly class SummarizeLibraryEnrichment
     }
 
     /**
-     * Each recording's three strongest genres, weights summed across sources.
+     * Each recording's strongest genres, or strongest other tags (moods,
+     * scenes), weights summed across sources.
      *
      * @param  list<string>  $recordingIds
      * @return array<string, list<string>>
      */
-    private function genres(array $recordingIds): array
+    private function strongestTags(array $recordingIds, bool $genres, int $limit): array
     {
-        $genres = [];
+        $strongest = [];
 
         DB::table('recording_tags')
             ->join('tags', 'tags.id', '=', 'recording_tags.tag_id')
-            ->where('tags.is_genre', true)
+            ->where('tags.is_genre', $genres)
             ->whereIn('recording_tags.recording_id', $recordingIds)
             ->selectRaw('recording_tags.recording_id, tags.name, sum(recording_tags.weight) as weight')
             ->groupBy('recording_tags.recording_id', 'tags.name')
             ->orderByDesc('weight')
             ->orderBy('tags.name')
             ->get()
-            ->each(function (object $row) use (&$genres): void {
+            ->each(function (object $row) use (&$strongest, $limit): void {
                 $recordingId = $row->recording_id ?? null;
                 $name = $row->name ?? null;
 
-                if (is_string($recordingId) && is_string($name) && count($genres[$recordingId] ?? []) < 3) {
-                    $genres[$recordingId][] = $name;
+                if (is_string($recordingId) && is_string($name) && count($strongest[$recordingId] ?? []) < $limit) {
+                    $strongest[$recordingId][] = $name;
                 }
             });
 
-        return $genres;
+        return $strongest;
     }
 
     /**

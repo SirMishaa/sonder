@@ -541,7 +541,7 @@
     "Live": "En direct",
     "Up to date": "À jour",
     "Needs a retry": "À reprendre",
-    "Matching your tracks, then fetching their genres and credits.": "On identifie tes titres, puis on récupère leurs genres et leurs crédits.",
+    "Matching your tracks, then fetching their genres, tags and credits.": "On identifie tes titres, puis on récupère leurs genres, tags et crédits.",
     "The enrichment queue is paused. Nothing is lost, it picks up where it stopped.": "La file d'enrichissement est en pause. Rien n'est perdu, elle reprendra là où elle s'est arrêtée.",
     "Every track has been looked up.": "Tous tes titres ont été passés en revue.",
     ":count track could not be looked up and will be retried tomorrow.|:count tracks could not be looked up and will be retried tomorrow.": ":count titre n'a pas pu être identifié, il sera retenté demain.|:count titres n'ont pas pu être identifiés, ils seront retentés demain.",
@@ -553,8 +553,10 @@
     "Waiting": "En attente",
     "Described": "Décrits",
     "With a genre": "Avec un genre",
+    "With tags": "Avec des tags",
     "Updated :ago": "Mis à jour :ago",
     "Looked up": "Analysés",
     "Just enriched": "Derniers enrichis",
-    ":count credit|:count credits": ":count crédit|:count crédits"
+    ":count credit|:count credits": ":count crédit|:count crédits",
+    ":count listeners": ":count auditeurs"
 }

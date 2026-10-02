@@ -70,7 +70,8 @@ it('counts where each library track stands', function (): void {
         ->and($summary->failed)->toBe(0)
         ->and($summary->pending)->toBe(2)
         ->and($summary->described)->toBe(1)
-        ->and($summary->withGenre)->toBe(1);
+        ->and($summary->withGenre)->toBe(1)
+        ->and($summary->withTags)->toBe(2);
 });
 
 it('leaves other libraries out', function (): void {
@@ -166,4 +167,28 @@ it('is done once every source able to describe a recording has answered', functi
     describeWith($mbidOnly, MetadataSource::MusicBrainz, MetadataSource::LastFm);
 
     expect(resolve(SummarizeLibraryEnrichment::class)->handle($this->account)->state)->toBe(LibraryEnrichmentState::Done);
+});
+
+it('counts recordings tagged through their main artist', function (): void {
+    $recording = resolvedTrack($this->playlist, 'video-aaaa1');
+    $artist = Contributor::factory()->create();
+    $recording->credits()->create(['contributor_id' => $artist->id, 'credit_type' => CreditType::Artist, 'role' => '', 'credit_attributes' => [], 'source' => 'lastfm']);
+    $artist->tags()->attach(Tag::named('german', isGenre: false), ['source' => 'lastfm', 'weight' => 30]);
+
+    expect(resolve(SummarizeLibraryEnrichment::class)->handle($this->account)->withTags)->toBe(1);
+});
+
+it('shows the strongest tags that are not genres, and the listeners', function (): void {
+    $recording = resolvedTrack($this->playlist, 'video-aaaa1');
+    $recording->update(['lastfm_listeners' => 171227, 'projected_at' => now()]);
+    $recording->tags()->attach(Tag::named('Gothic Rock', isGenre: true), ['source' => 'musicbrainz', 'weight' => 100]);
+    $recording->tags()->attach(Tag::named('german', isGenre: false), ['source' => 'lastfm', 'weight' => 30]);
+    $recording->tags()->attach(Tag::named('dark', isGenre: false), ['source' => 'lastfm', 'weight' => 20]);
+    $recording->tags()->attach(Tag::named('seen live', isGenre: false), ['source' => 'lastfm', 'weight' => 10]);
+
+    $item = resolve(SummarizeLibraryEnrichment::class)->handle($this->account)->recent[0];
+
+    expect($item->genres)->toBe(['gothic rock'])
+        ->and($item->tags)->toBe(['german', 'dark'])
+        ->and($item->listeners)->toBe(171227);
 });

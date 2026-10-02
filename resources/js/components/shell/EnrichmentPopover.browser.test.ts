@@ -14,6 +14,8 @@ function enriched(
         artists: 'Muse',
         thumbnailUrl: null,
         genres: ['alternative rock'],
+        tags: [],
+        listeners: null,
         creditCount: 12,
         year: 2012,
         enrichedAt: new Date().toISOString(),
@@ -33,6 +35,7 @@ function summary(
         recordings: 950,
         described: 900,
         withGenre: 321,
+        withTags: 654,
         updatedAt: new Date().toISOString(),
         recent: [],
         ...overrides,
@@ -45,7 +48,9 @@ async function mount(initial: App.Data.LibraryEnrichmentData) {
         global: {
             mocks: {
                 $t: (key: string, params?: Record<string, string>) =>
-                    key.replace(':ago', params?.ago ?? ''),
+                    key
+                        .replace(':ago', params?.ago ?? '')
+                        .replace(':count', params?.count ?? ''),
                 $tChoice: (key: string, count: number): string =>
                     key
                         .split('|')
@@ -123,4 +128,26 @@ it('keeps the panel nearly opaque over artwork', async () => {
 
     expect(panel).not.toBeNull();
     expect(getComputedStyle(panel!).backgroundImage).toContain('0.94');
+});
+
+it('shows tags beside genres and how many people listen', async () => {
+    await mount(
+        summary({
+            recent: [
+                {
+                    ...enriched('a', 'Loreley'),
+                    genres: ['gothic rock'],
+                    tags: ['german', 'dark'],
+                    listeners: 171227,
+                },
+            ],
+        }),
+    );
+    await page.getByRole('button', { name: 'Metadata enrichment' }).click();
+
+    await expect.element(page.getByText('654')).toBeVisible();
+    await expect.element(page.getByText('gothic rock')).toBeVisible();
+    await expect.element(page.getByText('german')).toBeVisible();
+    await expect.element(page.getByText('dark')).toBeVisible();
+    await expect.element(page.getByText(/171K listeners/)).toBeVisible();
 });

@@ -32,6 +32,13 @@ export function formatDateTime(timestamp: string): string {
     }).format(new Date(timestamp));
 }
 
+/** A large number, shortened in the active language, e.g. "171 k" / "171K" / "1,2 M". */
+export function formatCompactNumber(value: number): string {
+    return new Intl.NumberFormat(languageTag(), { notation: 'compact' }).format(
+        value,
+    );
+}
+
 /** A number in the active language, e.g. "1 262" / "1,262". */
 export function formatNumber(value: number): string {
     return new Intl.NumberFormat(languageTag()).format(value);
