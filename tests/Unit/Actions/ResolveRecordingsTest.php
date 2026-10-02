@@ -264,3 +264,31 @@ it('stops asking credits.fm once past its deadline and keeps what it learned', f
     expect(array_count_values($this->creditsFm->calls)['resolve_batch'] ?? 0)->toBe(1)
         ->and(App\Models\Enrichment::query()->where('endpoint', 'resolve')->count())->toBe(6);
 });
+
+it('resolves the tracks credits.fm already answered before asking it about more', function (): void {
+    $tracks = array_map(
+        fn (int $index): TrackToResolve => new TrackToResolve(Provider::YouTubeMusic, sprintf('video%06d', $index), "Song {$index}", 'Muse', 200),
+        range(1, 7),
+    );
+    $resolve = resolve(ResolveRecordings::class);
+    $resolve->handle($tracks, until: now()->subSecond());
+
+    $resolve->handle(array_slice($tracks, 1), until: now()->subSecond());
+
+    expect(array_count_values($this->creditsFm->calls)['resolve_batch'] ?? 0)->toBe(1)
+        ->and(RecordingResolution::query()->count())->toBe(2);
+});
+
+it('asks credits.fm with the time left once the known tracks are resolved', function (): void {
+    $tracks = array_map(
+        fn (int $index): TrackToResolve => new TrackToResolve(Provider::YouTubeMusic, sprintf('video%06d', $index), "Song {$index}", 'Muse', 200),
+        range(1, 7),
+    );
+    $resolve = resolve(ResolveRecordings::class);
+    $resolve->handle($tracks, until: now()->subSecond());
+
+    $resolve->handle(array_slice($tracks, 1));
+
+    expect(array_count_values($this->creditsFm->calls)['resolve_batch'] ?? 0)->toBe(2)
+        ->and(RecordingResolution::query()->count())->toBe(7);
+});

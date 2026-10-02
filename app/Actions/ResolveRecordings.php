@@ -48,28 +48,52 @@ final readonly class ResolveRecordings
      * tracks already resolved keep their resolution, and credits.fm's
      * answers are kept a day so a retry does not ask again.
      *
+     * A run first resolves the tracks credits.fm already answered (cheap:
+     * MusicBrainz answers in a fraction of a second), then asks credits.fm
+     * about the others a few at a time with the time left, resolving each
+     * answer as it comes. A run that got nothing done still asks once, so
+     * every run moves forward.
+     *
      * @param  list<TrackToResolve>  $tracks  at most MAX_TRACKS
-     * @param  CarbonInterface|null  $until  stops between calls once past it; the rest stays unresolved
+     * @param  CarbonInterface|null  $until  stops between tracks and calls once past it; the rest stays unresolved
      * @return list<Recording>
      */
     public function handle(array $tracks, ?CarbonInterface $until = null): array
     {
-        if ($tracks === []) {
-            return [];
-        }
-
-        $candidates = $this->candidates($tracks, $until);
         $resolved = [];
+        $toAsk = [];
+        $worked = false;
+        $pastDeadline = fn (): bool => $until !== null && now()->greaterThanOrEqualTo($until);
 
-        foreach ($candidates as $index => $trackCandidates) {
-            $recording = $this->resolve($tracks[$index], $trackCandidates);
+        foreach ($tracks as $index => $track) {
+            $stored = $this->storedReadings($track);
 
-            if ($recording instanceof Recording) {
-                $resolved[$recording->id] = $recording;
+            if ($stored === null) {
+                $toAsk[$index] = MusicText::queries($track->title, $track->artists);
+
+                continue;
             }
 
-            if ($until !== null && now()->greaterThanOrEqualTo($until)) {
+            if ($worked && $pastDeadline()) {
+                return array_values($resolved);
+            }
+
+            $this->keep($resolved, $this->resolve($track, $stored));
+            $worked = true;
+        }
+
+        foreach ($this->creditsFmBatches($toAsk) as $batch) {
+            if ($worked && $pastDeadline()) {
                 break;
+            }
+
+            foreach ($this->askCreditsFm($tracks, $batch) as $index => $candidates) {
+                if ($worked && $pastDeadline()) {
+                    break 2;
+                }
+
+                $this->keep($resolved, $this->resolve($tracks[$index], $candidates));
+                $worked = true;
             }
         }
 
@@ -77,40 +101,13 @@ final readonly class ResolveRecordings
     }
 
     /**
-     * Every reading of every track with the ISRC credits.fm gave it, asking
-     * credits.fm only about the tracks it has not answered in the last day,
-     * a few tracks per call. Each answer is kept as it comes; once past
-     * `$until`, the tracks not asked yet are left out.
-     *
-     * @param  list<TrackToResolve>  $tracks
-     * @return array<int, list<array{query: TrackQuery, isrc: string|null}>>
+     * @param  array<string, Recording>  $resolved
      */
-    private function candidates(array $tracks, ?CarbonInterface $until): array
+    private function keep(array &$resolved, ?Recording $recording): void
     {
-        $candidates = [];
-        $toAsk = [];
-
-        foreach ($tracks as $index => $track) {
-            $stored = $this->storedReadings($track);
-
-            if ($stored !== null) {
-                $candidates[$index] = $stored;
-            } else {
-                $toAsk[$index] = MusicText::queries($track->title, $track->artists);
-            }
+        if ($recording instanceof Recording) {
+            $resolved[$recording->id] = $recording;
         }
-
-        foreach ($this->creditsFmBatches($toAsk) as $number => $batch) {
-            if ($number > 0 && $until !== null && now()->greaterThanOrEqualTo($until)) {
-                break;
-            }
-
-            $candidates += $this->askCreditsFm($tracks, $batch);
-        }
-
-        ksort($candidates);
-
-        return $candidates;
     }
 
     /**
