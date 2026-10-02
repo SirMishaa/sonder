@@ -67,6 +67,16 @@ final class Recording extends Model
             ->first();
     }
 
+    public static function booted(): void
+    {
+        self::saving(function (self $recording): void {
+            $recording->forceFill([
+                'match_title' => MusicText::matchTitle($recording->title),
+                'match_artist' => MusicText::matchArtist($recording->artist_name),
+            ]);
+        });
+    }
+
     /**
      * @return array<string, string>
      */
@@ -111,15 +121,5 @@ final class Recording extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class, 'recording_tags')->withPivot(['source', 'weight']);
-    }
-
-    protected static function booted(): void
-    {
-        self::saving(function (self $recording): void {
-            $recording->forceFill([
-                'match_title' => MusicText::matchTitle($recording->title),
-                'match_artist' => MusicText::matchArtist($recording->artist_name),
-            ]);
-        });
     }
 }

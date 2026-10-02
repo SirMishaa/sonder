@@ -37,6 +37,8 @@ arch('actions reach metadata services through their gateway contracts')
         'App\Services\Metadata\CreditsFm\RateLimitedCreditsFmGateway',
         'App\Services\Metadata\MusicBrainz\HttpMusicBrainzGateway',
         'App\Services\Metadata\MusicBrainz\RateLimitedMusicBrainzGateway',
+        'App\Services\Metadata\LastFm\HttpLastFmGateway',
+        'App\Services\Metadata\LastFm\RateLimitedLastFmGateway',
     ]);
 
 arch('only the metadata gateways call metadata services over HTTP')
@@ -45,4 +47,5 @@ arch('only the metadata gateways call metadata services over HTTP')
     ->ignoring([
         'App\Services\Metadata\CreditsFm\HttpCreditsFmGateway',
         'App\Services\Metadata\MusicBrainz\HttpMusicBrainzGateway',
+        'App\Services\Metadata\LastFm\HttpLastFmGateway',
     ]);

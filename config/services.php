@@ -39,6 +39,12 @@ return [
         'user_agent' => 'Sonder/1.0 ( '.(env('MUSICBRAINZ_CONTACT') ?: 'set MUSICBRAINZ_CONTACT').' )',
     ],
 
+    'lastfm' => [
+        'url' => env('LASTFM_URL', 'https://ws.audioscrobbler.com/2.0/'),
+        'key' => env('LASTFM_API_KEY', ''),
+        'shared_secret' => env('LASTFM_API_SHARED_SECRET', ''),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

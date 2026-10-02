@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Services\Metadata\CreditsFm\CreditsFmGateway;
+use App\Services\Metadata\LastFm\LastFmGateway;
 use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Sleep;
 use Illuminate\Support\Str;
 use Tests\Support\FakeCreditsFmGateway;
+use Tests\Support\FakeLastFmGateway;
 use Tests\Support\FakeMusicBrainzGateway;
 use Tests\TestCase;
 
@@ -27,6 +29,8 @@ pest()->extend(TestCase::class)
         // Tests never reach a real metadata service; a test needing answers binds its own fake.
         app()->instance(CreditsFmGateway::class, new FakeCreditsFmGateway());
         app()->instance(MusicBrainzGateway::class, new FakeMusicBrainzGateway());
+        // Off by default so every other test keeps its sources; Last.fm tests bind an enabled fake.
+        app()->instance(LastFmGateway::class, new FakeLastFmGateway(enabled: false));
     })
     ->in('Browser', 'Feature', 'Unit');
 

@@ -216,7 +216,7 @@ return [
             'manual' => false, // When set to true, you need to call `withTrace()` on the request to enable tracing
             'allowed_headers' => [],
             'sensitive_headers' => [],
-            'sensitive_query_parameters' => [],
+            'sensitive_query_parameters' => ['api_key'],
         ],
 
         Instrumentation\QueryInstrumentation::class => filter_var(env('OTEL_INSTRUMENTATION_QUERY', true), FILTER_VALIDATE_BOOLEAN),

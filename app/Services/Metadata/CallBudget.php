@@ -21,6 +21,8 @@ final readonly class CallBudget
 
     public const string MUSICBRAINZ = 'musicbrainz';
 
+    public const string LASTFM = 'lastfm';
+
     public function __construct(
         private RateLimiter $limiter,
         private EnrichmentTelemetry $telemetry,

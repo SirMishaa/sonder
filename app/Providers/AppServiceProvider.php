@@ -11,6 +11,9 @@ use App\Services\Metadata\CreditsFm\CreditsFmGateway;
 use App\Services\Metadata\CreditsFm\HttpCreditsFmGateway;
 use App\Services\Metadata\CreditsFm\RateLimitedCreditsFmGateway;
 use App\Services\Metadata\EnrichmentTelemetry;
+use App\Services\Metadata\LastFm\HttpLastFmGateway;
+use App\Services\Metadata\LastFm\LastFmGateway;
+use App\Services\Metadata\LastFm\RateLimitedLastFmGateway;
 use App\Services\Metadata\MusicBrainz\HttpMusicBrainzGateway;
 use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
 use App\Services\Metadata\MusicBrainz\RateLimitedMusicBrainzGateway;
@@ -48,6 +51,10 @@ final class AppServiceProvider extends ServiceProvider
             $this->app->make(HttpMusicBrainzGateway::class),
             $this->app->make(CallBudget::class),
         ));
+        $this->app->bind(LastFmGateway::class, fn (): LastFmGateway => new RateLimitedLastFmGateway(
+            $this->app->make(HttpLastFmGateway::class),
+            $this->app->make(CallBudget::class),
+        ));
 
         $this->app->singleton(ProviderRegistry::class, fn (): ProviderRegistry => (new ProviderRegistry($this->app))
             ->register(Provider::YouTubeMusic, YouTubeMusicAdapter::class, YouTubeMusicCredentials::class));
@@ -69,13 +76,17 @@ final class AppServiceProvider extends ServiceProvider
         ]);
 
         // credits.fm documents no limit: stay polite. MusicBrainz allows one
-        // request a second per IP and blocks clients that exceed it.
+        // request a second per IP and blocks clients that exceed it. Last.fm
+        // allows five requests a second averaged over five minutes.
         RateLimiter::for(CallBudget::CREDITS_FM, fn (string $key): array => [
             Limit::perSecond(2)->by('credits-fm:second:'.$key),
             Limit::perHour(3000)->by('credits-fm:hour:'.$key),
         ]);
         RateLimiter::for(CallBudget::MUSICBRAINZ, fn (string $key): array => [
             Limit::perSecond(1)->by('musicbrainz:second:'.$key),
+        ]);
+        RateLimiter::for(CallBudget::LASTFM, fn (string $key): array => [
+            Limit::perSecond(4)->by('lastfm:second:'.$key),
         ]);
 
         $this->registerDevCommands();
