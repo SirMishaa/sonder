@@ -15,7 +15,9 @@ use App\Models\Recording;
 use App\Models\RecordingResolution;
 use App\Models\Tag;
 use App\Models\YouTubeMusicAccount;
+use App\Services\Metadata\LastFm\LastFmGateway;
 use Illuminate\Support\Facades\Queue;
+use Tests\Support\FakeLastFmGateway;
 
 beforeEach(function (): void {
     $this->account = YouTubeMusicAccount::factory()->create();
@@ -140,4 +142,16 @@ it('shows a track in the feed as soon as it is identified', function (): void {
     $recent = resolve(SummarizeLibraryEnrichment::class)->handle($this->account)->recent;
 
     expect(array_map(fn (RecentEnrichmentData $item): string => $item->videoId, $recent))->toBe(['video-aaaa2', 'video-aaaa1']);
+});
+
+it('waits for Last.fm only when it has a key', function (): void {
+    app()->instance(LastFmGateway::class, new FakeLastFmGateway());
+    $recording = resolvedTrack($this->playlist, 'video-aaaa1');
+    describeWith($recording, MetadataSource::CreditsFm, MetadataSource::MusicBrainz);
+
+    expect(resolve(SummarizeLibraryEnrichment::class)->handle($this->account)->state)->toBe(LibraryEnrichmentState::Running);
+
+    describeWith($recording, MetadataSource::LastFm);
+
+    expect(resolve(SummarizeLibraryEnrichment::class)->handle($this->account)->state)->toBe(LibraryEnrichmentState::Done);
 });

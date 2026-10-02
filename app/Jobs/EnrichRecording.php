@@ -72,9 +72,17 @@ final class EnrichRecording implements ShouldQueue
         resolve(AnnounceEnrichmentProgress::class)->forRecording($recording->id);
     }
 
+    /**
+     * Marks as failed what this source still owes: answers stored before the
+     * failure stay as they are.
+     */
     public function failed(Throwable $exception): void
     {
-        Enrichment::store(Enrichment::RECORDING, $this->recordingId, $this->source, DescribeRecording::endpoint($this->source), EnrichmentStatus::Failed, error: $exception->getMessage());
+        foreach (DescribeRecording::endpoints($this->source) as $endpoint) {
+            if (Enrichment::isDue(Enrichment::RECORDING, $this->recordingId, $this->source, $endpoint)) {
+                Enrichment::store(Enrichment::RECORDING, $this->recordingId, $this->source, $endpoint, EnrichmentStatus::Failed, error: $exception->getMessage());
+            }
+        }
 
         resolve(AnnounceEnrichmentProgress::class)->forRecording($this->recordingId);
     }

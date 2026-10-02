@@ -162,8 +162,10 @@ final class ResolveLibraryTracks implements ShouldQueue
             ->filter()
             ->unique();
 
+        $sources = resolve(DescribeRecording::class)->sources();
+
         foreach ($recordingIds as $recordingId) {
-            foreach (DescribeRecording::SOURCES as $source) {
+            foreach ($sources as $source) {
                 EnrichRecording::dispatch($recordingId, $source);
             }
         }

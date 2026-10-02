@@ -21,6 +21,7 @@ use App\Models\RecordingResolution;
 use App\Models\YouTubeMusicAccount;
 use App\Services\Metadata\CreditsFm\CreditsFmGateway;
 use App\Services\Metadata\EnrichmentTelemetry;
+use App\Services\Metadata\LastFm\LastFmGateway;
 use App\Services\Metadata\MusicBrainz\MusicBrainzGateway;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -28,6 +29,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\FakeCreditsFmGateway;
 use Tests\Support\FakeEnrichmentTelemetry;
+use Tests\Support\FakeLastFmGateway;
 use Tests\Support\FakeMusicBrainzGateway;
 
 beforeEach(function (): void {
@@ -228,4 +230,15 @@ it('reports which source held a resolution run back', function (): void {
     (new ResolveLibraryTracks(survivalBatch()))->withFakeQueueInteractions()->handle();
 
     expect($telemetry->runs)->toBe([['outcome' => 'rate_limited:musicbrainz', 'settled' => 0, 'remaining' => 1]]);
+});
+
+it('records a failure only on the endpoints left undone', function (): void {
+    app()->instance(LastFmGateway::class, new FakeLastFmGateway());
+    $recording = Recording::factory()->create(['title' => 'Loreley', 'artist_name' => 'Lord of the Lost']);
+    Enrichment::store(Enrichment::RECORDING, $recording->id, MetadataSource::LastFm, Enrichment::INFO, EnrichmentStatus::Done, ['track' => []]);
+
+    (new EnrichRecording($recording->id, MetadataSource::LastFm))->failed(new RuntimeException('gave up'));
+
+    expect(Enrichment::query()->where('source', MetadataSource::LastFm)->pluck('status', 'endpoint')->all())
+        ->toEqual(['info' => EnrichmentStatus::Done, 'top_tags' => EnrichmentStatus::Failed, 'similar' => EnrichmentStatus::Failed]);
 });

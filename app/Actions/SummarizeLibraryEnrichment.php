@@ -27,6 +27,8 @@ final readonly class SummarizeLibraryEnrichment
 
     public const int RECENT = 5;
 
+    public function __construct(private DescribeRecording $describe) {}
+
     public function handle(YouTubeMusicAccount $account): LibraryEnrichmentData
     {
         $videos = Track::query()
@@ -243,7 +245,7 @@ final readonly class SummarizeLibraryEnrichment
      */
     private function described(array $recordingIds): int
     {
-        $sources = array_map(fn (MetadataSource $source): string => $source->value, DescribeRecording::SOURCES);
+        $sources = array_map(fn (MetadataSource $source): string => $source->value, $this->describe->sources());
 
         $answered = Enrichment::query()
             ->where('subject_type', Enrichment::RECORDING)
