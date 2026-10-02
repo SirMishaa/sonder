@@ -15,3 +15,9 @@ Schedule::command('youtube-music:verify-cookies')->daily();
  * same reason: a scale-to-zero environment stays asleep the rest of the time.
  */
 Schedule::command('metadata:retry-due')->daily();
+
+/*
+ * Charts move daily; one snapshot a day also leaves a scale-to-zero
+ * environment asleep the rest of the time.
+ */
+Schedule::command('metadata:charts')->daily();

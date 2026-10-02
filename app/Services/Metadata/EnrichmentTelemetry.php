@@ -35,4 +35,9 @@ interface EnrichmentTelemetry
     public function coverage(string $facet, float $ratio): void;
 
     public function backlog(string $status, int $count): void;
+
+    /**
+     * One chart snapshot: how many entries are tracks the library knows.
+     */
+    public function chartEntries(string $chart, int $linked, int $unlinked): void;
 }

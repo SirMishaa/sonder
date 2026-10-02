@@ -8,11 +8,14 @@ use App\Enums\ResolutionStatus;
 use App\Jobs\EnrichRecording;
 use App\Jobs\ProjectRecordingMetadata;
 use App\Jobs\ResolveLibraryTracks;
+use App\Jobs\TakeChartSnapshot;
 use App\Models\Enrichment;
 use App\Models\Recording;
 use App\Models\RecordingResolution;
+use App\Services\Metadata\LastFm\LastFmGateway;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Queue;
+use Tests\Support\FakeLastFmGateway;
 
 it('queues the whole library for resolution', function (): void {
     Queue::fake();
@@ -48,4 +51,22 @@ it('reprojects every recording without calling any service', function (): void {
     expect(Artisan::call('metadata:reproject'))->toBe(0);
 
     Queue::assertPushed(ProjectRecordingMetadata::class, 2);
+});
+
+it('queues one snapshot per chart followed', function (): void {
+    Queue::fake();
+    app()->instance(LastFmGateway::class, new FakeLastFmGateway());
+
+    expect(Artisan::call('metadata:charts'))->toBe(0);
+
+    Queue::assertPushed(TakeChartSnapshot::class, 4);
+    Queue::assertPushed(TakeChartSnapshot::class, fn (TakeChartSnapshot $job): bool => $job->chart === 'country:US');
+});
+
+it('takes no chart without a key', function (): void {
+    Queue::fake();
+
+    expect(Artisan::call('metadata:charts'))->toBe(0);
+
+    Queue::assertNotPushed(TakeChartSnapshot::class);
 });

@@ -33,6 +33,9 @@ final class FakeEnrichmentTelemetry implements EnrichmentTelemetry
     /** @var array<string, int> */
     public array $backlog = [];
 
+    /** @var array<string, array{linked: int, unlinked: int}> */
+    public array $chartEntries = [];
+
     public function lookup(MetadataSource $source, string $endpoint, LookupOutcome $outcome, float $seconds): void
     {
         $this->lookups[] = ['source' => $source->value, 'endpoint' => $endpoint, 'outcome' => $outcome->value];
@@ -66,5 +69,10 @@ final class FakeEnrichmentTelemetry implements EnrichmentTelemetry
     public function backlog(string $status, int $count): void
     {
         $this->backlog[$status] = $count;
+    }
+
+    public function chartEntries(string $chart, int $linked, int $unlinked): void
+    {
+        $this->chartEntries[$chart] = ['linked' => $linked, 'unlinked' => $unlinked];
     }
 }

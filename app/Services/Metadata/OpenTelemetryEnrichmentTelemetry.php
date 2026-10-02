@@ -98,4 +98,11 @@ final class OpenTelemetryEnrichmentTelemetry implements EnrichmentTelemetry
         Meter::gauge('sonder.enrichment.backlog', '{item}', 'Metadata waiting to be fetched again, by status')
             ->record($count, ['status' => $status]);
     }
+
+    public function chartEntries(string $chart, int $linked, int $unlinked): void
+    {
+        $counter = Meter::counter('sonder.enrichment.chart_entries', '{entry}', 'Chart entries snapshotted, by chart and whether the library knows them');
+        $counter->add($linked, ['chart' => $chart, 'linked' => 'true']);
+        $counter->add($unlinked, ['chart' => $chart, 'linked' => 'false']);
+    }
 }
