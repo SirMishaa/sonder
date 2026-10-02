@@ -109,7 +109,7 @@ const legend = computed(() => [
                 align="start"
                 :side-offset="14"
                 :collision-padding="12"
-                class="material-glass panel z-50 w-[316px] rounded-[14px] p-4 focus:outline-none"
+                class="material-glass enrichment-panel z-50 w-[316px] rounded-[14px] p-4 focus:outline-none"
             >
                 <header class="flex items-center gap-2">
                     <h2 class="text-[14px] font-bold text-paper">
@@ -361,44 +361,6 @@ const legend = computed(() => [
     }
 }
 
-/*
- * Dense reading over busy artwork: the glass stays nearly opaque, its blur
- * only softens what shows through the edges.
- */
-.panel {
-    transform-origin: var(--reka-popover-content-transform-origin);
-    background: linear-gradient(
-        180deg,
-        oklch(0.215 0.014 60 / 0.94),
-        oklch(0.175 0.013 60 / 0.97)
-    );
-    backdrop-filter: blur(18px) saturate(1.3);
-    -webkit-backdrop-filter: blur(18px) saturate(1.3);
-}
-
-.panel[data-state='open'] {
-    animation: panel-in 240ms var(--ease-out-quint);
-}
-
-.panel[data-state='closed'] {
-    animation: panel-out 140ms ease-in forwards;
-}
-
-@keyframes panel-in {
-    from {
-        opacity: 0;
-        transform: translateX(-6px) scale(0.97);
-        filter: blur(3px);
-    }
-}
-
-@keyframes panel-out {
-    to {
-        opacity: 0;
-        transform: translateX(-4px) scale(0.98);
-    }
-}
-
 .chip {
     display: inline-flex;
     align-items: center;
@@ -632,16 +594,62 @@ const legend = computed(() => [
         animation: none;
     }
 
-    .panel[data-state='open'],
-    .panel[data-state='closed'] {
-        animation-duration: 1ms;
-    }
-
     .layer,
     .feed-move,
     .feed-enter-active,
     .feed-leave-active {
         transition: none;
+    }
+}
+</style>
+
+<!--
+  Not scoped: the popover content is teleported, and Vue puts the scope
+  attribute on reka's wrapper rather than on the element carrying the class.
+-->
+<style>
+/*
+ * Dense reading over busy artwork: the glass stays nearly opaque, its blur
+ * only softens what shows through the edges.
+ */
+.material-glass.enrichment-panel {
+    transform-origin: var(--reka-popover-content-transform-origin);
+    background: linear-gradient(
+        180deg,
+        oklch(0.215 0.014 60 / 0.94),
+        oklch(0.175 0.013 60 / 0.97)
+    );
+    backdrop-filter: blur(18px) saturate(1.3);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
+}
+
+.enrichment-panel[data-state='open'] {
+    animation: enrichment-panel-in 240ms var(--ease-out-quint);
+}
+
+.enrichment-panel[data-state='closed'] {
+    animation: enrichment-panel-out 140ms ease-in forwards;
+}
+
+@keyframes enrichment-panel-in {
+    from {
+        opacity: 0;
+        transform: translateX(-6px) scale(0.97);
+        filter: blur(3px);
+    }
+}
+
+@keyframes enrichment-panel-out {
+    to {
+        opacity: 0;
+        transform: translateX(-4px) scale(0.98);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .enrichment-panel[data-state='open'],
+    .enrichment-panel[data-state='closed'] {
+        animation-duration: 1ms;
     }
 }
 </style>

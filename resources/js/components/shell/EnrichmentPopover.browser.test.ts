@@ -114,3 +114,13 @@ it('slides each newly enriched track in at the top', async () => {
         )
         .toEqual(['Madness', 'Survival']);
 });
+
+it('keeps the panel nearly opaque over artwork', async () => {
+    await mount(summary());
+    await page.getByRole('button', { name: 'Metadata enrichment' }).click();
+
+    const panel = document.querySelector<HTMLElement>('.enrichment-panel');
+
+    expect(panel).not.toBeNull();
+    expect(getComputedStyle(panel!).backgroundImage).toContain('0.94');
+});
