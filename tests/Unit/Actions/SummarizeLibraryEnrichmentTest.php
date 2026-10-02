@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Actions\SummarizeLibraryEnrichment;
+use App\Data\RecentEnrichmentData;
 use App\Enums\CreditType;
 use App\Enums\LibraryEnrichmentState;
 use App\Enums\MetadataSource;
@@ -34,7 +35,7 @@ function resolvedTrack(Playlist $playlist, string $videoId): Recording
 {
     libraryTrack($playlist, $videoId);
     $recording = Recording::factory()->create();
-    RecordingResolution::factory()->create(['external_id' => $videoId, 'recording_id' => $recording->id]);
+    RecordingResolution::factory()->create(['external_id' => $videoId, 'recording_id' => $recording->id, 'resolved_at' => now()->subHour()]);
 
     return $recording;
 }
@@ -119,7 +120,7 @@ it('lists the library tracks something was learned about last', function (): voi
 
     $recent = resolve(SummarizeLibraryEnrichment::class)->handle($this->account)->recent;
 
-    expect($recent)->toHaveCount(3)
+    expect($recent)->toHaveCount(4)
         ->and($recent[0]->videoId)->toBe('video-aaaa2')
         ->and($recent[0]->title)->toBe('Survival')
         ->and($recent[0]->genres)->toBe(['rock', 'alternative rock'])
@@ -127,5 +128,16 @@ it('lists the library tracks something was learned about last', function (): voi
         ->and($recent[0]->year)->toBe(2012)
         ->and($recent[1]->videoId)->toBe('video-aaaa3')
         ->and($recent[1]->genres)->toBe([])
-        ->and($recent[2]->videoId)->toBe('video-aaaa1');
+        ->and($recent[2]->videoId)->toBe('video-aaaa1')
+        ->and($recent[3]->videoId)->toBe('video-aaaa4');
+});
+
+it('shows a track in the feed as soon as it is identified', function (): void {
+    resolvedTrack($this->playlist, 'video-aaaa1')->update(['projected_at' => now()->subMinutes(5)]);
+    $identified = resolvedTrack($this->playlist, 'video-aaaa2');
+    RecordingResolution::query()->where('recording_id', $identified->id)->update(['resolved_at' => now()->subMinute()]);
+
+    $recent = resolve(SummarizeLibraryEnrichment::class)->handle($this->account)->recent;
+
+    expect(array_map(fn (RecentEnrichmentData $item): string => $item->videoId, $recent))->toBe(['video-aaaa2', 'video-aaaa1']);
 });

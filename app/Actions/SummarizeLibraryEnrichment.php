@@ -84,8 +84,9 @@ final readonly class SummarizeLibraryEnrichment
     }
 
     /**
-     * The library tracks something was learned about last: a source described
-     * them, or their genres and credits were projected.
+     * The library tracks something was learned about last: they were matched
+     * to a recording, a source described them, or their genres and credits
+     * were projected.
      *
      * @param  list<string>  $recordingIds
      * @return list<RecentEnrichmentData>
@@ -146,7 +147,8 @@ final readonly class SummarizeLibraryEnrichment
     }
 
     /**
-     * The latest of each recording's description and projection, newest first.
+     * The latest of each recording's identification, description and
+     * projection, newest first.
      *
      * @param  list<string>  $recordingIds
      * @return array<string, CarbonImmutable>
@@ -177,6 +179,18 @@ final readonly class SummarizeLibraryEnrichment
             ->limit(self::RECENT)
             ->get()
             ->each(fn (object $row) => $note($row->subject_key ?? null, $row->described_at ?? null));
+
+        RecordingResolution::query()
+            ->where('provider', Provider::YouTubeMusic)
+            ->whereIn('recording_id', $recordingIds)
+            ->whereNotNull('resolved_at')
+            ->toBase()
+            ->selectRaw('recording_id, max(resolved_at) as resolved_at')
+            ->groupBy('recording_id')
+            ->orderByDesc('resolved_at')
+            ->limit(self::RECENT)
+            ->get()
+            ->each(fn (object $row) => $note($row->recording_id ?? null, $row->resolved_at ?? null));
 
         Recording::query()
             ->whereKey($recordingIds)
