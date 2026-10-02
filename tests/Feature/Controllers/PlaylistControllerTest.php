@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Enums\YouTubeMusicSyncStatus;
 use App\Models\Playlist;
+use App\Models\RecordingResolution;
+use App\Models\Tag;
 use App\Models\User;
 use App\Models\YouTubeMusicAccount;
 use App\Models\YouTubeMusicSync;
@@ -186,4 +188,19 @@ it('loads suggestions from the rest of the library after the page', function ():
         ->loadDeferredProps(fn (AssertableInertia $reload) => $reload
             ->has('suggestionPool', 1)
             ->where('suggestionPool.0.track.videoId', 'VID_NEW')));
+});
+
+it('shows the genres of each track', function (): void {
+    $user = User::factory()->create();
+    $playlist = Playlist::factory()->for(YouTubeMusicAccount::factory()->for($user), 'youtubeMusicAccount')->create(['youtube_playlist_id' => 'PL1']);
+    libraryTrack($playlist, 'video000001');
+    libraryTrack($playlist, 'video000002', 'Uprising');
+    RecordingResolution::factory()->create(['external_id' => 'video000001'])->recording()->firstOrFail()
+        ->tags()->attach(Tag::named('Alternative Rock', isGenre: true), ['source' => 'musicbrainz', 'weight' => 90]);
+
+    $this->actingAs($user)->get(route('playlist.show', 'PL1'))
+        ->assertOk()
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('playlist.tracks.0.genres', ['alternative rock'])
+            ->where('playlist.tracks.1.genres', []));
 });

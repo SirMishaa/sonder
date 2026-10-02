@@ -60,8 +60,17 @@ const controlsDisabled = computed(
                     <p class="truncate font-bold">
                         {{ player.current.value.title }}
                     </p>
-                    <p class="truncate text-[13px] text-dim">
-                        {{ player.current.value.artists }}
+                    <p
+                        class="flex min-w-0 items-center gap-2 text-[13px] text-dim"
+                    >
+                        <span class="truncate">{{
+                            player.current.value.artists
+                        }}</span>
+                        <span
+                            v-if="player.current.value.genres?.length"
+                            class="genre"
+                            >{{ player.current.value.genres[0] }}</span
+                        >
                     </p>
                 </div>
             </template>
@@ -202,6 +211,17 @@ const controlsDisabled = computed(
 
 .swap {
     animation: swap-in 380ms var(--ease-out-quint) both;
+}
+
+.genre {
+    flex-shrink: 0;
+    padding: 0 7px;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    font-size: 11px;
+    line-height: 17px;
+    white-space: nowrap;
+    color: var(--color-dim);
 }
 
 .progress {

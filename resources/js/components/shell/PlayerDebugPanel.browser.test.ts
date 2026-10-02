@@ -25,6 +25,7 @@ async function mountPanel() {
                 thumbnailUrl: null,
                 isExplicit: false,
                 isAvailable: true,
+                genres: [],
             },
             {
                 videoId: 'def',
@@ -36,6 +37,7 @@ async function mountPanel() {
                 thumbnailUrl: null,
                 isExplicit: false,
                 isAvailable: true,
+                genres: [],
             },
         ],
         0,

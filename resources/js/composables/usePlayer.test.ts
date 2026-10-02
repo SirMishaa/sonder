@@ -27,6 +27,7 @@ function track(
         thumbnailUrl: null,
         isExplicit: false,
         isAvailable: true,
+        genres: [],
         ...overrides,
     };
 }
@@ -112,6 +113,7 @@ function remoteQueue(
             thumbnailUrl: null,
             playlistId: 'PL2',
             queued: false,
+            genres: [],
         })),
         index: 0,
         source: { playlistId: 'PL2', title: 'From the phone' },

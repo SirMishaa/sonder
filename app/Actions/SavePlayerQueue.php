@@ -14,7 +14,7 @@ final readonly class SavePlayerQueue
      * Replace the user's saved queue with the browser's copy. The last save
      * wins; the returned version lets the browser know its copy is current.
      *
-     * @param  array{tracks: array<int, array{key: string, videoId?: string|null, title: string, artists?: string|null, album?: string|null, duration?: string|null, durationSeconds: int, thumbnailUrl?: string|null, playlistId?: string|null, queued?: bool}>, index: int, source: array{playlistId: string|null, title: string}|null, origin: string}  $attributes
+     * @param  array{tracks: array<int, array{key: string, videoId?: string|null, title: string, artists?: string|null, album?: string|null, duration?: string|null, durationSeconds: int, thumbnailUrl?: string|null, playlistId?: string|null, queued?: bool, genres?: list<string>}>, index: int, source: array{playlistId: string|null, title: string}|null, origin: string}  $attributes
      */
     public function handle(User $user, array $attributes): int
     {
@@ -27,6 +27,7 @@ final readonly class SavePlayerQueue
             'thumbnailUrl' => $track['thumbnailUrl'] ?? null,
             'playlistId' => $track['playlistId'] ?? null,
             'queued' => $track['queued'] ?? false,
+            'genres' => $track['genres'] ?? [],
         ], $attributes['tracks']);
 
         return DB::transaction(function () use ($user, $attributes, $tracks): int {

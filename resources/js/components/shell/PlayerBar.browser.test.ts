@@ -26,6 +26,7 @@ async function mountBar() {
                 thumbnailUrl: null,
                 isExplicit: false,
                 isAvailable: true,
+                genres: ['alternative rock', 'rock'],
             },
         ],
         0,
@@ -90,4 +91,13 @@ it('disables the controls when the player is unavailable', async () => {
     await expect
         .element(page.getByRole('button', { name: 'Next  N' }))
         .toBeDisabled();
+});
+
+it('shows the main genre of the playing track', async () => {
+    await mountBar();
+
+    await expect.element(page.getByText('alternative rock')).toBeVisible();
+    await expect
+        .element(page.getByText('rock', { exact: true }))
+        .not.toBeInTheDocument();
 });

@@ -256,6 +256,9 @@ useShortcuts({ r: refresh });
                     <span class="head hidden md:flex" role="columnheader">{{
                         $t('Album')
                     }}</span>
+                    <span class="head hidden lg:flex" role="columnheader">{{
+                        $t('Genre')
+                    }}</span>
                     <span class="head justify-end" role="columnheader">{{
                         $t('Time')
                     }}</span>
@@ -333,6 +336,17 @@ useShortcuts({ r: refresh });
                             class="absolute inset-x-0 inset-y-2"
                         />
                         <span class="relative truncate">{{ track.album }}</span>
+                    </span>
+                    <span
+                        class="cell hidden gap-1 overflow-hidden lg:flex"
+                        role="cell"
+                    >
+                        <span
+                            v-for="genre in track.genres"
+                            :key="genre"
+                            class="genre"
+                            >{{ genre }}</span
+                        >
                     </span>
                     <span
                         class="cell justify-end text-[12.5px] font-medium text-faint"
@@ -449,6 +463,25 @@ useShortcuts({ r: refresh });
     .track-table {
         grid-template-columns: 36px minmax(0, 1.4fr) minmax(0, 1fr) 64px;
     }
+}
+
+@media (min-width: 1024px) {
+    .track-table {
+        grid-template-columns:
+            36px minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.9fr)
+            64px;
+    }
+}
+
+.genre {
+    flex-shrink: 0;
+    padding: 0 8px;
+    border: 1px solid var(--color-line);
+    border-radius: 999px;
+    font-size: 11.5px;
+    line-height: 19px;
+    white-space: nowrap;
+    color: var(--color-dim);
 }
 
 .head {

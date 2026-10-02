@@ -84,6 +84,7 @@ durationSeconds: number,
 thumbnailUrl: string | null,
 playlistId: string | null,
 queued: boolean,
+genres: string[],
 };
 export type RecentEnrichmentData = {
 videoId: string,
@@ -112,6 +113,7 @@ durationSeconds: number | null,
 thumbnailUrl: string | null,
 isExplicit: boolean,
 isAvailable: boolean,
+genres: string[],
 };
 export type YouTubeMusicSyncData = {
 id: string,

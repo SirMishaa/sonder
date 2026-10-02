@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property-read string $id
  * @property-read string $user_id
- * @property-read array<int, array{key: string, videoId: string|null, title: string, artists: string, album: string|null, duration: string|null, durationSeconds: int, thumbnailUrl: string|null, playlistId: string|null, queued?: bool}> $tracks
+ * @property-read array<int, array{key: string, videoId: string|null, title: string, artists: string, album: string|null, duration: string|null, durationSeconds: int, thumbnailUrl: string|null, playlistId: string|null, queued?: bool, genres?: list<string>}> $tracks
  * @property-read int $current_index
  * @property-read array{playlistId: string|null, title: string}|null $source
  * @property-read ListenOrigin $origin

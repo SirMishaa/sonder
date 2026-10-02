@@ -18,6 +18,7 @@ function track(videoId: string, title: string): App.Data.TrackData {
         thumbnailUrl: null,
         isExplicit: false,
         isAvailable: true,
+        genres: [],
     };
 }
 

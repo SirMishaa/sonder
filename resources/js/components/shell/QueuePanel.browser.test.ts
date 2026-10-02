@@ -6,7 +6,11 @@ import QueuePanel from '@/components/shell/QueuePanel.vue';
 import { createPlayer, playerKey } from '@/composables/usePlayer';
 import { FakeTransport } from '@/lib/player/fakeTransport';
 
-function track(videoId: string, title: string): App.Data.TrackData {
+function track(
+    videoId: string,
+    title: string,
+    genres: string[] = [],
+): App.Data.TrackData {
     return {
         videoId,
         title,
@@ -17,6 +21,7 @@ function track(videoId: string, title: string): App.Data.TrackData {
         thumbnailUrl: null,
         isExplicit: false,
         isAvailable: true,
+        genres,
     };
 }
 
@@ -31,7 +36,7 @@ async function mountQueue() {
     player.playTracks(
         [
             track('a', 'Survival'),
-            track('b', 'Hysteria'),
+            track('b', 'Hysteria', ['alternative rock', 'rock']),
             track('c', 'Uprising'),
             track('d', 'Madness'),
         ],
@@ -130,4 +135,10 @@ it('reorders and plays from the keyboard while the list has focus', async () => 
 
     await userEvent.keyboard('{Enter}');
     expect(transport.videoId()).toBe('b');
+});
+
+it('shows the main genre of each upcoming track', async () => {
+    await mountQueue();
+
+    await expect.element(page.getByText('· alternative rock')).toBeVisible();
 });

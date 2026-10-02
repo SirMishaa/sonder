@@ -61,9 +61,12 @@ defineEmits<{
                 <span class="block truncate font-semibold">{{
                     track.title
                 }}</span>
-                <span class="block truncate text-[12.5px] text-dim">{{
-                    track.artists
-                }}</span>
+                <span class="block truncate text-[12.5px] text-dim"
+                    >{{ track.artists
+                    }}<span v-if="track.genres?.length" class="text-faint">
+                        · {{ track.genres[0] }}</span
+                    ></span
+                >
             </span>
             <span class="text-[12.5px] font-medium text-faint">{{
                 track.duration

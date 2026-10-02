@@ -35,6 +35,8 @@ final class UpdatePlayerQueueRequest extends FormRequest
             'tracks.*.thumbnailUrl' => ['nullable', 'string', 'max:2048'],
             'tracks.*.playlistId' => ['nullable', 'string', 'max:64'],
             'tracks.*.queued' => ['sometimes', 'boolean'],
+            'tracks.*.genres' => ['sometimes', 'array', 'max:3'],
+            'tracks.*.genres.*' => ['string', 'max:64'],
             'index' => ['required', 'integer', 'min:-1', 'max:'.max(-1, $trackCount - 1)],
             'source' => ['nullable', 'array'],
             'source.playlistId' => ['nullable', 'string', 'max:64'],

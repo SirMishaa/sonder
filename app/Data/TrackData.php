@@ -11,6 +11,9 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 #[TypeScript]
 final class TrackData extends Data
 {
+    /**
+     * @param  list<string>  $genres  strongest first, at most two
+     */
     public function __construct(
         public ?string $videoId,
         public string $title,
@@ -21,9 +24,13 @@ final class TrackData extends Data
         public ?string $thumbnailUrl,
         public bool $isExplicit,
         public bool $isAvailable,
+        public array $genres = [],
     ) {}
 
-    public static function fromModel(Track $track): self
+    /**
+     * @param  list<string>  $genres
+     */
+    public static function fromModel(Track $track, array $genres = []): self
     {
         return new self(
             videoId: $track->youtube_video_id,
@@ -35,6 +42,7 @@ final class TrackData extends Data
             thumbnailUrl: $track->thumbnail_url,
             isExplicit: $track->is_explicit,
             isAvailable: $track->is_available,
+            genres: $genres,
         );
     }
 }

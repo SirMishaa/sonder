@@ -33,6 +33,8 @@ export type QueueTrack = {
     playlistId: string | null;
     /** Added by hand to play after the current track. */
     queued?: boolean;
+    /** Strongest first, at most two. */
+    genres?: string[];
 };
 
 export type QueueSource = {
@@ -132,6 +134,7 @@ export function toQueueTrack(
         durationSeconds: secondsOf(track),
         thumbnailUrl: track.thumbnailUrl,
         playlistId,
+        genres: track.genres,
     };
 }
 
@@ -237,6 +240,7 @@ export function createPlayer(deps: PlayerDeps) {
                     // Tracks restored from an older stored queue lack these.
                     playlistId: item.playlistId ?? null,
                     queued: item.queued ?? false,
+                    genres: item.genres ?? [],
                 })),
             index: state.index < 0 ? -1 : state.index - start,
             source: state.source,

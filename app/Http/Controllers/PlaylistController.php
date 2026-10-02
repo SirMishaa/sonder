@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Actions\CheckLibraryFreshness;
 use App\Actions\SampleLibraryTracks;
 use App\Actions\StartYouTubeMusicSync;
+use App\Actions\TrackGenres;
 use App\Data\PlaylistData;
 use App\Data\PlaylistSummaryData;
 use App\Data\PlaylistSyncStateData;
@@ -42,7 +43,7 @@ final readonly class PlaylistController
         return Inertia::render('playlist/Index');
     }
 
-    public function show(string $playlistId, #[CurrentUser] User $user, SampleLibraryTracks $sample): Response|RedirectResponse
+    public function show(string $playlistId, #[CurrentUser] User $user, SampleLibraryTracks $sample, TrackGenres $trackGenres): Response|RedirectResponse
     {
         $account = $user->youTubeMusicAccount()->first();
 
@@ -68,7 +69,8 @@ final readonly class PlaylistController
             'author' => $playlist->author,
         ]);
 
-        $tracks = $playlist->tracks->map(fn (Track $track): TrackData => TrackData::fromModel($track));
+        $genres = $trackGenres->handle(array_values(array_filter($playlist->tracks->pluck('youtube_video_id')->all(), is_string(...))));
+        $tracks = $playlist->tracks->map(fn (Track $track): TrackData => TrackData::fromModel($track, $genres[$track->youtube_video_id ?? ''] ?? []));
 
         $playlistData = PlaylistData::from([
             'id' => $playlist->youtube_playlist_id,

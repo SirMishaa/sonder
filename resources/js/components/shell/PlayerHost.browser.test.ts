@@ -72,6 +72,7 @@ it('sends the listen in progress when the page is hidden', async () => {
                 thumbnailUrl: null,
                 isExplicit: false,
                 isAvailable: true,
+                genres: [],
             },
         ],
         0,

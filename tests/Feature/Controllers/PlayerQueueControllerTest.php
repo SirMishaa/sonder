@@ -135,3 +135,22 @@ it('rejects an invalid queue', function (array $overrides, string $field): void 
     'source without a title' => [['source' => ['playlistId' => 'PL1']], 'source.title'],
     'more tracks than kept' => [['tracks' => array_map(fn (int $position): array => queueTrack(['key' => "k{$position}"]), range(0, 300))], 'tracks'],
 ]);
+
+it('keeps the genres of each queued track', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->putJson(route('player-queue.update'), queuePayload(['tracks' => [queueTrack(['genres' => ['alternative rock']])]]))
+        ->assertOk();
+
+    expect($user->playerQueue()->firstOrFail()->tracks[0])->toMatchArray(['genres' => ['alternative rock']])
+        ->and(App\Data\PlayerQueueData::fromModel($user->playerQueue()->firstOrFail())->tracks[0]->genres)->toBe(['alternative rock']);
+});
+
+it('gives an older stored track no genres', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->putJson(route('player-queue.update'), queuePayload(['tracks' => [queueTrack()]]))->assertOk();
+
+    expect(App\Data\PlayerQueueData::fromModel($user->playerQueue()->firstOrFail())->tracks[0]->genres)->toBe([]);
+});
