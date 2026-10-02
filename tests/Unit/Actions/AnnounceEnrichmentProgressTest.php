@@ -10,12 +10,14 @@ use App\Models\Playlist;
 use App\Models\Recording;
 use App\Models\RecordingResolution;
 use App\Models\YouTubeMusicAccount;
+use App\Services\Metadata\EnrichmentTelemetry;
 use Illuminate\Contracts\Broadcasting\Broadcaster;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Queue;
+use Tests\Support\FakeEnrichmentTelemetry;
 
 beforeEach(function (): void {
     Event::fake([LibraryEnrichmentUpdated::class]);
@@ -116,4 +118,19 @@ it('keeps enrichment going when the broadcast fails', function (): void {
     resolve(AnnounceEnrichmentProgress::class)->forVideos(['video-aaaa1']);
 
     Exceptions::assertReported(RuntimeException::class);
+});
+
+it('measures the coverage along the way, at most once a minute', function (): void {
+    $telemetry = new FakeEnrichmentTelemetry();
+    app()->instance(EnrichmentTelemetry::class, $telemetry);
+    $announce = resolve(AnnounceEnrichmentProgress::class);
+
+    $announce->forVideos(['video-aaaa1']);
+    $telemetry->coverage = [];
+    $announce->forVideos(['video-aaaa1']);
+    expect($telemetry->coverage)->toBe([]);
+
+    $this->travel(AnnounceEnrichmentProgress::COVERAGE_SECONDS)->seconds();
+    $announce->forVideos(['video-aaaa1']);
+    expect($telemetry->coverage)->toHaveKey('resolved');
 });

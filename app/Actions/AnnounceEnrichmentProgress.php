@@ -23,8 +23,12 @@ final readonly class AnnounceEnrichmentProgress
 {
     public const int QUIET_SECONDS = 2;
 
+    /** Coverage gauges are measured along the way, at most this often. */
+    public const int COVERAGE_SECONDS = 60;
+
     public function __construct(
         private SummarizeLibraryEnrichment $summarize,
+        private RecordEnrichmentCoverage $coverage,
         private Cache $cache,
     ) {}
 
@@ -59,6 +63,10 @@ final readonly class AnnounceEnrichmentProgress
 
     private function announce(YouTubeMusicAccount $account): void
     {
+        if ($this->cache->add('enrichment-coverage-measured', true, self::COVERAGE_SECONDS)) {
+            $this->coverage->handle();
+        }
+
         $summary = $this->summarize->handle($account);
 
         if ($summary->state === LibraryEnrichmentState::Running
