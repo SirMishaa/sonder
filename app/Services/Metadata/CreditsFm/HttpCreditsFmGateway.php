@@ -21,7 +21,8 @@ final readonly class HttpCreditsFmGateway implements CreditsFmGateway
 
     public function resolveBatch(array $queries): array
     {
-        $response = $this->send('resolve_batch', fn (PendingRequest $http): Response => $http->post('/v1/resolve/batch', [
+        // A batch takes about ten seconds and sometimes passes thirty.
+        $response = $this->send('resolve_batch', fn (PendingRequest $http): Response => $http->timeout(60)->post('/v1/resolve/batch', [
             'tracks' => array_map(fn (TrackQuery $query): array => ['name' => $query->title, 'artist' => $query->artist], $queries),
             'contribute' => false,
         ]));
