@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
+use App\Services\Thumbnails\ThumbnailProxy;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -41,7 +42,7 @@ final readonly class DownloadThumbnailAction
         }
 
         $hash = hash('md5', $url);
-        $extension = $this->getExtension($source);
+        $extension = ThumbnailProxy::extension($url);
         $filename = "thumbnails/{$hash}.{$extension}";
 
         if (Storage::disk()->exists($filename)) {
@@ -76,18 +77,5 @@ final readonly class DownloadThumbnailAction
         }
 
         return Str::is(self::ALLOWED_HOSTS, $host) ? $source : null;
-    }
-
-    private function getExtension(Url $source): string
-    {
-        $extension = pathinfo($source->getPath(), PATHINFO_EXTENSION);
-
-        $validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-        if (in_array(Str::lower($extension), $validExtensions)) {
-            return Str::lower($extension);
-        }
-
-        return 'jpg';
     }
 }
