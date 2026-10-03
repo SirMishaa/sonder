@@ -30,6 +30,7 @@ use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use OpenTelemetry\API\Logs\LoggerInterface as OpenTelemetryLoggerInterface;
 use OpenTelemetry\API\Logs\NoopLogger;
 
@@ -62,6 +63,7 @@ final class AppServiceProvider extends ServiceProvider
         Gate::define('viewInertiaDevTools', fn (User $user): bool => $user->email === 'mishaa.pro@proton.me');
 
         $this->registerOpenTelemetryLoggerFallback();
+        $this->identifyTelemetryInstance();
     }
 
     public function boot(): void
@@ -121,6 +123,19 @@ final class AppServiceProvider extends ServiceProvider
      * in the production build. The package overrides this binding once it boots,
      * so the real logger always wins.
      */
+    /**
+     * Gives each process its own `service.instance.id`. Without one, every
+     * worker exports its counters as the same series, and their interleaved
+     * totals read as constant resets that inflate every rate. It is set at
+     * runtime, since a cached config would hand all workers the same id.
+     */
+    private function identifyTelemetryInstance(): void
+    {
+        if (blank(config('opentelemetry.service_instance_id'))) {
+            config(['opentelemetry.service_instance_id' => (string) Str::uuid()]);
+        }
+    }
+
     private function registerOpenTelemetryLoggerFallback(): void
     {
         if ($this->app->bound(OpenTelemetryLoggerInterface::class)) {
