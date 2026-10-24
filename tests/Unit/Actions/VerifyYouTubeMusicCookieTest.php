@@ -53,11 +53,11 @@ it('leaves the cookie alone when YouTube Music cannot be reached', function (): 
     expect($account->refresh()->cookie_expired_at)->toBeNull();
 });
 
-it('checks the cookie with a live account call', function (): void {
+it('checks the cookie by listing the library, which sees a signed-out session', function (): void {
     $account = YouTubeMusicAccount::factory()->create();
 
     resolve(VerifyYouTubeMusicCookie::class)->handle($account);
 
-    expect($this->fakeProvider()->callCount('account'))->toBe(1)
-        ->and($this->fakeProvider()->callCount('playlists'))->toBe(0);
+    expect($this->fakeProvider()->callCount('playlists'))->toBe(1)
+        ->and($this->fakeProvider()->callCount('account'))->toBe(0);
 });

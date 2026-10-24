@@ -16,6 +16,7 @@ namespace App\Actions;
 use App\Exceptions\Providers\CredentialsRejected;
 use App\Exceptions\Providers\ProviderException;
 use App\Models\YouTubeMusicAccount;
+use App\Services\Music\Contracts\ReadsPlaylists;
 use App\Services\Music\ProviderRegistry;
 
 final readonly class VerifyYouTubeMusicCookie
@@ -23,8 +24,8 @@ final readonly class VerifyYouTubeMusicCookie
     public function __construct(private ProviderRegistry $providers) {}
 
     /**
-     * Checks the stored cookie with a live account call. Only a refused
-     * session flags it expired; an outage propagates so the caller can tell
+     * Checks the stored cookie with a live library listing. Only a refused
+     * session, an empty library included, flags it expired; an outage propagates so the caller can tell
      * "expired" from "could not check".
      *
      * @return bool Whether the cookie still works.
@@ -34,7 +35,7 @@ final readonly class VerifyYouTubeMusicCookie
     public function handle(YouTubeMusicAccount $account): bool
     {
         try {
-            $this->providers->adapter($account->provider())->account($account->credentials());
+            $this->providers->require($account->provider(), ReadsPlaylists::class)->playlists($account->credentials());
         } catch (CredentialsRejected $exception) {
             report($exception);
             $account->markCookieExpired();

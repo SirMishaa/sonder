@@ -11,6 +11,7 @@ use Illuminate\Cache\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Arr;
 use LogicException;
+use SensitiveParameter;
 
 /**
  * Caps the calls made to YouTube Music for each account against the
@@ -28,21 +29,21 @@ final readonly class RateLimitedGateway implements YouTubeMusicGateway
         private RateLimiter $limiter,
     ) {}
 
-    public function account(string $cookie): object
+    public function account(#[SensitiveParameter] string $cookie): object
     {
         $this->spendCall($cookie);
 
         return $this->gateway->account($cookie);
     }
 
-    public function library(string $cookie): array
+    public function library(#[SensitiveParameter] string $cookie): array
     {
         $this->spendCall($cookie);
 
         return $this->gateway->library($cookie);
     }
 
-    public function playlist(string $cookie, string $playlistId): object
+    public function playlist(#[SensitiveParameter] string $cookie, string $playlistId): object
     {
         $this->spendCall($cookie);
 
@@ -52,7 +53,7 @@ final readonly class RateLimitedGateway implements YouTubeMusicGateway
     /**
      * @throws ProviderRateLimited
      */
-    private function spendCall(string $cookie): void
+    private function spendCall(#[SensitiveParameter] string $cookie): void
     {
         $limits = $this->limits(mb_substr(hash('sha256', $cookie), 0, 16));
 
