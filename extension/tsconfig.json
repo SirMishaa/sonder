@@ -1,3 +1,4 @@
 {
-    "extends": "./.wxt/tsconfig.json"
+    "extends": "./.wxt/tsconfig.json",
+    "files": ["../resources/js/types/generated.d.ts"]
 }
