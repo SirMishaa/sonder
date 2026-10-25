@@ -134,6 +134,12 @@ isExplicit: boolean,
 isAvailable: boolean,
 genres: string[],
 };
+export type VideoKnowledgeData = {
+inLibrary: boolean,
+playlists: string[],
+listenCount: number,
+lastListenedAt: string | null,
+};
 export type YouTubeMusicSyncData = {
 id: string,
 status: App.Enums.YouTubeMusicSyncStatus,
