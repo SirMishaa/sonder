@@ -27,9 +27,10 @@ it('creates an extension token for the signed-in user', function (): void {
     $response = $this->actingAs($user)
         ->postJson(route('extension-connection.store'));
 
-    $response->assertOk()->assertJsonStructure(['token']);
+    $response->assertOk()->assertJsonStructure(['token', 'id']);
 
     $token = $user->tokens()->sole();
+    expect($response->json('id'))->toBe((string) $token->id);
     expect($token->name)->toBe('extension')
         ->and($token->abilities)->toBe(['extension'])
         ->and($response->json('token'))->toBeString()->toContain('|');

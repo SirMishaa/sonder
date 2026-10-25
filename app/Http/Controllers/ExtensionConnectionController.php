@@ -35,8 +35,11 @@ final readonly class ExtensionConnectionController
 
     public function store(#[CurrentUser] User $user): JsonResponse
     {
+        $token = $user->createToken(self::TOKEN_NAME, [self::TOKEN_NAME]);
+
         return response()->json([
-            'token' => $user->createToken(self::TOKEN_NAME, [self::TOKEN_NAME])->plainTextToken,
+            'token' => $token->plainTextToken,
+            'id' => (string) $token->accessToken->id,
         ]);
     }
 

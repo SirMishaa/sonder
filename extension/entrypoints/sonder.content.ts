@@ -1,24 +1,14 @@
 import { SONDER_URL } from '@/lib/config';
+import { listenForToken } from '@/lib/handoff';
 import { ask } from '@/lib/messages';
 
 /**
- * Picks up the token the "Connect the extension" page posts to its own
- * window, and hands it to the background worker.
+ * Runs on every Sonder page, since Inertia reaches the connect page without
+ * a full load, and hands the token it receives to the background worker.
  */
 export default defineContentScript({
-    matches: [`${SONDER_URL}/settings/extension*`],
+    matches: [`${SONDER_URL}/*`],
     main() {
-        window.addEventListener('message', (event: MessageEvent) => {
-            const data = event.data as { type?: unknown; token?: unknown };
-
-            if (
-                event.source === window &&
-                event.origin === window.location.origin &&
-                data?.type === 'sonder:extension-token' &&
-                typeof data.token === 'string'
-            ) {
-                void ask({ type: 'token', token: data.token });
-            }
-        });
+        listenForToken(window, (token) => ask({ type: 'token', token }));
     },
 });

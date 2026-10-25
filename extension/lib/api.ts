@@ -8,6 +8,13 @@ export class SignedOut extends Error {
     }
 }
 
+/** Sonder refused what was sent (validation), so retrying will not help. */
+export class Rejected extends Error {
+    constructor() {
+        super('Sonder rejected the request');
+    }
+}
+
 export type LookupBody = { videoIds: string[]; listId: string | null };
 
 export type LookupResult = {
@@ -61,6 +68,10 @@ export function createApi(deps: {
             await deps.token.clear();
 
             throw new SignedOut();
+        }
+
+        if (response.status === 422) {
+            throw new Rejected();
         }
 
         if (!response.ok) {

@@ -4,6 +4,11 @@ import type { Target } from './targets';
 
 export type Action = App.Enums.PlayerCommandAction;
 
+/** Sonder takes at most this many tracks per command (IssuePlayerCommandRequest). */
+export const MAX_ITEMS = 50;
+
+const UNTITLED = 'Sans titre';
+
 export type ActionDeps = {
     send(
         body: App.Data.PlayerCommandData,
@@ -48,7 +53,12 @@ export async function runAction(
         return;
     }
 
-    if (items.length === 0) {
+    const sent = items.slice(0, MAX_ITEMS).map((item) => ({
+        ...item,
+        title: item.title || UNTITLED,
+    }));
+
+    if (sent.length === 0) {
         deps.notify('Rien à envoyer dans ce mix');
 
         return;
@@ -58,15 +68,17 @@ export async function runAction(
         action,
         kind: target.kind,
         listId: target.kind === 'mix' ? target.listId : null,
-        title: target.title,
-        items,
+        title: target.title || UNTITLED,
+        items: sent,
     });
 
     if (!result.ok) {
         deps.notify(
-            result.error === 'signed-out'
-                ? "Connecte l'extension à Sonder"
-                : "Sonder n'a pas répondu",
+            {
+                'signed-out': "Connecte l'extension à Sonder",
+                rejected: "Sonder a refusé l'envoi",
+                failed: "Sonder n'a pas répondu",
+            }[result.error],
         );
 
         return;

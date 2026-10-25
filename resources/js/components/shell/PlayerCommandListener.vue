@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useEcho } from '@laravel/echo-vue';
-import { useEventListener } from '@vueuse/core';
+import { useEventListener, useIntervalFn } from '@vueuse/core';
 import { watch } from 'vue';
 import { usePlayer } from '@/composables/usePlayer';
 import { applyPlayerCommand } from '@/lib/player/playerCommands';
 import type { PlayerCommandPayload } from '@/lib/player/playerCommands';
-import { createTabLeader } from '@/lib/player/tabLeader';
+import { createTabLeader, HEARTBEAT_MS } from '@/lib/player/tabLeader';
 
 /**
  * Replays the commands the browser extension sends. Every open Sonder tab
@@ -19,7 +19,8 @@ const player = usePlayer();
 const leader = createTabLeader();
 
 useEventListener(window, 'focus', () => leader.touch());
-useEventListener(window, 'pagehide', () => leader.setPlaying(false));
+useEventListener(window, 'pagehide', () => leader.close());
+useIntervalFn(() => leader.heartbeat(), HEARTBEAT_MS);
 
 watch(
     () => player.state.playing,

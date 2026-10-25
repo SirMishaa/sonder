@@ -7,6 +7,7 @@ use App\Models\ExtensionCommand;
 use App\Models\PlayerQueue;
 use App\Models\User;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Exceptions;
 use Laravel\Sanctum\Sanctum;
 
 /**
@@ -77,4 +78,18 @@ it('logs, applies and broadcasts a command', function (): void {
         && $event->traceparent === $traceparent
         && $event->broadcastOn()[0]->name === 'private-player.'.$user->id
         && count($event->broadcastWith()['items']) === 2);
+});
+
+it('accepts a command already applied when the broadcast fails', function (): void {
+    Exceptions::fake();
+    Event::listen(PlayerCommandIssued::class, function (): void {
+        throw new RuntimeException('Reverb is unreachable');
+    });
+    $user = User::factory()->create();
+    Sanctum::actingAs($user, ['extension']);
+
+    $this->postJson(route('player-command.store'), aCommandBody())->assertAccepted();
+
+    expect(ExtensionCommand::query()->count())->toBe(1);
+    Exceptions::assertReported(RuntimeException::class);
 });

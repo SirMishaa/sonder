@@ -115,6 +115,33 @@ describe('SonderDrawer', () => {
         ).toEqual(['✓ Biblio', 'Déjà écouté', 'Jamais joué']);
     });
 
+    it('handles a list that holds the same video twice', async () => {
+        const { drawer, deps } = setup(MIX, async () => ({
+            ok: true,
+            value: {
+                videos: {
+                    N9SZaOJEWXU: knowledge({ inLibrary: true }),
+                    'dbB-mICjkQM': knowledge(),
+                },
+                list: null,
+            },
+        }));
+        deps.loadMix.mockResolvedValue([
+            item('N9SZaOJEWXU', 'Sunburn'),
+            item('dbB-mICjkQM', 'Plug In Baby'),
+            item('N9SZaOJEWXU', 'Sunburn'),
+        ]);
+        drawer.unmount();
+        const again = mount(SonderDrawer, { props: { target: MIX, deps } });
+        await flushPromises();
+
+        expect(deps.lookup).toHaveBeenLastCalledWith({
+            videoIds: ['N9SZaOJEWXU', 'dbB-mICjkQM'],
+            listId: 'RDN9SZaOJEWXU',
+        });
+        expect(again.findAll('[data-test=track-status]')).toHaveLength(3);
+    });
+
     it('runs an action from the footer', async () => {
         const { drawer, deps } = setup(VIDEO, async () => ({
             ok: true,

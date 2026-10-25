@@ -34,10 +34,13 @@ describe('tabLeader', () => {
 
     it('lets the playing tab lead whatever was focused last', () => {
         const storage = sharedStorage();
-        const first = createTabLeader({ storage, id: 'first' });
-        const second = createTabLeader({ storage, id: 'second' });
+        let clock = 1_000;
+        const now = () => clock;
+        const first = createTabLeader({ storage, now, id: 'first' });
+        const second = createTabLeader({ storage, now, id: 'second' });
 
         first.setPlaying(true);
+        clock += 10;
         second.touch();
 
         expect([first.isLeader(), second.isLeader()]).toEqual([true, false]);
@@ -62,5 +65,32 @@ describe('tabLeader', () => {
         });
 
         expect(leader.isLeader()).toBe(true);
+    });
+
+    it('hands the lead on when the focused tab closes', () => {
+        const storage = sharedStorage();
+        let clock = 1_000;
+        const now = () => clock;
+        const first = createTabLeader({ storage, now, id: 'first' });
+        clock += 10;
+        const second = createTabLeader({ storage, now, id: 'second' });
+
+        second.close();
+
+        expect(first.isLeader()).toBe(true);
+    });
+
+    it('ignores a playing tab that stopped answering', () => {
+        const storage = sharedStorage();
+        let clock = 1_000;
+        const now = () => clock;
+        const crashed = createTabLeader({ storage, now, id: 'crashed' });
+        const alive = createTabLeader({ storage, now, id: 'alive' });
+        crashed.setPlaying(true);
+
+        clock += 60_000;
+        alive.heartbeat();
+
+        expect(alive.isLeader()).toBe(true);
     });
 });

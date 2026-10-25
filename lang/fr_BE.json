@@ -568,5 +568,6 @@
     "Connected": "Connectée",
     "Last used": "Dernière utilisation",
     "Never used": "Jamais utilisée",
-    "Revoke": "Révoquer"
+    "Revoke": "Révoquer",
+    "No extension answered. Install it, then try again.": "Aucune extension n'a répondu. Installe-la, puis réessaie."
 }

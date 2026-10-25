@@ -6,5 +6,8 @@ export default defineConfig({
     plugins: [vue(), WxtVitest()],
     test: {
         environment: 'happy-dom',
+        environmentOptions: {
+            happyDOM: { url: 'https://sonder.test/settings/extension' },
+        },
     },
 });

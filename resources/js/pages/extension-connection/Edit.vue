@@ -7,6 +7,7 @@ import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
+import { handOffToken } from '@/lib/extensionHandoff';
 
 defineOptions({ layout: AppLayout });
 
@@ -17,14 +18,18 @@ defineProps<{
 const connecting = ref(false);
 const connected = ref(false);
 const failed = ref(false);
+const missing = ref(false);
 
 /**
  * Creates a token and hands it to the extension, whose content script on
- * this page listens for the message. The token never leaves this window.
+ * this page listens for the message. The token never leaves this window;
+ * when no extension takes it, it is revoked at once.
  */
 async function connect(): Promise<void> {
     connecting.value = true;
+    connected.value = false;
     failed.value = false;
+    missing.value = false;
 
     try {
         const response = await http.getClient().request({
@@ -32,14 +37,18 @@ async function connect(): Promise<void> {
             url: ExtensionConnectionController.store().url,
             headers: { Accept: 'application/json' },
         });
-        const { token } = JSON.parse(response.data) as { token: string };
+        const { token, id } = JSON.parse(response.data) as {
+            token: string;
+            id: string;
+        };
 
-        window.postMessage(
-            { type: 'sonder:extension-token', token },
-            window.location.origin,
-        );
-        connected.value = true;
-        router.reload({ only: ['tokens'] });
+        if (await handOffToken(token)) {
+            connected.value = true;
+            router.reload({ only: ['tokens'] });
+        } else {
+            missing.value = true;
+            revoke(id);
+        }
     } catch {
         failed.value = true;
     } finally {
@@ -82,6 +91,11 @@ function revoke(tokenId: string): void {
 
                 <p v-if="connected" class="text-sm text-dim">
                     {{ $t('Extension connected.') }}
+                </p>
+                <p v-if="missing" class="text-sm text-alarm">
+                    {{
+                        $t('No extension answered. Install it, then try again.')
+                    }}
                 </p>
                 <p v-if="failed" class="text-sm text-alarm">
                     {{ $t('The connection failed. Try again.') }}

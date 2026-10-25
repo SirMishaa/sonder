@@ -257,5 +257,6 @@
     "Connected": "Connected",
     "Last used": "Last used",
     "Never used": "Never used",
-    "Revoke": "Revoke"
+    "Revoke": "Revoke",
+    "No extension answered. Install it, then try again.": "No extension answered. Install it, then try again."
 }

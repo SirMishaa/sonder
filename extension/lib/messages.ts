@@ -17,7 +17,7 @@ export type Reply<M extends Message> = M extends { type: 'command' }
 
 export type Result<T> =
     | { ok: true; value: T }
-    | { ok: false; error: 'signed-out' | 'failed' };
+    | { ok: false; error: 'signed-out' | 'rejected' | 'failed' };
 
 /** Sends a message to the background worker and waits for its reply. */
 export function ask<M extends Message>(message: M): Promise<Reply<M>> {

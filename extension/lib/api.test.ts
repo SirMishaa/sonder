@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createApi, SignedOut } from './api';
+import { createApi, Rejected, SignedOut } from './api';
 import type { TokenStore } from './token';
 
 const TRACE = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01';
@@ -94,13 +94,19 @@ describe('api', () => {
         expect(fetch).not.toHaveBeenCalled();
     });
 
-    it('fails on any other error status', async () => {
-        const api = createApi({
+    it('tells a rejected request from a failure', async () => {
+        const rejecting = createApi({
             baseUrl: 'https://sonder.test',
             token: memoryToken('1|secret'),
             fetch: async () => new Response('{}', { status: 422 }),
         });
+        const failing = createApi({
+            baseUrl: 'https://sonder.test',
+            token: memoryToken('1|secret'),
+            fetch: async () => new Response('{}', { status: 500 }),
+        });
 
-        await expect(api.command(body)).rejects.toThrow('422');
+        await expect(rejecting.command(body)).rejects.toBeInstanceOf(Rejected);
+        await expect(failing.command(body)).rejects.toThrow('500');
     });
 });

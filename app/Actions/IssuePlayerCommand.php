@@ -9,10 +9,12 @@ use App\Data\PlayerCommandItemData;
 use App\Events\PlayerCommandIssued;
 use App\Models\ExtensionCommand;
 use App\Models\User;
+use Throwable;
 
 /**
  * Records a command from the browser extension, applies it to the stored
- * queue and tells the open Sonder tabs to replay it.
+ * queue and tells the open Sonder tabs to replay it. A failed broadcast is
+ * reported, not thrown: the stored queue already holds the command.
  */
 final readonly class IssuePlayerCommand
 {
@@ -30,7 +32,11 @@ final readonly class IssuePlayerCommand
 
         $this->apply->handle($user, $command);
 
-        event(new PlayerCommandIssued($logged, $command, $traceparent));
+        try {
+            event(new PlayerCommandIssued($logged, $command, $traceparent));
+        } catch (Throwable $failure) {
+            report($failure);
+        }
 
         return $logged;
     }

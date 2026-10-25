@@ -60,7 +60,7 @@ final readonly class ApplyPlayerCommand
                 }
             }
 
-            [$tracks, $index] = $this->capped($tracks, $index);
+            [$tracks, $index] = $this->capped($tracks, $index, array_column($items, 'key'));
             $version = ($queue->version ?? 0) + 1;
 
             PlayerQueue::query()->updateOrCreate(
@@ -85,8 +85,8 @@ final readonly class ApplyPlayerCommand
     {
         $now = (int) now()->getTimestampMs();
 
-        return array_map(fn (PlayerCommandItemData $item): array => [
-            'key' => "ext:{$item->videoId}@{$now}",
+        return array_map(fn (PlayerCommandItemData $item, int $position): array => [
+            'key' => "ext:{$item->videoId}#{$position}@{$now}",
             'videoId' => $item->videoId,
             'title' => $item->title,
             'artists' => $item->artists,
@@ -97,7 +97,7 @@ final readonly class ApplyPlayerCommand
             'playlistId' => null,
             'queued' => false,
             'genres' => [],
-        ], $command->items);
+        ], $command->items, array_keys($command->items));
     }
 
     /**
@@ -120,13 +120,15 @@ final readonly class ApplyPlayerCommand
     }
 
     /**
-     * Drops the oldest played tracks first, then the last ones, to stay
+     * Drops the oldest played tracks first, then the last upcoming ones,
+     * never the current track nor the tracks this command added, to stay
      * within what the browser keeps.
      *
      * @param  list<QueueTrack>  $tracks
+     * @param  list<string>  $added  keys of the tracks this command added
      * @return array{list<QueueTrack>, int}
      */
-    private function capped(array $tracks, int $index): array
+    private function capped(array $tracks, int $index, array $added): array
     {
         $excess = count($tracks) - PlayerQueue::MAX_TRACKS;
 
@@ -136,7 +138,17 @@ final readonly class ApplyPlayerCommand
 
         $played = min($excess, max(0, $index));
         $tracks = array_slice($tracks, $played);
+        $index -= $played;
+        $excess -= $played;
+        $kept = array_flip($added);
 
-        return [array_slice($tracks, 0, PlayerQueue::MAX_TRACKS), $index - $played];
+        for ($at = count($tracks) - 1; $excess > 0 && $at > $index; $at--) {
+            if (! isset($kept[$tracks[$at]['key']])) {
+                array_splice($tracks, $at, 1);
+                $excess--;
+            }
+        }
+
+        return [$tracks, $index];
     }
 }

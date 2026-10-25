@@ -147,3 +147,26 @@ it('bumps the version', function (): void {
     expect($version)->toBe(4)
         ->and(PlayerQueue::query()->where('user_id', $user->id)->sole()->version)->toBe(4);
 });
+
+it('gives each track of a command its own key, even for a repeated video', function (): void {
+    $user = User::factory()->create();
+
+    app(ApplyPlayerCommand::class)->handle($user, aPlayerCommand(PlayerCommandAction::Enqueue, PlayerCommandKind::Mix, ['same0000000', 'other000000', 'same0000000'], 'PLrepeat'));
+
+    $keys = array_column(PlayerQueue::query()->where('user_id', $user->id)->sole()->tracks, 'key');
+    expect(array_unique($keys))->toHaveCount(3);
+});
+
+it('keeps the new tracks when the upcoming tracks fill the queue', function (): void {
+    $user = User::factory()->create();
+    aStoredQueue($user, 300, 0, array_fill(0, 300, true));
+    $videoIds = array_map(fn (int $i): string => sprintf('new%08d', $i), range(1, 50));
+
+    app(ApplyPlayerCommand::class)->handle($user, aPlayerCommand(PlayerCommandAction::Enqueue, PlayerCommandKind::Mix, $videoIds, 'RDmix'));
+
+    $queue = PlayerQueue::query()->where('user_id', $user->id)->sole();
+    $stored = queuedVideoIds($user);
+    expect($stored)->toHaveCount(300)
+        ->and($stored[$queue->current_index])->toBe('old00000000')
+        ->and(array_values(array_intersect($stored, $videoIds)))->toBe($videoIds);
+});

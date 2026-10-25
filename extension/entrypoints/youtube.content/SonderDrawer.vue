@@ -52,13 +52,16 @@ async function load(): Promise<void> {
                       },
                   ];
         const result = await props.deps.lookup({
-            videoIds: tracks.map((track) => track.videoId),
+            videoIds: [...new Set(tracks.map((track) => track.videoId))],
             listId: props.target.kind === 'mix' ? props.target.listId : null,
         });
 
         state.value = result.ok
             ? { status: 'ready', tracks, result: result.value }
-            : { status: result.error };
+            : {
+                  status:
+                      result.error === 'signed-out' ? 'signed-out' : 'failed',
+              };
     } catch {
         state.value = { status: 'failed' };
     }
@@ -237,8 +240,8 @@ onMounted(load);
                 </p>
                 <ol class="-mx-1 mt-2 flex-1 overflow-y-auto">
                     <li
-                        v-for="track in state.tracks"
-                        :key="track.videoId"
+                        v-for="(track, position) in state.tracks"
+                        :key="position"
                         class="grid grid-cols-[1fr_auto] items-center gap-2 rounded-[7px] px-1 py-1.5 text-[13px] hover:bg-hover"
                     >
                         <span class="min-w-0">

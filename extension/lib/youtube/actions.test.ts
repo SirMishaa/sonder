@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { runAction } from './actions';
+import type { ActionDeps } from './actions';
 import type { Target } from './targets';
 
 const VIDEO: Target = {
@@ -18,7 +19,7 @@ const MIX: Target = {
 
 function deps() {
     return {
-        send: vi.fn(async () => ({
+        send: vi.fn<ActionDeps['send']>(async () => ({
             ok: true as const,
             value: { id: 'cmd', traceparent: 't', sonderOpen: true },
         })),
@@ -107,5 +108,42 @@ describe('runAction', () => {
 
         expect(d.send).not.toHaveBeenCalled();
         expect(d.notify).toHaveBeenCalledWith('Rien à envoyer dans ce mix');
+    });
+
+    it('sends at most 50 tracks of a long list', async () => {
+        const d = deps();
+        d.loadMix.mockResolvedValue(
+            Array.from({ length: 80 }, (_, index) => ({
+                videoId: `v${String(index).padStart(10, '0')}`,
+                title: `T${index}`,
+                artists: 'X',
+                durationSeconds: 1,
+                thumbnailUrl: null,
+            })),
+        );
+
+        await runAction('enqueue', MIX, d);
+
+        expect(d.send.mock.calls[0]?.[0].items).toHaveLength(50);
+    });
+
+    it('names a video YouTube gave no title', async () => {
+        const d = deps();
+
+        await runAction('enqueue', { ...VIDEO, title: '', artists: '' }, d);
+
+        expect(d.send.mock.calls[0]?.[0]).toMatchObject({
+            title: 'Sans titre',
+            items: [{ title: 'Sans titre' }],
+        });
+    });
+
+    it('says when Sonder refused what was sent', async () => {
+        const d = deps();
+        d.send.mockResolvedValue({ ok: false, error: 'rejected' } as never);
+
+        await runAction('enqueue', VIDEO, d);
+
+        expect(d.notify).toHaveBeenCalledWith("Sonder a refusé l'envoi");
     });
 });
