@@ -101,3 +101,27 @@ it('shows the main genre of the playing track', async () => {
         .element(page.getByText('rock', { exact: true }))
         .not.toBeInTheDocument();
 });
+
+it('keeps the thumb where it is dragged, step after step', async () => {
+    const { transport } = await mountBar();
+    const slider = page
+        .getByRole('slider', { name: 'Volume' })
+        .element() as HTMLInputElement;
+    const seen: string[] = [];
+
+    for (let position = 40; position <= 70; position += 0.5) {
+        slider.value = String(position);
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        seen.push(`${position}→${slider.value}`);
+    }
+
+    expect(
+        seen.filter((entry) => {
+            const [asked, shown] = entry.split('→').map(Number);
+
+            return asked !== shown;
+        }),
+    ).toEqual([]);
+    expect(transport.volume).toBe(34);
+});

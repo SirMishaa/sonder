@@ -8,7 +8,7 @@ import {
     Volume2,
     VolumeX,
 } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import Artwork from '@/components/music/Artwork.vue';
 import { formatSeconds, usePlayer } from '@/composables/usePlayer';
 import { positionToVolume, volumeToPosition } from '@/lib/player/volumeCurve';
@@ -16,12 +16,24 @@ import { positionToVolume, volumeToPosition } from '@/lib/player/volumeCurve';
 const player = usePlayer();
 
 const volume = computed(() => (player.state.muted ? 0 : player.state.volume));
-const volumePosition = computed(() => volumeToPosition(volume.value));
+const draggedPosition = ref<number | null>(null);
+
+/**
+ * Where the volume thumb sits. Many positions share one whole-percent
+ * volume, so the thumb stays where it was dragged as long as that position
+ * still gives the current volume; otherwise (mute, another device) it moves
+ * to the volume's own position.
+ */
+const volumePosition = computed(() =>
+    draggedPosition.value !== null &&
+    positionToVolume(draggedPosition.value) === volume.value
+        ? draggedPosition.value
+        : volumeToPosition(volume.value),
+);
 
 function onVolume(event: Event): void {
-    player.setVolume(
-        positionToVolume(Number((event.target as HTMLInputElement).value)),
-    );
+    draggedPosition.value = Number((event.target as HTMLInputElement).value);
+    player.setVolume(positionToVolume(draggedPosition.value));
 }
 
 function onSeek(event: MouseEvent): void {
