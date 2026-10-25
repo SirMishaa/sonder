@@ -5,6 +5,7 @@ import PlaylistController from '@/actions/App/Http/Controllers/PlaylistControlle
 import AppSidebar from '@/components/shell/AppSidebar.vue';
 import CommandPalette from '@/components/shell/CommandPalette.vue';
 import PlayerBar from '@/components/shell/PlayerBar.vue';
+import PlayerCommandListener from '@/components/shell/PlayerCommandListener.vue';
 import PlayerHost from '@/components/shell/PlayerHost.vue';
 import QueuePanel from '@/components/shell/QueuePanel.vue';
 import ToastHost from '@/components/shell/ToastHost.vue';
@@ -57,5 +58,9 @@ useShortcuts({
         <QueuePanel />
         <CommandPalette />
         <PlayerHost :saved-queue="page.props.playerQueue" />
+        <PlayerCommandListener
+            v-if="page.props.auth.user"
+            :user-id="String(page.props.auth.user.id)"
+        />
     </div>
 </template>

@@ -317,6 +317,17 @@ export function createPlayer(deps: PlayerDeps) {
         saveTimer = setTimeout(() => void save(), SYNC_DELAY_MS);
     }
 
+    /** Trace context of a replayed extension command, sent with the next save. */
+    let pendingTraceparent: string | undefined;
+
+    /**
+     * Sends `traceparent` with the next queue save, so the save joins the
+     * trace of the extension command that caused it.
+     */
+    function traceNextSave(traceparent: string): void {
+        pendingTraceparent = traceparent;
+    }
+
     async function save(): Promise<void> {
         saveTimer = null;
 
@@ -338,7 +349,9 @@ export function createPlayer(deps: PlayerDeps) {
         }
 
         saving = true;
-        const version = await deps.sync.save(kept);
+        const traceparent = pendingTraceparent;
+        pendingTraceparent = undefined;
+        const version = await deps.sync.save(kept, traceparent);
         saving = false;
 
         if (version === null) {
@@ -741,6 +754,26 @@ export function createPlayer(deps: PlayerDeps) {
         return item.key;
     }
 
+    /**
+     * Queues a track right after the current one, ahead of the tracks
+     * already queued by hand. With nothing playing, plays it. Returns the
+     * queued entry's key.
+     */
+    function queueFirst(
+        track: App.Data.TrackData,
+        position: number,
+        source: QueueSource,
+    ): string {
+        const key = queueNext(track, position, source);
+        const index = state.queue.findIndex((item) => item.key === key);
+
+        if (index > state.index + 1) {
+            bringUpNext(index);
+        }
+
+        return key;
+    }
+
     /** Moves an upcoming entry to play right after the current track. */
     function bringUpNext(index: number): void {
         if (index <= state.index + 1 || index >= state.queue.length) {
@@ -900,6 +933,8 @@ export function createPlayer(deps: PlayerDeps) {
         playTracks,
         playNext,
         queueNext,
+        queueFirst,
+        traceNextSave,
         unqueue,
         bringUpNext,
         moveUpcoming,

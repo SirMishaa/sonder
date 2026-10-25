@@ -82,11 +82,14 @@ function setup(
 /** A server that numbers every save, starting after `version`. */
 function fakeSync(version = 0) {
     const saved: QueueSnapshot[] = [];
+    const traces: (string | undefined)[] = [];
 
     return {
         saved,
+        traces,
         sync: {
-            save: async (snapshot: QueueSnapshot) => {
+            save: async (snapshot: QueueSnapshot, traceparent?: string) => {
+                traces.push(traceparent);
                 saved.push(
                     JSON.parse(JSON.stringify(snapshot)) as QueueSnapshot,
                 );
@@ -159,6 +162,21 @@ describe('queue sync', () => {
             'c',
             'b',
         ]);
+    });
+
+    it('sends the trace of a replayed command with the next save only', async () => {
+        const { traces, sync } = fakeSync();
+        const { player } = setup({ sync });
+        const traceparent =
+            '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01';
+
+        player.playTracks([track('a'), track('b')], 0, SOURCE);
+        player.traceNextSave(traceparent);
+        await vi.advanceTimersByTimeAsync(1000);
+        player.queueNext(track('c'), 2, SOURCE);
+        await vi.advanceTimersByTimeAsync(1000);
+
+        expect(traces).toEqual([traceparent, undefined]);
     });
 
     it('does not save when only device settings change', async () => {
@@ -457,6 +475,30 @@ describe('usePlayer', () => {
             'y',
             'b',
         ]);
+    });
+
+    it('puts a track queued first ahead of tracks already queued', () => {
+        const { player } = setup();
+        player.playTracks([track('a'), track('b')], 0, SOURCE);
+        player.queueNext(track('x'), 4, SOURCE);
+
+        player.queueFirst(track('y'), 5, SOURCE);
+
+        expect(player.current.value?.videoId).toBe('a');
+        expect(player.upNext.value.map((item) => item.videoId)).toEqual([
+            'y',
+            'x',
+            'b',
+        ]);
+        expect(player.state.queue[1]?.queued).toBe(true);
+    });
+
+    it('plays a track queued first when nothing is loaded', () => {
+        const { player } = setup();
+
+        player.queueFirst(track('y'), 0, SOURCE);
+
+        expect(player.current.value?.videoId).toBe('y');
     });
 
     it('plays a queued track next, recorded as from the queue', () => {

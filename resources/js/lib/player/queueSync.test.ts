@@ -18,7 +18,29 @@ describe('queueSync', () => {
         const sync = createQueueSync({ url: () => '/player/queue', request });
 
         await expect(sync.save(snapshot)).resolves.toBe(6);
-        expect(request).toHaveBeenCalledWith('/player/queue', snapshot);
+        expect(request).toHaveBeenCalledWith(
+            '/player/queue',
+            snapshot,
+            undefined,
+        );
+    });
+
+    it('passes the trace context along', async () => {
+        const request = vi.fn(async () => ({
+            status: 200,
+            data: '{"version":7}',
+        }));
+        const sync = createQueueSync({ url: () => '/player/queue', request });
+        const traceparent =
+            '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01';
+
+        await sync.save(snapshot, traceparent);
+
+        expect(request).toHaveBeenCalledWith(
+            '/player/queue',
+            snapshot,
+            traceparent,
+        );
     });
 
     it('returns null on a validation error', async () => {
