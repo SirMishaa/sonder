@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import cards from './fixtures/cards.html?raw';
-import { targetFromCard, targetFromWatchPage } from './targets';
+import {
+    targetFromCard,
+    targetFromPlaylistPanel,
+    targetFromWatchPage,
+} from './targets';
 
 function card(id: string): Element {
     return document.querySelector(`#${id}`)!.firstElementChild!;
@@ -100,6 +104,47 @@ describe('targetFromWatchPage', () => {
     it('returns null away from a watch page', () => {
         expect(
             targetFromWatchPage(document, new URL('https://www.youtube.com/')),
+        ).toBeNull();
+    });
+});
+
+describe('targetFromPlaylistPanel', () => {
+    const PANEL = `
+        <ytd-playlist-panel-renderer>
+            <div id="header-contents">
+                <div id="header-description">
+                    <h3><yt-attributed-string><span>Mix - C418 - Aria Math</span></yt-attributed-string></h3>
+                    <h3 id="next-video-title"><span id="next-label">Next:</span> Gotye</h3>
+                </div>
+            </div>
+        </ytd-playlist-panel-renderer>`;
+
+    it('reads the mix being played as a whole', () => {
+        document.body.innerHTML = PANEL;
+
+        expect(
+            targetFromPlaylistPanel(
+                document,
+                new URL(
+                    'https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=RDdQw4w9WgXcQ&index=4',
+                ),
+            ),
+        ).toEqual({
+            kind: 'mix',
+            listId: 'RDdQw4w9WgXcQ',
+            seedVideoId: 'dQw4w9WgXcQ',
+            title: 'Mix - C418 - Aria Math',
+        });
+    });
+
+    it('returns null without a list', () => {
+        document.body.innerHTML = PANEL;
+
+        expect(
+            targetFromPlaylistPanel(
+                document,
+                new URL('https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+            ),
         ).toBeNull();
     });
 });

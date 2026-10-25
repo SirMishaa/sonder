@@ -22,6 +22,7 @@ export function createMenuWatcher(deps: {
     mount(list: Element, target: Target): void;
     report(name: string, attributes?: Record<string, string>): void;
     watchPage?: () => Target | null;
+    playlistPanel?: () => Target | null;
 }): MenuWatcher {
     let pending: Target | null = null;
     let opened = 0;
@@ -53,6 +54,11 @@ export function createMenuWatcher(deps: {
 
             if (button.closest('ytd-watch-metadata')) {
                 pending = deps.watchPage?.() ?? null;
+                opened++;
+            } else if (
+                button.closest('ytd-playlist-panel-renderer #header-contents')
+            ) {
+                pending = deps.playlistPanel?.() ?? null;
                 opened++;
             }
 

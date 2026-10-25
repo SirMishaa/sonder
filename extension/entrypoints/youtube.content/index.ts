@@ -6,7 +6,10 @@ import type { Action } from '@/lib/youtube/actions';
 import { closeMenu, createMenuWatcher, fitMenu } from '@/lib/youtube/menu';
 import { fetchMix } from '@/lib/youtube/mix';
 import { pauseYouTube } from '@/lib/youtube/player';
-import { targetFromWatchPage } from '@/lib/youtube/targets';
+import {
+    targetFromPlaylistPanel,
+    targetFromWatchPage,
+} from '@/lib/youtube/targets';
 import type { Target } from '@/lib/youtube/targets';
 import { openDrawer } from './drawer';
 import SonderMenuGroup from './SonderMenuGroup.vue';
@@ -151,6 +154,8 @@ export default defineContentScript({
             report: reportIssue,
             watchPage: () =>
                 targetFromWatchPage(document, new URL(location.href)),
+            playlistPanel: () =>
+                targetFromPlaylistPanel(document, new URL(location.href)),
         });
 
         ctx.addEventListener(

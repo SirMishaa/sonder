@@ -114,6 +114,29 @@ export function targetFromWatchPage(doc: Document, url: URL): Target | null {
     };
 }
 
+/** The whole mix or playlist being played in the watch page's side panel. */
+export function targetFromPlaylistPanel(
+    doc: Document,
+    url: URL,
+): Target | null {
+    const listId = url.searchParams.get('list');
+
+    if (!listId || !/^[\w-]+$/.test(listId)) {
+        return null;
+    }
+
+    return {
+        kind: 'mix',
+        listId,
+        seedVideoId: url.searchParams.get('v'),
+        title: text(
+            doc.querySelector(
+                'ytd-playlist-panel-renderer #header-description h3:not(#next-video-title)',
+            ),
+        ),
+    };
+}
+
 /** The YouTube cards whose ⋮ menu gets the Sonder group. */
 export const CARD_SELECTOR =
     'yt-lockup-view-model, ytd-video-renderer, ytd-compact-video-renderer, ytd-rich-item-renderer, ytd-rich-grid-media, ytd-playlist-panel-video-renderer';

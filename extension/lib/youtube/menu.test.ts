@@ -68,6 +68,36 @@ describe('menu watcher', () => {
         expect(report).toHaveBeenCalledOnce();
     });
 
+    it('adds the group to the menu of the mix being played', () => {
+        const mount = vi.fn();
+        const mix = {
+            kind: 'mix' as const,
+            listId: 'RDx',
+            seedVideoId: null,
+            title: 'Mix',
+        };
+        const watcher = createMenuWatcher({
+            mount,
+            report: vi.fn(),
+            playlistPanel: () => mix,
+        });
+        document.body.innerHTML = `
+            <ytd-playlist-panel-renderer><div id="header-contents">
+                <button aria-label="Action menu"></button>
+            </div></ytd-playlist-panel-renderer>
+            <yt-list-view-model id="list"></yt-list-view-model>`;
+        const button = document.querySelector('button')!;
+        button.addEventListener('click', watcher.onClick);
+
+        button.click();
+        watcher.onPopup(document.querySelector('#list')!);
+
+        expect(mount).toHaveBeenCalledWith(
+            document.querySelector('#list'),
+            mix,
+        );
+    });
+
     it('ignores menus that do not belong to a card', () => {
         const { mount, report, list, watcher } = setup();
         const avatar = document.createElement('button');
