@@ -1,0 +1,1330 @@
+{
+    "_note": "youtubei/v1/next for RDSu6YettpXzU, fetched signed out on 2026-10-25, reduced to the playlist panel; the last two entries are synthetic.",
+    "contents": {
+        "twoColumnWatchNextResults": {
+            "playlist": {
+                "playlist": {
+                    "title": "Mix - Souffrance ft. Vald - Voraces (Clip Officiel)",
+                    "playlistId": "RDSu6YettpXzU",
+                    "contents": [
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "Su6YettpXzU",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance ft. Vald - Voraces (Clip Officiel) 3 minutes et 59 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance ft. Vald - Voraces (Clip Officiel)"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CMoBEMggGAAiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 59 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:59"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/Su6YettpXzU/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAG4FCiQunNzgVHhoarCzTFuQTcbg",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "wLftOfT2fu0",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance ft. Soprano - COMPTE DOUBLE ( Clip Officiel ) 4 minutes et 5 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance ft. Soprano - COMPTE DOUBLE ( Clip Officiel )"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CMcBEMggGAEiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "4 minutes et 5 secondes"
+                                        }
+                                    },
+                                    "simpleText": "4:05"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/wLftOfT2fu0/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDyt602RuSKrKiviHqFPktrv3b3-w",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "cd2iFwJ-iVY",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance - LES MOYENS (Clip Officiel) 2 minutes et 58 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance - LES MOYENS (Clip Officiel)"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CMQBEMggGAIiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "2 minutes et 58 secondes"
+                                        }
+                                    },
+                                    "simpleText": "2:58"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/cd2iFwJ-iVY/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCQy-tH_t2OB_Tk1eogovCFH9nmtQ",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "t7voK6HE0og",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance Ft. Zkr - Appuie-tête (Vidéo Officielle) 5 minutes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance Ft. Zkr - Appuie-tête (Vidéo Officielle)"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CMEBEMggGAMiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "5 minutes"
+                                        }
+                                    },
+                                    "simpleText": "5:00"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/t7voK6HE0og/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBhuQivIzb1TVZ6X4WH0AZMDASOTA",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "zMuee9bS1uA",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance - HIVER AUTOMNE (Clip Vertical) 3 minutes et 2 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance - HIVER AUTOMNE (Clip Vertical)"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CL4BEMggGAQiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 2 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:02"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/zMuee9bS1uA/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDllY4aXj93zu4zb-0rjxeLiFSmQw",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "OeP8pgsqhis",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance - Métro (Clip Officiel) 2 minutes et 47 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance - Métro (Clip Officiel)"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CLsBEMggGAUiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "2 minutes et 47 secondes"
+                                        }
+                                    },
+                                    "simpleText": "2:47"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/OeP8pgsqhis/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBqxeyW_HX0EKDlm03AF5natsz9gA",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "qMPSBDod3O4",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance - Hall 26 ( Clip Officiel ) 2 minutes et 56 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance - Hall 26 ( Clip Officiel )"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CLgBEMggGAYiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "2 minutes et 56 secondes"
+                                        }
+                                    },
+                                    "simpleText": "2:56"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/qMPSBDod3O4/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCeQ0KoICnqd3f6CdGO898zPsXOGA",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "3zPr7olHUu8",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Vald + Heuss L'enfoiré - Royal cheese (Clip Officiel) 3 minutes et 17 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Vald + Heuss L'enfoiré - Royal cheese (Clip Officiel)"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "VALD",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CLUBEMggGAciEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCUNv0EUZYhuelHXWoFLTqwg",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCUNv0EUZYhuelHXWoFLTqwg",
+                                                    "canonicalBaseUrl": "/channel/UCUNv0EUZYhuelHXWoFLTqwg"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 17 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:17"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/3zPr7olHUu8/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAY7p0RrBNVP4EJNenAaMYOICtARQ",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "HW8rR8UDyig",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "REFLEXIONS TRES BASSES 3 minutes et 46 secondes"
+                                        }
+                                    },
+                                    "simpleText": "REFLEXIONS TRES BASSES"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "VALD",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CLIBEMggGAgiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCUNv0EUZYhuelHXWoFLTqwg",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCUNv0EUZYhuelHXWoFLTqwg",
+                                                    "canonicalBaseUrl": "/channel/UCUNv0EUZYhuelHXWoFLTqwg"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 46 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:46"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/HW8rR8UDyig/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDYnJl2WBbI88Dp2af4DbYUyJ5omw",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "PyEC8vTbUjQ",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "VALD - ROCHE NOIRE (Visualizer officiel) 4 minutes et 28 secondes"
+                                        }
+                                    },
+                                    "simpleText": "VALD - ROCHE NOIRE (Visualizer officiel)"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "VALD",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CK8BEMggGAkiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCUNv0EUZYhuelHXWoFLTqwg",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCUNv0EUZYhuelHXWoFLTqwg",
+                                                    "canonicalBaseUrl": "/channel/UCUNv0EUZYhuelHXWoFLTqwg"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "4 minutes et 28 secondes"
+                                        }
+                                    },
+                                    "simpleText": "4:28"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/PyEC8vTbUjQ/hqdefault.jpg?sqp=-oaymwE2CNACELwBSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARh_IDcoLjAP&rs=AOn4CLCJkXFaysb_4YG8kkuWn5TJhqJAEQ",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "-1W2cD6ZdrI",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "VALD - LETHARGIE (Visualizer officiel) 2 minutes et 16 secondes"
+                                        }
+                                    },
+                                    "simpleText": "VALD - LETHARGIE (Visualizer officiel)"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "VALD",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CKwBEMggGAoiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCUNv0EUZYhuelHXWoFLTqwg",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCUNv0EUZYhuelHXWoFLTqwg",
+                                                    "canonicalBaseUrl": "/channel/UCUNv0EUZYhuelHXWoFLTqwg"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "2 minutes et 16 secondes"
+                                        }
+                                    },
+                                    "simpleText": "2:16"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/-1W2cD6ZdrI/hqdefault.jpg?sqp=-oaymwE2CNACELwBSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhlIGUoZTAP&rs=AOn4CLBdQXFpKizVe1fz_nYSw67APtmgAQ",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "pQClUCBPYNs",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "VALD - GAUCHE DROITE (Clip Officiel) 3 minutes et 50 secondes"
+                                        }
+                                    },
+                                    "simpleText": "VALD - GAUCHE DROITE (Clip Officiel)"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "VALD",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CKkBEMggGAsiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCUNv0EUZYhuelHXWoFLTqwg",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCUNv0EUZYhuelHXWoFLTqwg",
+                                                    "canonicalBaseUrl": "/channel/UCUNv0EUZYhuelHXWoFLTqwg"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 50 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:50"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/pQClUCBPYNs/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCpZK53VXCtcPDT7fSM_96crz1flw",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "-svLVQ8Xa-I",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance - LE REPOS DES BRAVES (Visualizer) 2 minutes et 52 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance - LE REPOS DES BRAVES (Visualizer)"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CKYBEMggGAwiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "2 minutes et 52 secondes"
+                                        }
+                                    },
+                                    "simpleText": "2:52"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/-svLVQ8Xa-I/hqdefault.jpg?sqp=-oaymwE2CNACELwBSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARh_IEgoGzAP&rs=AOn4CLA71qDl_2WdYpvfXae5Xdp-STaEig",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "SJSTpZuZDIw",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance - Tour de magie ( Clip Officiel ) 4 minutes et 7 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance - Tour de magie ( Clip Officiel )"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CKMBEMggGA0iEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "4 minutes et 7 secondes"
+                                        }
+                                    },
+                                    "simpleText": "4:07"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/SJSTpZuZDIw/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCGwaUdxHARZ0UqIIyUrzj8KT1pVg",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "yxYQumWqknY",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Simba 3 minutes et 10 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Simba"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CKABEMggGA4iEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 10 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:10"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/yxYQumWqknY/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBlouf_AdI-dumYG9S-DI0lE-huIw",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "I-HchJqKhVw",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "DEMI PORTION feat @souffrance - GANGSTARR (clip officiel) 3 minutes et 2 secondes"
+                                        }
+                                    },
+                                    "simpleText": "DEMI PORTION feat @souffrance - GANGSTARR (clip officiel)"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Demi Portion",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CJ0BEMggGA8iEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCNBHGMYDaq6i-OLAx4vi-IQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCNBHGMYDaq6i-OLAx4vi-IQ",
+                                                    "canonicalBaseUrl": "/channel/UCNBHGMYDaq6i-OLAx4vi-IQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 2 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:02"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/I-HchJqKhVw/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLDi6dv2QOEY91Pk6kz40RbU0QudZA",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "qAk19alfwC0",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance - Ciel Gris Kebab Grill (Audio Officiel) 2 minutes et 59 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance - Ciel Gris Kebab Grill (Audio Officiel)"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CJoBEMggGBAiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "2 minutes et 59 secondes"
+                                        }
+                                    },
+                                    "simpleText": "2:59"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/qAk19alfwC0/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAgEbrClAGZ_61K1pDEJoHtibB9vg",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "yx1vgbevnO8",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Étoiles filantes 2 minutes et 46 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Étoiles filantes"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CJcBEMggGBEiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "2 minutes et 46 secondes"
+                                        }
+                                    },
+                                    "simpleText": "2:46"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/yx1vgbevnO8/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLB4gaxd1DvQefRxkYBuK6y3om4GdA",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "ZOrhano4wZw",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance - BIZON ( Clip officiel ) 3 minutes et 11 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance - BIZON ( Clip officiel )"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CJQBEMggGBIiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 11 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:11"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/ZOrhano4wZw/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLChItaFyjIMWwrZtTnEpBAGGtdV4w",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "4S7AAC2NtCQ",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance ft. Jewel Usain - À PLUS TARD ( Clip Officiel ) 3 minutes et 13 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance ft. Jewel Usain - À PLUS TARD ( Clip Officiel )"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CJEBEMggGBMiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 13 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:13"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/4S7AAC2NtCQ/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBtuhxTeIb9eX0vJaUbbVXzkUA7ww",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "ZNcp6WZSCC0",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Souffrance - Symphonie Feat Limsa d'Aulnay ( Audio Officiel ) 3 minutes et 33 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Souffrance - Symphonie Feat Limsa d'Aulnay ( Audio Officiel )"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "Souffrance ",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CI4BEMggGBQiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCidiyFmxxNHptPx25N7KLDQ",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCidiyFmxxNHptPx25N7KLDQ",
+                                                    "canonicalBaseUrl": "/channel/UCidiyFmxxNHptPx25N7KLDQ"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 33 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:33"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/ZNcp6WZSCC0/hqdefault.jpg?sqp=-oaymwE2CNACELwBSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhyIEIoPjAP&rs=AOn4CLAJhkSt-OrMhwV220pK1n8C5VlhaQ",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "Seq_iT0QIVw",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Vald - Pas deux fois | Deezer Sessions, Paris 3 minutes et 10 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Vald - Pas deux fois | Deezer Sessions, Paris"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "VALD",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CIsBEMggGBUiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCUNv0EUZYhuelHXWoFLTqwg",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCUNv0EUZYhuelHXWoFLTqwg",
+                                                    "canonicalBaseUrl": "/channel/UCUNv0EUZYhuelHXWoFLTqwg"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 10 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:10"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/Seq_iT0QIVw/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBPEqOAUmwtkmxDMB9lUpqepjxqjg",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "D1oYyHUOX_E",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Anunnaki 3 minutes et 23 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Anunnaki"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "VALD",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CIgBEMggGBYiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCUNv0EUZYhuelHXWoFLTqwg",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCUNv0EUZYhuelHXWoFLTqwg",
+                                                    "canonicalBaseUrl": "/channel/UCUNv0EUZYhuelHXWoFLTqwg"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 23 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:23"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/D1oYyHUOX_E/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLB-LfHqIbswbop9rcWark369BIODA",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "M3iGcTxw5d4",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "Lefa - Bitch (Clip officiel) ft. Vald 4 minutes et 50 secondes"
+                                        }
+                                    },
+                                    "simpleText": "Lefa - Bitch (Clip officiel) ft. Vald"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "LEFA",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CIUBEMggGBciEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCnKCBjL2VJipAhyz6n2AeOg",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCnKCBjL2VJipAhyz6n2AeOg",
+                                                    "canonicalBaseUrl": "/channel/UCnKCBjL2VJipAhyz6n2AeOg"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "4 minutes et 50 secondes"
+                                        }
+                                    },
+                                    "simpleText": "4:50"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/M3iGcTxw5d4/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLC6TGoHIQAsoKDuZfaaru_AGXPs2A",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "videoId": "iXzBdNjpYw0",
+                                "title": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "OrelSan - Rêves bizarres (feat. Damso) [CLIP OFFICIEL] 3 minutes et 37 secondes"
+                                        }
+                                    },
+                                    "simpleText": "OrelSan - Rêves bizarres (feat. Damso) [CLIP OFFICIEL]"
+                                },
+                                "shortBylineText": {
+                                    "runs": [
+                                        {
+                                            "text": "orelsan",
+                                            "navigationEndpoint": {
+                                                "clickTrackingParams": "CIIBEMggGBgiEwi4zZvL89WXAxUUD4wGHVdjNrXKAQSP5Trz",
+                                                "commandMetadata": {
+                                                    "webCommandMetadata": {
+                                                        "url": "/channel/UCEnFzIYw3BrndPCddyQ6c5A",
+                                                        "webPageType": "WEB_PAGE_TYPE_CHANNEL",
+                                                        "rootVe": 3611,
+                                                        "apiUrl": "/youtubei/v1/browse"
+                                                    }
+                                                },
+                                                "browseEndpoint": {
+                                                    "browseId": "UCEnFzIYw3BrndPCddyQ6c5A",
+                                                    "canonicalBaseUrl": "/channel/UCEnFzIYw3BrndPCddyQ6c5A"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                "lengthText": {
+                                    "accessibility": {
+                                        "accessibilityData": {
+                                            "label": "3 minutes et 37 secondes"
+                                        }
+                                    },
+                                    "simpleText": "3:37"
+                                },
+                                "thumbnail": {
+                                    "thumbnails": [
+                                        {
+                                            "url": "https://i.ytimg.com/vi/iXzBdNjpYw0/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCUiVMofQaAkH3WuZD7gwjoLYNoAA",
+                                            "width": 336,
+                                            "height": 188
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "playlistPanelVideoRenderer": {
+                                "title": {
+                                    "simpleText": "[Vidéo privée]"
+                                },
+                                "unplayableText": {
+                                    "simpleText": "Vidéo indisponible"
+                                }
+                            }
+                        },
+                        {
+                            "automixPreviewVideoRenderer": {
+                                "content": {}
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}
