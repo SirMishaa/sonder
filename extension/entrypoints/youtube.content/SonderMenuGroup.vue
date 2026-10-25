@@ -32,7 +32,7 @@ async function run(action: Action): Promise<void> {
 
 <template>
     <div
-        class="mx-1.5 my-1 rounded-[9px] bg-[oklch(0.21_0.014_60)] py-1 font-sans text-paper"
+        class="group-enter mx-1.5 my-1 rounded-[9px] bg-[oklch(0.21_0.014_60)] py-1 font-sans text-paper"
         role="group"
         aria-label="Sonder"
     >
@@ -50,7 +50,7 @@ async function run(action: Action): Promise<void> {
             type="button"
             role="menuitem"
             :disabled="busy"
-            class="flex w-full items-center gap-3 rounded-[7px] px-2.5 py-1.5 text-left text-[14px] font-medium transition-colors duration-150 hover:bg-raised focus-visible:bg-raised focus-visible:outline-none disabled:opacity-60"
+            class="flex w-full cursor-pointer items-center gap-3 rounded-[7px] px-2.5 py-1.5 text-left text-[14px] font-medium transition-colors duration-150 hover:bg-raised focus-visible:bg-raised focus-visible:outline-none disabled:opacity-60"
             @click="run(command.action)"
         >
             <span class="w-4 text-center text-amber" aria-hidden="true">{{
@@ -61,7 +61,7 @@ async function run(action: Action): Promise<void> {
         <button
             type="button"
             role="menuitem"
-            class="flex w-full items-center gap-3 rounded-[7px] px-2.5 py-1.5 text-left text-[14px] font-medium transition-colors duration-150 hover:bg-raised focus-visible:bg-raised focus-visible:outline-none"
+            class="flex w-full cursor-pointer items-center gap-3 rounded-[7px] px-2.5 py-1.5 text-left text-[14px] font-medium transition-colors duration-150 hover:bg-raised focus-visible:bg-raised focus-visible:outline-none"
             @click="actions.openPanel(target)"
         >
             <span class="w-4 text-center text-amber" aria-hidden="true">◧</span>
@@ -69,3 +69,18 @@ async function run(action: Action): Promise<void> {
         </button>
     </div>
 </template>
+
+<style scoped>
+@media (prefers-reduced-motion: no-preference) {
+    .group-enter {
+        animation: group-enter 180ms var(--ease-out-quint) both;
+    }
+}
+
+@keyframes group-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+}
+</style>

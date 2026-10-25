@@ -127,7 +127,7 @@ onMounted(load);
 
 <template>
     <aside
-        class="fixed top-[72px] right-4 bottom-4 z-[2250] flex w-[360px] flex-col rounded-2xl bg-[linear-gradient(180deg,oklch(0.21_0.014_60/0.86),oklch(0.17_0.012_60/0.82))] p-4 font-sans text-paper shadow-[inset_0_1px_0_oklch(1_0_0/0.08),0_30px_60px_-24px_oklch(0_0_0/0.85)] backdrop-blur-[14px] backdrop-saturate-[1.4]"
+        class="drawer-enter fixed top-[72px] right-4 bottom-4 z-[2250] flex w-[360px] flex-col rounded-2xl bg-[linear-gradient(180deg,oklch(0.21_0.014_60/0.86),oklch(0.17_0.012_60/0.82))] p-4 font-sans text-paper shadow-[inset_0_1px_0_oklch(1_0_0/0.08),0_30px_60px_-24px_oklch(0_0_0/0.85)] backdrop-blur-[14px] backdrop-saturate-[1.4]"
         aria-label="Sonder"
         tabindex="-1"
         @keydown.esc="deps.close()"
@@ -147,7 +147,7 @@ onMounted(load);
             />
             <button
                 type="button"
-                class="ml-2 grid size-7 place-items-center rounded-md text-dim transition-colors duration-150 hover:bg-raised hover:text-paper"
+                class="ml-2 grid size-7 cursor-pointer place-items-center rounded-md text-dim transition-colors duration-150 hover:bg-raised hover:text-paper"
                 aria-label="Fermer"
                 @click="deps.close()"
             >
@@ -182,7 +182,7 @@ onMounted(load);
             <a
                 :href="CONNECT_URL"
                 target="_blank"
-                class="mt-2 block font-bold text-amber hover:underline"
+                class="mt-2 block cursor-pointer font-bold text-amber hover:underline"
                 >Connecter l'extension</a
             >
         </div>
@@ -194,7 +194,7 @@ onMounted(load);
             Sonder n'a pas répondu.
             <button
                 type="button"
-                class="mt-2 block font-bold text-amber hover:underline"
+                class="mt-2 block cursor-pointer font-bold text-amber hover:underline"
                 @click="load"
             >
                 Réessayer
@@ -242,7 +242,10 @@ onMounted(load);
                     <li
                         v-for="(track, position) in state.tracks"
                         :key="position"
-                        class="grid grid-cols-[1fr_auto] items-center gap-2 rounded-[7px] px-1 py-1.5 text-[13px] hover:bg-hover"
+                        class="row-enter grid grid-cols-[1fr_auto] items-center gap-2 rounded-[7px] px-1 py-1.5 text-[13px] hover:bg-hover"
+                        :style="{
+                            animationDelay: `${Math.min(position, 12) * 40}ms`,
+                        }"
                     >
                         <span class="min-w-0">
                             <span class="block truncate">{{
@@ -270,7 +273,7 @@ onMounted(load);
                 type="button"
                 :data-test="`action-${entry.action}`"
                 :disabled="busy"
-                class="rounded-[9px] px-3 py-1.5 text-[13px] font-bold transition-[filter,transform] duration-150 active:scale-[0.97] disabled:opacity-60"
+                class="cursor-pointer rounded-[9px] px-3 py-1.5 text-[13px] font-bold transition-[filter,transform] duration-150 active:scale-[0.97] disabled:opacity-60"
                 :class="
                     index === 0
                         ? 'bg-[linear-gradient(135deg,var(--color-amber-light),var(--color-amber-deep))] text-amber-ink hover:brightness-105'
@@ -283,3 +286,30 @@ onMounted(load);
         </footer>
     </aside>
 </template>
+
+<style scoped>
+@media (prefers-reduced-motion: no-preference) {
+    .drawer-enter {
+        animation: drawer-enter 320ms var(--ease-out-quint) both;
+    }
+
+    .row-enter {
+        animation: row-enter 280ms var(--ease-out-quint) both;
+    }
+}
+
+@keyframes drawer-enter {
+    from {
+        opacity: 0;
+        transform: translateX(24px);
+        filter: blur(4px);
+    }
+}
+
+@keyframes row-enter {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+}
+</style>

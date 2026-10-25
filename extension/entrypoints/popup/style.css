@@ -1,2 +1,7 @@
 @import 'tailwindcss';
 @import '../../assets/tokens.css';
+
+body {
+    margin: 0;
+    background: var(--color-ink);
+}
