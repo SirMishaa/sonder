@@ -8,6 +8,7 @@ import { fetchMix } from '@/lib/youtube/mix';
 import { pauseYouTube } from '@/lib/youtube/player';
 import { targetFromWatchPage } from '@/lib/youtube/targets';
 import type { Target } from '@/lib/youtube/targets';
+import { openDrawer } from './drawer';
 import SonderMenuGroup from './SonderMenuGroup.vue';
 import SonderToast from './SonderToast.vue';
 import './style.css';
@@ -94,7 +95,8 @@ export default defineContentScript({
                     pause: () => pauseYouTube(),
                     notify,
                 }),
-            openPanel: (_target: Target) => notify('Le panneau arrive bientôt'),
+            openPanel: (target: Target) =>
+                void openDrawer(ctx, target, actions.run),
         };
 
         async function mount(list: Element, target: Target): Promise<void> {
