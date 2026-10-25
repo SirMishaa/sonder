@@ -14,7 +14,7 @@ export default defineConfig({
             typeCheck: true,
         },
         plugins: ['eslint', 'typescript', 'unicorn', 'oxc', 'vue'],
-        ignorePatterns: ['vite.config.ts'],
+        ignorePatterns: ['vite.config.ts', 'extension/.output/**', 'extension/.wxt/**'],
     },
     fmt: {
         printWidth: 80,
@@ -52,6 +52,8 @@ export default defineConfig({
             'resources/js/routes/*',
             'resources/js/wayfinder/*',
             'resources/js/types/generated.d.ts',
+            'extension/.output/*',
+            'extension/.wxt/*',
         ],
     },
     plugins: [

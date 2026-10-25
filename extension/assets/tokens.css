@@ -1,0 +1,25 @@
+/*
+ * Sonder's design tokens (DESIGN.md, "The Listening Room"), copied from
+ * resources/css/app.css so the extension speaks the same visual language.
+ */
+@theme {
+    --color-amber: oklch(0.8 0.15 68);
+    --color-amber-light: oklch(0.84 0.14 75);
+    --color-amber-deep: oklch(0.66 0.17 48);
+    --color-amber-ink: oklch(0.22 0.04 60);
+    --color-ink: oklch(0.165 0.012 60);
+    --color-sleeve: oklch(0.182 0.013 60);
+    --color-panel: oklch(0.19 0.013 60);
+    --color-hover: oklch(0.215 0.014 60);
+    --color-raised: oklch(0.235 0.014 60);
+    --color-line: oklch(0.285 0.012 60);
+    --color-paper: oklch(0.94 0.012 80);
+    --color-dim: oklch(0.72 0.018 70);
+    --color-faint: oklch(0.6 0.016 70);
+    --color-signal: oklch(0.78 0.12 150);
+    --color-alarm: oklch(0.66 0.18 28);
+
+    --font-sans: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+
+    --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+}

@@ -2,11 +2,11 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vp build",
-        "build:ssr": "vp build && vp build --ssr",
-        "dev": "vp dev",
-        "lint": "NODE_OPTIONS='--experimental-strip-types' vp fmt resources/ && NODE_OPTIONS='--experimental-strip-types' vp lint --fix",
-        "test:lint": "NODE_OPTIONS='--experimental-strip-types' vp fmt --check resources/ && NODE_OPTIONS='--experimental-strip-types' vp lint",
+        "build": "vp -C . build",
+        "build:ssr": "vp -C . build && vp -C . build --ssr",
+        "dev": "vp -C . dev",
+        "lint": "NODE_OPTIONS='--experimental-strip-types' vp fmt resources/ extension/ && NODE_OPTIONS='--experimental-strip-types' vp lint --fix",
+        "test:lint": "NODE_OPTIONS='--experimental-strip-types' vp fmt --check resources/ extension/ && NODE_OPTIONS='--experimental-strip-types' vp lint",
         "test:types": "tsc --noEmit",
         "test": "vp test"
     },
@@ -23,28 +23,28 @@
         "pusher-js": "^8.6.0",
         "reka-ui": "^2.11.0",
         "tailwind-merge": "^3.7.0",
-        "tailwindcss": "^4.3.3",
+        "tailwindcss": "catalog:",
         "temporal-polyfill": "^1.0.6",
         "tw-animate-css": "^1.4.0",
-        "vue": "^3.5.44",
+        "vue": "catalog:",
         "vue-input-otp": "^0.4.0"
     },
     "devDependencies": {
         "@laravel/vite-plugin-wayfinder": "^0.1.11",
-        "@tailwindcss/vite": "^4.3.3",
+        "@tailwindcss/vite": "catalog:",
         "@types/node": "^26.6.5",
-        "@vitejs/plugin-vue": "^6.0.10",
+        "@vitejs/plugin-vue": "catalog:",
         "@vitest/browser-playwright": "5.0.5",
         "chokidar": "^6.0.0",
         "concurrently": "^10.0.6",
         "npm-check-updates": "^23.1.1",
         "playwright": "^1.64.1",
-        "typescript": "^6.0.3",
+        "typescript": "catalog:",
         "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
         "vite-plugin-vue-devtools": "^8.2.1",
         "vite-plus": "1.4.0",
         "vitest-browser-vue": "^3.1.0",
-        "vue-tsc": "^3.3.13"
+        "vue-tsc": "catalog:"
     },
     "optionalDependencies": {
         "@rollup/rollup-linux-x64-gnu": "4.65.0",
@@ -53,5 +53,18 @@
         "@tailwindcss/oxide-win32-x64-msvc": "^4.3.3",
         "lightningcss-linux-x64-gnu": "^1.33.0",
         "lightningcss-win32-x64-msvc": "^1.33.0"
+    },
+    "workspaces": {
+        "packages": [
+            "extension"
+        ],
+        "catalog": {
+            "vue": "^3.5.44",
+            "typescript": "^6.0.3",
+            "tailwindcss": "^4.3.3",
+            "@tailwindcss/vite": "^4.3.3",
+            "vue-tsc": "^3.3.13",
+            "@vitejs/plugin-vue": "^6.0.10"
+        }
     }
 }

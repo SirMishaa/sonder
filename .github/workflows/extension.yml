@@ -1,0 +1,56 @@
+name: extension
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'extension/**'
+      - 'resources/js/types/generated.d.ts'
+      - 'package.json'
+      - 'bun.lock'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'extension/**'
+      - 'resources/js/types/generated.d.ts'
+      - 'package.json'
+      - 'bun.lock'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  extension:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Bun Dependencies
+        run: bun install
+
+      - name: Type Check
+        working-directory: extension
+        run: bun run compile
+
+      - name: Tests
+        working-directory: extension
+        run: bun run test
+
+      - name: Build
+        working-directory: extension
+        run: bun run zip
+
+      - name: Store Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonder-extension
+          path: extension/.output/*.zip

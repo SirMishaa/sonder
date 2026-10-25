@@ -1,0 +1,35 @@
+{
+    "name": "sonder-extension",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Sonder actions on YouTube",
+    "type": "module",
+    "scripts": {
+        "dev": "wxt",
+        "dev:firefox": "wxt -b firefox",
+        "build": "wxt build",
+        "build:firefox": "wxt build -b firefox",
+        "zip": "wxt zip",
+        "zip:firefox": "wxt zip -b firefox",
+        "compile": "vue-tsc --noEmit",
+        "postinstall": "wxt prepare",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "vue": "catalog:"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "catalog:",
+        "@vitejs/plugin-vue": "catalog:",
+        "@vue/test-utils": "^2.5.1",
+        "@wxt-dev/module-vue": "^1.0.3",
+        "happy-dom": "^21.0.4",
+        "tailwindcss": "catalog:",
+        "typescript": "catalog:",
+        "vite": "^8.1.5",
+        "vitest": "^5.0.5",
+        "vue-tsc": "catalog:",
+        "web-ext": "^10.5.0",
+        "wxt": "^0.21.3"
+    }
+}
