@@ -4,6 +4,11 @@ export type ArtistTallyData = {
 name: string,
 trackCount: number,
 };
+export type ExtensionTokenData = {
+id: string,
+createdAt: string,
+lastUsedAt: string | null,
+};
 export type LibraryData = {
 accountName: string,
 playlists: App.Data.LibraryPlaylistData[],

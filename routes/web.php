@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\DiscoverController;
+use App\Http\Controllers\ExtensionConnectionController;
 use App\Http\Controllers\ListenController;
 use App\Http\Controllers\PlayerQueueController;
 use App\Http\Controllers\PlaylistController;
@@ -76,6 +77,15 @@ Route::middleware('auth')->group(function (): void {
     Route::put('settings/password', [UserPasswordController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('password.update');
+
+    // Extension Connection...
+    Route::get('settings/extension', [ExtensionConnectionController::class, 'edit'])
+        ->name('extension-connection.edit');
+    Route::post('settings/extension', [ExtensionConnectionController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('extension-connection.store');
+    Route::delete('settings/extension/{tokenId}', [ExtensionConnectionController::class, 'destroy'])
+        ->name('extension-connection.destroy');
 
     // User Two-Factor Authentication...
     Route::get('settings/two-factor', [UserTwoFactorAuthenticationController::class, 'show'])

@@ -17,6 +17,7 @@
         "laravel/framework": "^13.38.0",
         "laravel/octane": "^2.22.0",
         "laravel/reverb": ">=1.12",
+        "laravel/sanctum": "^4.3.3",
         "laravel/wayfinder": "^0.1.23",
         "league/flysystem-aws-s3-v3": "^3.35.3",
         "nunomaduro/essentials": "^1.2.0",

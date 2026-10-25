@@ -248,5 +248,14 @@
     "Web Server is Down": "Web Server is Down",
     "Whoops!": "Whoops!",
     "Yes": "Yes",
-    "You are receiving this email because we received a password reset request for your account.": "You are receiving this email because we received a password reset request for your account."
+    "You are receiving this email because we received a password reset request for your account.": "You are receiving this email because we received a password reset request for your account.",
+    "Browser extension": "Browser extension",
+    "Send YouTube videos and mixes to Sonder from the extension.": "Send YouTube videos and mixes to Sonder from the extension.",
+    "Connect the extension": "Connect the extension",
+    "Extension connected.": "Extension connected.",
+    "The connection failed. Try again.": "The connection failed. Try again.",
+    "Connected": "Connected",
+    "Last used": "Last used",
+    "Never used": "Never used",
+    "Revoke": "Revoke"
 }

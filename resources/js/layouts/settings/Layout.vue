@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
+import { edit as editExtensionConnection } from '@/routes/extension-connection';
 import { edit as editPassword } from '@/routes/password';
 import { show as showTwoFactorAuth } from '@/routes/two-factor';
 import { edit as editProfile } from '@/routes/user-profile';
@@ -22,6 +23,10 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Two-Factor Auth',
         href: showTwoFactorAuth(),
+    },
+    {
+        title: 'Browser extension',
+        href: editExtensionConnection(),
     },
 ];
 

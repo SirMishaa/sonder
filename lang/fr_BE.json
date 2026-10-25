@@ -559,5 +559,14 @@
     "Looked up": "Analysés",
     "Just enriched": "Derniers enrichis",
     ":count credit|:count credits": ":count crédit|:count crédits",
-    ":count listeners": ":count auditeurs"
+    ":count listeners": ":count auditeurs",
+    "Browser extension": "Extension du navigateur",
+    "Send YouTube videos and mixes to Sonder from the extension.": "Envoie des vidéos et des mix YouTube vers Sonder depuis l'extension.",
+    "Connect the extension": "Connecter l'extension",
+    "Extension connected.": "Extension connectée.",
+    "The connection failed. Try again.": "La connexion a échoué. Réessaie.",
+    "Connected": "Connectée",
+    "Last used": "Dernière utilisation",
+    "Never used": "Jamais utilisée",
+    "Revoke": "Révoquer"
 }
