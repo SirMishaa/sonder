@@ -43,6 +43,7 @@ final class PlayerQueueData extends Data
                     playlistId: $track['playlistId'],
                     queued: $track['queued'] ?? false,
                     genres: $track['genres'] ?? [],
+                    via: $track['via'] ?? null,
                 ),
                 $queue->tracks,
             ),

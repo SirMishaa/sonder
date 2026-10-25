@@ -170,3 +170,13 @@ it('keeps the new tracks when the upcoming tracks fill the queue', function (): 
         ->and($stored[$queue->current_index])->toBe('old00000000')
         ->and(array_values(array_intersect($stored, $videoIds)))->toBe($videoIds);
 });
+
+it('marks the tracks it adds as coming from the extension', function (): void {
+    $user = User::factory()->create();
+    aStoredQueue($user, 2, 0);
+
+    app(ApplyPlayerCommand::class)->handle($user, aPlayerCommand(PlayerCommandAction::PlayNext, PlayerCommandKind::Video, ['vidA0000000']));
+
+    $tracks = PlayerQueue::query()->where('user_id', $user->id)->sole()->tracks;
+    expect(array_column($tracks, 'via', 'videoId'))->toMatchArray(['vidA0000000' => 'extension']);
+});

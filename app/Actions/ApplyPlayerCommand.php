@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
  * opened later starts from it. An open tab replays the same command itself
  * and its next save supersedes this one.
  *
- * @phpstan-type QueueTrack array{key: string, videoId: string|null, title: string, artists: string, album: string|null, duration: string|null, durationSeconds: int, thumbnailUrl: string|null, playlistId: string|null, queued?: bool, genres?: list<string>}
+ * @phpstan-type QueueTrack array{key: string, videoId: string|null, title: string, artists: string, album: string|null, duration: string|null, durationSeconds: int, thumbnailUrl: string|null, playlistId: string|null, queued?: bool, genres?: list<string>, via?: string|null}
  */
 final readonly class ApplyPlayerCommand
 {
@@ -97,6 +97,7 @@ final readonly class ApplyPlayerCommand
             'playlistId' => null,
             'queued' => false,
             'genres' => [],
+            'via' => 'extension',
         ], $command->items, array_keys($command->items));
     }
 

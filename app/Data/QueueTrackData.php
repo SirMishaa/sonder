@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Data;
 
 use Spatie\LaravelData\Data;
+use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
@@ -17,6 +18,7 @@ final class QueueTrackData extends Data
      * @param  string  $key  Unique within the queue: the track's place in its list, plus a suffix when queued by hand.
      * @param  bool  $queued  Added by hand to play after the current track.
      * @param  list<string>  $genres  strongest first, at most two
+     * @param  string|null  $via  'extension' when the browser extension sent it from YouTube.
      */
     public function __construct(
         public string $key,
@@ -30,5 +32,7 @@ final class QueueTrackData extends Data
         public ?string $playlistId,
         public bool $queued = false,
         public array $genres = [],
+        #[LiteralTypeScriptType("'extension' | null")]
+        public ?string $via = null,
     ) {}
 }

@@ -154,3 +154,22 @@ it('gives an older stored track no genres', function (): void {
 
     expect(App\Data\PlayerQueueData::fromModel($user->playerQueue()->firstOrFail())->tracks[0]->genres)->toBe([]);
 });
+
+it('remembers which tracks came from the browser extension', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->putJson(route('player-queue.update'), queuePayload(['tracks' => [queueTrack(['via' => 'extension']), queueTrack(['key' => 'other#1'])]]))
+        ->assertOk();
+
+    $tracks = App\Data\PlayerQueueData::fromModel($user->playerQueue()->firstOrFail())->tracks;
+    expect($tracks[0]->via)->toBe('extension')
+        ->and($tracks[1]->via)->toBeNull();
+});
+
+it('rejects an unknown track origin', function (): void {
+    $this->actingAs(User::factory()->create())
+        ->putJson(route('player-queue.update'), queuePayload(['tracks' => [queueTrack(['via' => 'spotify'])]]))
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('tracks.0.via');
+});

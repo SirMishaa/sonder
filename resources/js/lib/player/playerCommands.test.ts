@@ -106,4 +106,22 @@ describe('applyPlayerCommand', () => {
             'b',
         ]);
     });
+
+    it('marks every track it adds as coming from the extension', () => {
+        const player = playing(setup());
+
+        applyPlayerCommand(player, command('play_now', 'video', ['v']));
+        applyPlayerCommand(player, command('play_next', 'video', ['n']));
+        applyPlayerCommand(player, command('enqueue', 'video', ['q']));
+
+        expect(
+            player.state.queue.map((item) => [item.videoId, item.via ?? null]),
+        ).toEqual([
+            ['a', 'extension'],
+            ['v', 'extension'],
+            ['n', 'extension'],
+            ['q', 'extension'],
+            ['b', 'extension'],
+        ]);
+    });
 });

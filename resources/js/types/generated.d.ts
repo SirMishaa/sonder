@@ -104,6 +104,7 @@ thumbnailUrl: string | null,
 playlistId: string | null,
 queued: boolean,
 genres: string[],
+via: 'extension' | null,
 };
 export type RecentEnrichmentData = {
 videoId: string,

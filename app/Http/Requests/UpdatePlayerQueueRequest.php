@@ -33,6 +33,7 @@ final class UpdatePlayerQueueRequest extends FormRequest
             'tracks.*.queued' => ['sometimes', 'boolean'],
             'tracks.*.genres' => ['sometimes', 'array', 'max:3'],
             'tracks.*.genres.*' => ['string', 'max:64'],
+            'tracks.*.via' => ['sometimes', 'nullable', Rule::in(['extension'])],
             'index' => ['required', 'integer', 'min:-1', 'max:'.max(-1, $trackCount - 1)],
             'source' => ['nullable', 'array'],
             'source.playlistId' => ['nullable', 'string', 'max:64'],

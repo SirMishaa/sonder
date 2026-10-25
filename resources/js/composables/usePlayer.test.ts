@@ -117,6 +117,7 @@ function remoteQueue(
             playlistId: 'PL2',
             queued: false,
             genres: [],
+            via: null,
         })),
         index: 0,
         source: { playlistId: 'PL2', title: 'From the phone' },

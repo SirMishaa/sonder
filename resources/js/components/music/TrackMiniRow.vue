@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { GripVertical, X } from 'lucide-vue-next';
+import { GripVertical, X, Youtube } from 'lucide-vue-next';
 import PlayableArtwork from '@/components/music/PlayableArtwork.vue';
 import type { QueueTrack } from '@/composables/usePlayer';
 
 /**
  * One upcoming track. A sortable row (the queue panel) also gets a grip to
- * drag it, a remove button, and leaves keyboard focus to its list.
+ * drag it, a remove button, and leaves keyboard focus to its list. Tracks
+ * the browser extension sent from YouTube carry a small YouTube mark.
  */
 type Props = {
     track: QueueTrack;
@@ -68,9 +69,19 @@ defineEmits<{
                     ></span
                 >
             </span>
-            <span class="text-[12.5px] font-medium text-faint">{{
-                track.duration
-            }}</span>
+            <span
+                class="flex items-center gap-1.5 text-[12.5px] font-medium text-faint"
+            >
+                <Youtube
+                    v-if="track.via === 'extension'"
+                    class="size-3.5"
+                    role="img"
+                    :aria-label="$t('Sent from YouTube')"
+                >
+                    <title>{{ $t('Sent from YouTube') }}</title>
+                </Youtube>
+                {{ track.duration }}
+            </span>
         </button>
         <button
             v-if="sortable"

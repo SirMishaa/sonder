@@ -67,12 +67,12 @@ it('seeks where the bar is clicked', async () => {
     expect(transport.position).toBeLessThan(100);
 });
 
-it('sets the volume', async () => {
+it('sets the volume along a curve that favours quiet levels', async () => {
     const { transport } = await mountBar();
 
-    await page.getByRole('slider', { name: 'Volume' }).fill('30');
+    await page.getByRole('slider', { name: 'Volume' }).fill('50');
 
-    expect(transport.volume).toBe(30);
+    expect(transport.volume).toBe(13);
 });
 
 it('no longer presents itself as a preview', async () => {

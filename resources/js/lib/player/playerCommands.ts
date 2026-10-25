@@ -23,7 +23,8 @@ function toTrack(item: App.Data.PlayerCommandItemData): App.Data.TrackData {
 
 /**
  * Replays a command sent from the browser extension on this tab's player,
- * through the same functions the interface uses.
+ * through the same functions the interface uses, and marks the tracks it
+ * added so the queue can show where they came from.
  */
 export function applyPlayerCommand(
     player: Player,
@@ -32,21 +33,29 @@ export function applyPlayerCommand(
     const tracks = command.items.map(toTrack);
     const source = { playlistId: command.listId, title: command.title };
 
+    const added = new Set<string>();
+
     if (command.action === 'play_now' && command.kind === 'mix') {
         player.playTracks(tracks, 0, source, 'playlist');
+        player.state.queue.forEach((item) => added.add(item.key));
     } else if (command.action === 'play_now') {
         player.playNext(tracks[0]!, source, 'queue');
+        added.add(player.state.queue[player.state.index]!.key);
     } else if (command.action === 'play_next') {
         [...tracks]
             .reverse()
             .forEach((track, position) =>
-                player.queueFirst(track, position, source),
+                added.add(player.queueFirst(track, position, source)),
             );
     } else {
         tracks.forEach((track, position) =>
-            player.queueNext(track, position, source),
+            added.add(player.queueNext(track, position, source)),
         );
     }
+
+    player.state.queue
+        .filter((item) => added.has(item.key))
+        .forEach((item) => (item.via = 'extension'));
 
     if (command.traceparent) {
         player.traceNextSave(command.traceparent);

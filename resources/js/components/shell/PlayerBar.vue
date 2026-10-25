@@ -11,13 +11,17 @@ import {
 import { computed } from 'vue';
 import Artwork from '@/components/music/Artwork.vue';
 import { formatSeconds, usePlayer } from '@/composables/usePlayer';
+import { positionToVolume, volumeToPosition } from '@/lib/player/volumeCurve';
 
 const player = usePlayer();
 
 const volume = computed(() => (player.state.muted ? 0 : player.state.volume));
+const volumePosition = computed(() => volumeToPosition(volume.value));
 
 function onVolume(event: Event): void {
-    player.setVolume(Number((event.target as HTMLInputElement).value));
+    player.setVolume(
+        positionToVolume(Number((event.target as HTMLInputElement).value)),
+    );
 }
 
 function onSeek(event: MouseEvent): void {
@@ -167,10 +171,12 @@ const controlsDisabled = computed(
                 type="range"
                 min="0"
                 max="100"
-                :value="volume"
+                step="0.5"
+                :value="volumePosition"
                 class="volume"
-                :style="{ '--v': `${volume}%` }"
+                :style="{ '--v': `${volumePosition}%` }"
                 :aria-label="$t('Volume')"
+                :aria-valuetext="`${volume} %`"
                 @input="onVolume"
             />
             <button

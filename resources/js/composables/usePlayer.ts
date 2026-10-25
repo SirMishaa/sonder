@@ -35,6 +35,8 @@ export type QueueTrack = {
     queued?: boolean;
     /** Strongest first, at most two. */
     genres?: string[];
+    /** Sent by the browser extension from YouTube. */
+    via?: 'extension' | null;
 };
 
 export type QueueSource = {
@@ -241,6 +243,7 @@ export function createPlayer(deps: PlayerDeps) {
                     playlistId: item.playlistId ?? null,
                     queued: item.queued ?? false,
                     genres: item.genres ?? [],
+                    via: item.via ?? null,
                 })),
             index: state.index < 0 ? -1 : state.index - start,
             source: state.source,
