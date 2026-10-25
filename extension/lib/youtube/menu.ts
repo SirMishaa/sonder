@@ -75,3 +75,56 @@ export function createMenuWatcher(deps: {
         },
     };
 }
+
+const MARGIN = 8;
+
+/**
+ * Lets a YouTube menu grow to hold the Sonder group. YouTube caps the menu's
+ * size when it opens and never measures it again, which hid the group behind
+ * scrollbars; the menu is then moved back inside the window.
+ */
+export function fitMenu(
+    list: Element,
+    viewport: { width: number; height: number } = {
+        width: window.innerWidth,
+        height: window.innerHeight,
+    },
+): void {
+    const sheet = list.closest<HTMLElement>(
+        'ytd-menu-popup-renderer, yt-sheet-view-model',
+    );
+    const dropdown = list.closest<HTMLElement>('tp-yt-iron-dropdown');
+
+    sheet?.style.removeProperty('max-width');
+    sheet?.style.removeProperty('max-height');
+
+    if (!dropdown) {
+        return;
+    }
+
+    const box = dropdown.getBoundingClientRect();
+
+    if (box.bottom > viewport.height - MARGIN) {
+        dropdown.style.top = `${Math.max(MARGIN, viewport.height - box.height - MARGIN)}px`;
+    }
+
+    if (box.right > viewport.width - MARGIN) {
+        dropdown.style.left = `${Math.max(MARGIN, viewport.width - box.width - MARGIN)}px`;
+    }
+}
+
+/**
+ * Closes a YouTube menu. Its Polymer methods live in the page's world, out
+ * of a content script's reach, so this presses Escape like the owner would.
+ */
+export function closeMenu(list: Element): void {
+    list.closest('tp-yt-iron-dropdown')?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+            key: 'Escape',
+            code: 'Escape',
+            keyCode: 27,
+            bubbles: true,
+            composed: true,
+        }),
+    );
+}

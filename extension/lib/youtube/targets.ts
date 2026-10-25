@@ -65,7 +65,7 @@ function fromRenderer(card: Element): Target | null {
         kind: 'video',
         videoId,
         title: text(card.querySelector('#video-title')),
-        artists: text(card.querySelector('ytd-channel-name a')),
+        artists: text(card.querySelector('ytd-channel-name a, #byline')),
     };
 }
 
@@ -81,6 +81,7 @@ export function targetFromCard(card: Element): Target | null {
         case 'ytd-video-renderer':
         case 'ytd-compact-video-renderer':
         case 'ytd-rich-grid-media':
+        case 'ytd-playlist-panel-video-renderer':
             return fromRenderer(card);
         case 'ytd-rich-item-renderer': {
             const inner = card.querySelector(
@@ -115,4 +116,4 @@ export function targetFromWatchPage(doc: Document, url: URL): Target | null {
 
 /** The YouTube cards whose ⋮ menu gets the Sonder group. */
 export const CARD_SELECTOR =
-    'yt-lockup-view-model, ytd-video-renderer, ytd-compact-video-renderer, ytd-rich-item-renderer, ytd-rich-grid-media';
+    'yt-lockup-view-model, ytd-video-renderer, ytd-compact-video-renderer, ytd-rich-item-renderer, ytd-rich-grid-media, ytd-playlist-panel-video-renderer';

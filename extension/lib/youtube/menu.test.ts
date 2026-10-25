@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import cards from './fixtures/cards.html?raw';
-import { createMenuWatcher } from './menu';
+import { closeMenu, createMenuWatcher, fitMenu } from './menu';
 
 const POPUP = `
     <ytd-popup-container>
@@ -79,5 +79,54 @@ describe('menu watcher', () => {
 
         expect(mount).not.toHaveBeenCalled();
         expect(report).not.toHaveBeenCalled();
+    });
+
+    it('frees the menu to fit the Sonder group, inside the window', () => {
+        document.body.innerHTML = `
+            <tp-yt-iron-dropdown style="position: fixed; left: 1884px; top: 1154px">
+                <ytd-menu-popup-renderer style="max-width: 129px; max-height: 52px">
+                    <tp-yt-paper-listbox id="items"></tp-yt-paper-listbox>
+                </ytd-menu-popup-renderer>
+            </tp-yt-iron-dropdown>`;
+        const dropdown = document.querySelector<HTMLElement>(
+            'tp-yt-iron-dropdown',
+        )!;
+        const sheet = document.querySelector<HTMLElement>(
+            'ytd-menu-popup-renderer',
+        )!;
+        dropdown.getBoundingClientRect = () =>
+            ({
+                top: 1154,
+                left: 1884,
+                width: 242,
+                height: 220,
+                bottom: 1374,
+                right: 2126,
+            }) as DOMRect;
+
+        fitMenu(document.querySelector('#items')!, {
+            width: 2000,
+            height: 1216,
+        });
+
+        expect(sheet.style.maxWidth).toBe('');
+        expect(sheet.style.maxHeight).toBe('');
+        expect(dropdown.style.top).toBe('988px');
+        expect(dropdown.style.left).toBe('1750px');
+    });
+
+    it('closes the menu the way a press on Escape does', () => {
+        document.body.innerHTML = `
+            <tp-yt-iron-dropdown><tp-yt-paper-listbox id="items"></tp-yt-paper-listbox></tp-yt-iron-dropdown>`;
+        const pressed = vi.fn();
+        document
+            .querySelector('tp-yt-iron-dropdown')!
+            .addEventListener('keydown', (event) =>
+                pressed((event as KeyboardEvent).key),
+            );
+
+        closeMenu(document.querySelector('#items')!);
+
+        expect(pressed).toHaveBeenCalledWith('Escape');
     });
 });

@@ -46,6 +46,29 @@ describe('targetFromCard', () => {
         });
     });
 
+    it('reads a track of the mix being played', () => {
+        document.body.innerHTML = `
+            <ytd-playlist-panel-video-renderer>
+                <a id="wc-endpoint" href="/watch?v=3dm_5qWWDV8&amp;list=RDG_sBOsh-vyI&amp;index=4">
+                    <span id="video-title" title="Muse - Hysteria [Official Music Video]">
+                        Muse - Hysteria [Official Music Video]
+                    </span>
+                    <span id="byline">Muse</span>
+                </a>
+            </ytd-playlist-panel-video-renderer>`;
+
+        expect(
+            targetFromCard(
+                document.querySelector('ytd-playlist-panel-video-renderer')!,
+            ),
+        ).toEqual({
+            kind: 'video',
+            videoId: '3dm_5qWWDV8',
+            title: 'Muse - Hysteria [Official Music Video]',
+            artists: 'Muse',
+        });
+    });
+
     it('returns null for an unknown card', () => {
         expect(targetFromCard(card('ad'))).toBeNull();
     });

@@ -3,7 +3,7 @@ import { initFaro, reportIssue, trackAction } from '@/lib/faro';
 import { ask } from '@/lib/messages';
 import { runAction } from '@/lib/youtube/actions';
 import type { Action } from '@/lib/youtube/actions';
-import { createMenuWatcher } from '@/lib/youtube/menu';
+import { closeMenu, createMenuWatcher, fitMenu } from '@/lib/youtube/menu';
 import { fetchMix } from '@/lib/youtube/mix';
 import { pauseYouTube } from '@/lib/youtube/player';
 import { targetFromWatchPage } from '@/lib/youtube/targets';
@@ -45,14 +45,6 @@ function nextPopupList(timeout = 1500): Promise<Element | null> {
             resolve(find());
         }, timeout);
     });
-}
-
-function closeMenu(list: Element): void {
-    const dropdown = list.closest('tp-yt-iron-dropdown') as
-        | (Element & { close?: () => void })
-        | null;
-
-    dropdown?.close?.();
 }
 
 export default defineContentScript({
@@ -151,6 +143,7 @@ export default defineContentScript({
             });
             ui.mount();
             ui.shadowHost.setAttribute('data-sonder-group', '');
+            requestAnimationFrame(() => fitMenu(list));
         }
 
         const watcher = createMenuWatcher({
