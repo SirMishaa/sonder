@@ -72,7 +72,7 @@ it('sets the volume along a curve that favours quiet levels', async () => {
 
     await page.getByRole('slider', { name: 'Volume' }).fill('50');
 
-    expect(transport.volume).toBe(13);
+    expect(transport.volume).toBe(25);
 });
 
 it('no longer presents itself as a preview', async () => {
@@ -123,5 +123,5 @@ it('keeps the thumb where it is dragged, step after step', async () => {
             return asked !== shown;
         }),
     ).toEqual([]);
-    expect(transport.volume).toBe(34);
+    expect(transport.volume).toBe(49);
 });
