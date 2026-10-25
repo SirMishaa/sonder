@@ -8,7 +8,8 @@
         "lint": "NODE_OPTIONS='--experimental-strip-types' vp fmt resources/ extension/ && NODE_OPTIONS='--experimental-strip-types' vp lint --fix",
         "test:lint": "NODE_OPTIONS='--experimental-strip-types' vp fmt --check resources/ extension/ && NODE_OPTIONS='--experimental-strip-types' vp lint",
         "test:types": "tsc --noEmit",
-        "test": "vp test"
+        "test": "vp test",
+        "build:extension": "bun run --cwd extension build"
     },
     "dependencies": {
         "@inertiajs/vue3": "^3.9.1",
