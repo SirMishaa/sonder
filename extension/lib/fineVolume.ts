@@ -1,4 +1,8 @@
-export type GainGraph = { setGain(gain: number): void };
+export type GainGraph = {
+    setGain(gain: number): void;
+    /** Routes another video element through the same gain. */
+    follow?(video: HTMLVideoElement): void;
+};
 
 const START_TIMEOUT_MS = 1000;
 
@@ -43,10 +47,12 @@ export async function attachGain(doc: Document): Promise<GainGraph | null> {
  * Answers Sonder, the page embedding this YouTube player: says whether the
  * precise volume works and applies the gains it sends. Only messages from
  * Sonder's origin count. The graph is built once it succeeds; a failed
- * attempt is retried at the next hello.
+ * attempt is retried at the next hello. YouTube may swap its video element
+ * when playback starts, so any video that starts playing is routed too.
  */
 export function serveFineVolume(deps: {
     win: Window;
+    doc: Document;
     parentOrigin: string;
     attach: () => Promise<GainGraph | null>;
     reply: (message: unknown) => void;
@@ -85,8 +91,19 @@ export function serveFineVolume(deps: {
         }
     }
 
-    const listener = (event: MessageEvent) => void onMessage(event);
-    deps.win.addEventListener('message', listener);
+    async function onPlay(event: Event): Promise<void> {
+        if (graph !== null && event.target instanceof HTMLVideoElement) {
+            (await graph)?.follow?.(event.target);
+        }
+    }
 
-    return () => deps.win.removeEventListener('message', listener);
+    const listener = (event: MessageEvent) => void onMessage(event);
+    const playListener = (event: Event) => void onPlay(event);
+    deps.win.addEventListener('message', listener);
+    deps.doc.addEventListener('play', playListener, true);
+
+    return () => {
+        deps.win.removeEventListener('message', listener);
+        deps.doc.removeEventListener('play', playListener, true);
+    };
 }

@@ -3,11 +3,17 @@ import { serveFineVolume } from './fineVolume';
 
 const SONDER = 'https://sonder.test';
 
-function setup(graph: { setGain: (gain: number) => void } | null) {
+function setup(
+    graph: {
+        setGain: (gain: number) => void;
+        follow?: (video: HTMLVideoElement) => void;
+    } | null,
+) {
     const replies: unknown[] = [];
     const attach = vi.fn(async () => graph);
     const stop = serveFineVolume({
         win: window,
+        doc: document,
         parentOrigin: SONDER,
         attach,
         reply: (message) => replies.push(message),
@@ -69,6 +75,21 @@ describe('serveFineVolume', () => {
 
         expect(replies).toEqual([]);
         expect(attach).not.toHaveBeenCalled();
+        stop();
+    });
+
+    it('follows the video YouTube swaps in when playback starts', async () => {
+        const follow = vi.fn();
+        const { send, stop } = setup({ setGain: vi.fn(), follow });
+        send({ type: 'sonder:fine-volume-hello' });
+        await flush();
+        const swapped = document.createElement('video');
+        document.body.append(swapped);
+
+        swapped.dispatchEvent(new Event('play'));
+        await flush();
+
+        expect(follow).toHaveBeenCalledWith(swapped);
         stop();
     });
 });

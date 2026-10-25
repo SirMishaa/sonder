@@ -17,6 +17,7 @@ export default defineContentScript({
 
         serveFineVolume({
             win: window,
+            doc: document,
             parentOrigin: sonder,
             attach: () => attachGain(document),
             reply: (message) => window.parent.postMessage(message, sonder),
