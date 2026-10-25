@@ -570,5 +570,7 @@
     "Never used": "Jamais utilisée",
     "Revoke": "Révoquer",
     "No extension answered. Install it, then try again.": "Aucune extension n'a répondu. Installe-la, puis réessaie.",
-    "Sent from YouTube": "Envoyé depuis YouTube"
+    "Sent from YouTube": "Envoyé depuis YouTube",
+    "Precise volume, through the Sonder extension": "Volume précis, grâce à l'extension Sonder",
+    "Install the Sonder extension to go below 1 %": "Installe l'extension Sonder pour descendre sous 1 %"
 }

@@ -73,6 +73,8 @@ type PlayerState = {
     ready: boolean;
     unavailable: boolean;
     actualVideoId: string | null;
+    /** The Sonder extension makes volumes under 1 % audible. */
+    fineVolume: boolean;
 };
 
 type PersistedState = Pick<
@@ -158,6 +160,7 @@ export function createPlayer(deps: PlayerDeps) {
         ready: false,
         unavailable: false,
         actualVideoId: null,
+        fineVolume: false,
     });
     const debug = reactive<{ entries: DebugEntry[] }>({ entries: [] });
 
@@ -615,6 +618,7 @@ export function createPlayer(deps: PlayerDeps) {
         transport = next;
         state.ready = false;
         state.playing = false;
+        state.fineVolume = false;
         positionTrusted = false;
 
         next.on('ready', () => {
@@ -639,6 +643,10 @@ export function createPlayer(deps: PlayerDeps) {
         });
         next.on('state', onState);
         next.on('error', onError);
+        next.on('fineVolume', (available) => {
+            state.fineVolume = available;
+            log('info', `fine volume ${available ? 'on' : 'off'}`);
+        });
         next.on('autoplayBlocked', () => {
             stopPolling();
             state.playing = false;

@@ -17,6 +17,8 @@ export type TransportEvents = {
     state: [PlaybackState];
     error: [number];
     autoplayBlocked: [];
+    /** The Sonder extension can make the volume quieter than 1 %. */
+    fineVolume: [boolean];
 };
 
 export type LoadOptions = { startAt: number; autoplay: boolean };

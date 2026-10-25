@@ -1,21 +1,16 @@
 /**
  * The volume slider follows a square curve, like hearing does: its lower
- * half covers 1 to 25 %, where fine steps matter most. Rounding up gives
- * every whole percent its own stretch of the slider, so the quietest volume
- * only takes its first tenth. YouTube's player takes whole percents only,
- * so 1 % stays the quietest sound it can make.
+ * half covers 0 to 25 %, where fine steps matter most. Volumes are
+ * continuous; YouTube rounds them up to whole percents and the Sonder
+ * extension, when present, makes up the rest (see splitVolume).
  */
 export function positionToVolume(position: number): number {
-    if (position <= 0) {
-        return 0;
-    }
+    const clamped = Math.max(0, Math.min(position, 100));
 
-    return Math.min(100, Math.ceil(100 * (Math.min(position, 100) / 100) ** 2));
+    return 100 * (clamped / 100) ** 2;
 }
 
-/** Where a volume sits on the slider: the middle of its stretch. */
+/** Where a volume sits on the slider, from 0 to 100. */
 export function volumeToPosition(volume: number): number {
-    const clamped = Math.max(0, Math.min(volume, 100));
-
-    return clamped === 0 ? 0 : 100 * Math.sqrt((clamped - 0.5) / 100);
+    return 100 * Math.sqrt(Math.max(0, Math.min(volume, 100)) / 100);
 }

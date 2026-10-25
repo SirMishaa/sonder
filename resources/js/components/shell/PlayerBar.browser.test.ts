@@ -75,6 +75,32 @@ it('sets the volume along a curve that favours quiet levels', async () => {
     expect(transport.volume).toBe(25);
 });
 
+it('invites to install the extension for volumes under 1 %', async () => {
+    await mountBar();
+
+    await expect
+        .element(
+            page.getByRole('link', {
+                name: 'Install the Sonder extension to go below 1 %',
+            }),
+        )
+        .toBeVisible();
+});
+
+it('shows when the extension makes the volume precise', async () => {
+    const { transport } = await mountBar();
+
+    transport.announceFineVolume(true);
+
+    await expect
+        .element(
+            page.getByRole('img', {
+                name: 'Precise volume, through the Sonder extension',
+            }),
+        )
+        .toBeVisible();
+});
+
 it('no longer presents itself as a preview', async () => {
     await mountBar();
 
@@ -123,5 +149,5 @@ it('keeps the thumb where it is dragged, step after step', async () => {
             return asked !== shown;
         }),
     ).toEqual([]);
-    expect(transport.volume).toBe(49);
+    expect(transport.volume).toBeCloseTo(49);
 });

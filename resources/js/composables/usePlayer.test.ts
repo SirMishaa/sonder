@@ -478,6 +478,16 @@ describe('usePlayer', () => {
         ]);
     });
 
+    it('knows when the extension makes the volume precise', () => {
+        const { player, transport } = setup();
+
+        expect(player.state.fineVolume).toBe(false);
+
+        transport.announceFineVolume(true);
+
+        expect(player.state.fineVolume).toBe(true);
+    });
+
     it('puts a track queued first ahead of tracks already queued', () => {
         const { player } = setup();
         player.playTracks([track('a'), track('b')], 0, SOURCE);

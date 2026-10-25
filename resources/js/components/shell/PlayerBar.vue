@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+    AudioLines,
     ListMusic,
     Pause,
     Play,
@@ -12,11 +13,19 @@ import { computed, ref } from 'vue';
 import Artwork from '@/components/music/Artwork.vue';
 import { formatSeconds, usePlayer } from '@/composables/usePlayer';
 import { positionToVolume, volumeToPosition } from '@/lib/player/volumeCurve';
+import { edit as editExtensionConnection } from '@/routes/extension-connection';
 
 const player = usePlayer();
 
 const volume = computed(() => (player.state.muted ? 0 : player.state.volume));
 const draggedPosition = ref<number | null>(null);
+
+/** Whole percents, with one decimal under 10 % where the extension reaches. */
+const volumeLabel = computed(() =>
+    volume.value < 10 && volume.value > 0
+        ? volume.value.toFixed(1)
+        : String(Math.round(volume.value)),
+);
 
 /**
  * Where the volume thumb sits. Many positions share one whole-percent
@@ -188,9 +197,27 @@ const controlsDisabled = computed(
                 class="volume"
                 :style="{ '--v': `${volumePosition}%` }"
                 :aria-label="$t('Volume')"
-                :aria-valuetext="`${volume} %`"
+                :aria-valuetext="`${volumeLabel} %`"
                 @input="onVolume"
             />
+            <span
+                v-if="player.state.fineVolume"
+                role="img"
+                class="grid size-7 place-items-center text-dim"
+                :aria-label="$t('Precise volume, through the Sonder extension')"
+                :title="$t('Precise volume, through the Sonder extension')"
+            >
+                <AudioLines class="size-4" />
+            </span>
+            <a
+                v-else
+                :href="editExtensionConnection().url"
+                class="grid size-7 cursor-pointer place-items-center rounded-md text-faint transition-colors duration-150 hover:bg-raised hover:text-amber"
+                :aria-label="$t('Install the Sonder extension to go below 1 %')"
+                :title="$t('Install the Sonder extension to go below 1 %')"
+            >
+                <AudioLines class="size-4 opacity-60" />
+            </a>
             <button
                 type="button"
                 class="queue-button"

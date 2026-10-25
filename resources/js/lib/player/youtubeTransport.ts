@@ -1,3 +1,5 @@
+import { createFineVolumeLink, splitVolume } from '@/lib/player/fineVolume';
+import type { FineVolumeLink } from '@/lib/player/fineVolume';
 import { createEmitter } from '@/lib/player/transport';
 import type { PlaybackState, PlayerTransport } from '@/lib/player/transport';
 
@@ -13,6 +15,7 @@ type YouTubePlayer = {
     getCurrentTime(): number;
     getDuration(): number;
     getVideoData(): { video_id?: string } | undefined;
+    getIframe(): HTMLIFrameElement;
     destroy(): void;
 };
 
@@ -104,11 +107,15 @@ function loadIframeApi(): Promise<YouTubeNamespace> {
  * PlayerTransport over the YouTube IFrame Player API. youtube.com (never
  * youtube-nocookie.com) so the user's YouTube Premium session applies.
  * Commands before the player is ready are ignored; the store waits for
- * "ready" and cues the current track itself.
+ * "ready" and cues the current track itself. Volumes under 1 % go through
+ * the Sonder extension inside the player when it answers (fineVolume);
+ * it is asked again whenever playback starts, since it may only manage to
+ * start its audio then.
  */
 export function createYouTubeTransport(element: HTMLElement): PlayerTransport {
     const emitter = createEmitter();
     let player: YouTubePlayer | null = null;
+    let fine: FineVolumeLink | null = null;
     let destroyed = false;
 
     loadIframeApi().then(
@@ -132,10 +139,30 @@ export function createYouTubeTransport(element: HTMLElement): PlayerTransport {
                 events: {
                     onReady: () => {
                         player = instance;
+                        fine = createFineVolumeLink({
+                            frame: () => instance.getIframe().contentWindow,
+                            listen: (listener) => {
+                                window.addEventListener('message', listener);
+
+                                return () =>
+                                    window.removeEventListener(
+                                        'message',
+                                        listener,
+                                    );
+                            },
+                        });
+                        fine.onChange((available) =>
+                            emitter.emit('fineVolume', available),
+                        );
+                        fine.hello();
                         emitter.emit('ready');
                     },
                     onStateChange: ({ data }) => {
                         const state = STATES[data];
+
+                        if (state === 'playing' && !fine?.available()) {
+                            fine?.hello();
+                        }
 
                         if (state) {
                             emitter.emit('state', state);
@@ -164,7 +191,12 @@ export function createYouTubeTransport(element: HTMLElement): PlayerTransport {
         play: () => player?.playVideo(),
         pause: () => player?.pauseVideo(),
         seek: (seconds) => player?.seekTo(seconds, true),
-        setVolume: (volume) => player?.setVolume(volume),
+        setVolume(volume) {
+            const { playerVolume, gain } = splitVolume(volume);
+
+            player?.setVolume(playerVolume);
+            fine?.setGain(gain);
+        },
         setMuted: (muted) => (muted ? player?.mute() : player?.unMute()),
         currentTime: () => player?.getCurrentTime() ?? 0,
         duration: () => player?.getDuration() ?? 0,
@@ -172,6 +204,8 @@ export function createYouTubeTransport(element: HTMLElement): PlayerTransport {
         on: emitter.on,
         destroy() {
             destroyed = true;
+            fine?.destroy();
+            fine = null;
             player?.destroy();
             player = null;
             emitter.clear();

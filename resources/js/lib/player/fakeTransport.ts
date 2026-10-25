@@ -56,6 +56,10 @@ export class FakeTransport implements PlayerTransport {
         this.position = seconds;
     }
 
+    announceFineVolume(available: boolean): void {
+        this.emitter.emit('fineVolume', available);
+    }
+
     setVolume(volume: number): void {
         this.volume = volume;
     }
