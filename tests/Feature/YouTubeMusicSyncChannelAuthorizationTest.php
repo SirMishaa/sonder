@@ -94,3 +94,17 @@ it('lets users follow only their own library enrichment', function (): void {
         'socket_id' => '123.456',
     ])->assertForbidden();
 });
+
+it('lets users follow only their own player commands', function (): void {
+    $owner = User::factory()->create();
+
+    $this->actingAs($owner)->postJson('/broadcasting/auth', [
+        'channel_name' => 'private-player.'.$owner->id,
+        'socket_id' => '123.456',
+    ])->assertOk();
+
+    $this->actingAs(User::factory()->create())->postJson('/broadcasting/auth', [
+        'channel_name' => 'private-player.'.$owner->id,
+        'socket_id' => '123.456',
+    ])->assertForbidden();
+});

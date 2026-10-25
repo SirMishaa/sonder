@@ -13,3 +13,5 @@ Broadcast::channel('youtube-music-sync.{syncId}', function (User $user, string $
 });
 
 Broadcast::channel('library-enrichment.{userId}', fn (User $user, string $userId): bool => $user->id === $userId);
+
+Broadcast::channel('player.{userId}', fn (User $user, string $userId): bool => $user->id === $userId);

@@ -44,6 +44,20 @@ artistCount: number,
 totalHours: number,
 topArtists: App.Data.ArtistTallyData[],
 };
+export type PlayerCommandData = {
+action: App.Enums.PlayerCommandAction,
+kind: App.Enums.PlayerCommandKind,
+listId: string | null,
+title: string,
+items: App.Data.PlayerCommandItemData[],
+};
+export type PlayerCommandItemData = {
+videoId: string,
+title: string,
+artists: string,
+durationSeconds: number,
+thumbnailUrl: string | null,
+};
 export type PlayerQueueData = {
 tracks: App.Data.QueueTrackData[],
 index: number,
@@ -139,6 +153,8 @@ export type ListenOrigin = 'playlist' | 'search' | 'suggestion' | 'queue' | 'aut
 export type Locale = 'fr_BE' | 'en_US';
 export type LookupOutcome = 'found' | 'not_found' | 'failed';
 export type MetadataSource = 'credits_fm' | 'musicbrainz' | 'lastfm' | 'youtube_music';
+export type PlayerCommandAction = 'play_now' | 'play_next' | 'enqueue';
+export type PlayerCommandKind = 'video' | 'mix';
 export type Provider = 'youtube_music';
 export type ProviderErrorCode = 'credentials_rejected' | 'unavailable' | 'rate_limited';
 export type ResolutionMethod = 'credits_fm' | 'musicbrainz_search' | 'lastfm';

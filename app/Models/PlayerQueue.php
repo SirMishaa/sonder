@@ -35,6 +35,11 @@ final class PlayerQueue extends Model
 
     use HasUuids;
 
+    /**
+     * The browser keeps a window of this many tracks around the current one.
+     */
+    public const int MAX_TRACKS = 300;
+
     protected $fillable = [
         'user_id',
         'tracks',

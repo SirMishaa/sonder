@@ -5,17 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Enums\ListenOrigin;
+use App\Models\PlayerQueue;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 final class UpdatePlayerQueueRequest extends FormRequest
 {
-    /**
-     * The browser keeps a window of this many tracks around the current one.
-     */
-    public const int MAX_TRACKS = 300;
-
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
@@ -24,7 +20,7 @@ final class UpdatePlayerQueueRequest extends FormRequest
         $trackCount = is_array($this->input('tracks')) ? count($this->input('tracks')) : 0;
 
         return [
-            'tracks' => ['present', 'array', 'max:'.self::MAX_TRACKS],
+            'tracks' => ['present', 'array', 'max:'.PlayerQueue::MAX_TRACKS],
             'tracks.*.key' => ['required', 'string', 'max:128', 'distinct'],
             'tracks.*.videoId' => ['nullable', 'string', 'max:11', 'regex:/^[A-Za-z0-9_-]+$/'],
             'tracks.*.title' => ['required', 'string', 'max:255'],
