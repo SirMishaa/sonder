@@ -1,0 +1,155 @@
+{
+    "__inputs": [
+        {
+            "name": "DS_TRACES",
+            "label": "traces",
+            "type": "datasource",
+            "pluginId": "tempo",
+            "pluginName": "Tempo"
+        }
+    ],
+    "title": "Sonder extension",
+    "uid": "sonder-extension",
+    "tags": ["sonder", "extension"],
+    "schemaVersion": 39,
+    "time": {
+        "from": "now-24h",
+        "to": "now"
+    },
+    "refresh": "",
+    "description": "Actions sent from the browser extension, read from Sonder's server spans (sonder.client = extension). Import on the self-hosted Grafana and pick its Tempo data source.",
+    "panels": [
+        {
+            "id": 1,
+            "type": "timeseries",
+            "title": "Actions de l'extension",
+            "description": "Commandes et recherches reçues par Sonder, par action.",
+            "datasource": {
+                "type": "tempo",
+                "uid": "${DS_TRACES}"
+            },
+            "gridPos": {
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "tempo",
+                        "uid": "${DS_TRACES}"
+                    },
+                    "queryType": "traceql",
+                    "query": "{ resource.service.name = \"sonder\" && span.sonder.client = \"extension\" } | count_over_time() by (span.sonder.extension.action)",
+                    "metricsQueryType": "range"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "options": {}
+        },
+        {
+            "id": 2,
+            "type": "timeseries",
+            "title": "Erreurs par action",
+            "description": "Requêtes de l'extension en erreur côté serveur.",
+            "datasource": {
+                "type": "tempo",
+                "uid": "${DS_TRACES}"
+            },
+            "gridPos": {
+                "x": 12,
+                "y": 0,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "tempo",
+                        "uid": "${DS_TRACES}"
+                    },
+                    "queryType": "traceql",
+                    "query": "{ resource.service.name = \"sonder\" && span.sonder.client = \"extension\" && status = error } | count_over_time() by (span.sonder.extension.action)",
+                    "metricsQueryType": "range"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "options": {}
+        },
+        {
+            "id": 3,
+            "type": "timeseries",
+            "title": "Durée p95 par action",
+            "description": "Temps de réponse de Sonder aux appels de l'extension.",
+            "datasource": {
+                "type": "tempo",
+                "uid": "${DS_TRACES}"
+            },
+            "gridPos": {
+                "x": 0,
+                "y": 8,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "tempo",
+                        "uid": "${DS_TRACES}"
+                    },
+                    "queryType": "traceql",
+                    "query": "{ resource.service.name = \"sonder\" && span.sonder.client = \"extension\" } | quantile_over_time(duration, .95) by (span.sonder.extension.action)",
+                    "metricsQueryType": "range"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "options": {}
+        },
+        {
+            "id": 4,
+            "type": "timeseries",
+            "title": "Vidéos ou mix",
+            "description": "Ce qui est envoyé : une vidéo ou les titres d'un mix.",
+            "datasource": {
+                "type": "tempo",
+                "uid": "${DS_TRACES}"
+            },
+            "gridPos": {
+                "x": 12,
+                "y": 8,
+                "w": 12,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "tempo",
+                        "uid": "${DS_TRACES}"
+                    },
+                    "queryType": "traceql",
+                    "query": "{ resource.service.name = \"sonder\" && span.sonder.client = \"extension\" } | count_over_time() by (span.sonder.extension.kind)",
+                    "metricsQueryType": "range"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "options": {}
+        }
+    ]
+}

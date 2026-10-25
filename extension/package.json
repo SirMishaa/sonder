@@ -16,6 +16,7 @@
         "test": "vitest run"
     },
     "dependencies": {
+        "@grafana/faro-web-sdk": "^2.13.0",
         "vue": "catalog:"
     },
     "devDependencies": {

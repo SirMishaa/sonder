@@ -1,5 +1,5 @@
 import { createApp, h, ref } from 'vue';
-import { reportIssue } from '@/lib/faro';
+import { initFaro, reportIssue, trackAction } from '@/lib/faro';
 import { ask } from '@/lib/messages';
 import { runAction } from '@/lib/youtube/actions';
 import type { Action } from '@/lib/youtube/actions';
@@ -59,6 +59,12 @@ export default defineContentScript({
     matches: ['*://www.youtube.com/*'],
     cssInjectionMode: 'ui',
     async main(ctx) {
+        initFaro({
+            url: import.meta.env.WXT_FARO_URL,
+            app: 'sonder-extension',
+            version: browser.runtime.getManifest().version,
+        });
+
         const toastMessage = ref<string | null>(null);
         let toastTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -89,7 +95,25 @@ export default defineContentScript({
         const actions = {
             run: (action: Action, target: Target) =>
                 runAction(action, target, {
-                    send: (body) => ask({ type: 'command', body }),
+                    send: async (body) => {
+                        const result = await ask({ type: 'command', body });
+
+                        if (result.ok) {
+                            trackAction({
+                                action: body.action,
+                                kind: body.kind,
+                                items: body.items.length,
+                                traceparent: result.value.traceparent,
+                            });
+                        } else {
+                            reportIssue('action.failed', {
+                                action: body.action,
+                                error: result.error,
+                            });
+                        }
+
+                        return result;
+                    },
                     loadMix: (listId, seedVideoId) =>
                         fetchMix(listId, seedVideoId, document),
                     pause: () => pauseYouTube(),
