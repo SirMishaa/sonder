@@ -1,15 +1,17 @@
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'wxt';
-
-const sonderUrl = process.env.WXT_SONDER_URL ?? 'https://sonder.mishaa.dev';
+import { matchPattern, sonderUrlFor } from './lib/sonderUrl';
 
 export default defineConfig({
     modules: ['@wxt-dev/module-vue'],
     vite: () => ({ plugins: [tailwindcss()] }),
-    manifest: {
+    manifest: ({ mode }) => ({
         name: 'Sonder',
         description: 'Send YouTube videos and mixes to Sonder.',
         permissions: ['storage', 'tabs'],
-        host_permissions: ['*://*.youtube.com/*', `${sonderUrl}/*`],
-    },
+        host_permissions: [
+            '*://*.youtube.com/*',
+            matchPattern(sonderUrlFor(mode, process.env.WXT_SONDER_URL)),
+        ],
+    }),
 });

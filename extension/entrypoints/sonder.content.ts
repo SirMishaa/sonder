@@ -1,4 +1,4 @@
-import { SONDER_URL } from '@/lib/config';
+import { SONDER_PAGES } from '@/lib/config';
 import { listenForToken } from '@/lib/handoff';
 import { ask } from '@/lib/messages';
 
@@ -7,7 +7,7 @@ import { ask } from '@/lib/messages';
  * a full load, and hands the token it receives to the background worker.
  */
 export default defineContentScript({
-    matches: [`${SONDER_URL}/*`],
+    matches: [SONDER_PAGES],
     main() {
         listenForToken(window, (token) => ask({ type: 'token', token }));
     },
