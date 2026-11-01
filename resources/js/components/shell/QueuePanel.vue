@@ -196,6 +196,14 @@ watch(
                         })
                     }}
                 </span>
+                <button
+                    v-if="player.upNext.value.length > 0"
+                    type="button"
+                    class="ml-auto shrink-0 text-[12.5px] font-medium text-faint transition-colors hover:text-dim"
+                    @click="player.clearUpcoming()"
+                >
+                    {{ $t('Clear') }}
+                </button>
             </h2>
             <p
                 v-if="visible.length > 1"

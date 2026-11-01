@@ -820,6 +820,11 @@ export function createPlayer(deps: PlayerDeps) {
         }
     }
 
+    /** Empties the up-next list, keeping the current track playing. */
+    function clearUpcoming(): void {
+        state.queue = state.queue.slice(0, state.index + 1);
+    }
+
     function jumpTo(index: number): void {
         if (index < 0 || index >= state.queue.length) {
             return;
@@ -872,15 +877,23 @@ export function createPlayer(deps: PlayerDeps) {
         loadIndex(state.index - 1, 'queue');
     }
 
-    function toggle(): void {
-        if (!current.value || !transport || !state.ready) {
-            return;
-        }
-
-        if (state.playing) {
-            transport.pause();
-        } else {
+    function play(): void {
+        if (current.value && transport && state.ready && !state.playing) {
             transport.play();
+        }
+    }
+
+    function pause(): void {
+        if (transport && state.ready && state.playing) {
+            transport.pause();
+        }
+    }
+
+    function toggle(): void {
+        if (state.playing) {
+            pause();
+        } else {
+            play();
         }
     }
 
@@ -947,11 +960,14 @@ export function createPlayer(deps: PlayerDeps) {
         queueFirst,
         traceNextSave,
         unqueue,
+        clearUpcoming,
         bringUpNext,
         moveUpcoming,
         jumpTo,
         next,
         previous,
+        play,
+        pause,
         toggle,
         seek,
         setVolume,

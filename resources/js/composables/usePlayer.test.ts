@@ -555,6 +555,18 @@ describe('usePlayer', () => {
         expect(player.upNext.value.map((item) => item.videoId)).toEqual(['b']);
     });
 
+    it('clears the up-next list without stopping the current track', () => {
+        const { player, transport } = setup();
+        player.playTracks([track('a'), track('b'), track('c')], 0, SOURCE);
+        player.queueNext(track('x'), 4, SOURCE);
+
+        player.clearUpcoming();
+
+        expect(player.upNext.value).toEqual([]);
+        expect(player.current.value?.videoId).toBe('a');
+        expect(transport.videoId()).toBe('a');
+    });
+
     it('moves an upcoming track to play next without interrupting', () => {
         const { player, transport } = setup();
         player.playTracks(
