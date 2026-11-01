@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { usePlayer } from '@/composables/usePlayer';
+import { bindMediaSession } from '@/lib/player/mediaSession';
 import type { PlayerTransport } from '@/lib/player/transport';
 import { createYouTubeTransport } from '@/lib/player/youtubeTransport';
 
@@ -20,10 +21,12 @@ const props = withDefaults(
 const player = usePlayer();
 const mount = ref<HTMLDivElement | null>(null);
 let transport: PlayerTransport | null = null;
+let unbindMediaSession: (() => void) | null = null;
 
 onMounted(() => {
     window.addEventListener('pagehide', player.handlePageHide);
     player.hydrate(props.savedQueue);
+    unbindMediaSession = bindMediaSession(player);
 
     if (mount.value) {
         transport = props.createTransport(mount.value);
@@ -33,6 +36,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     window.removeEventListener('pagehide', player.handlePageHide);
+    unbindMediaSession?.();
     transport?.destroy();
 });
 </script>
