@@ -13,11 +13,20 @@ function prefersReducedMotion(): boolean {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/** The open queue panel's heading when visible, else the player bar button. */
+/**
+ * The open queue's heading when visible, else the player's up-next control
+ * (the player bar button, or the mini player's artwork on a phone).
+ */
 function landingTarget(): HTMLElement | null {
+    const shown = (selector: string): HTMLElement | undefined =>
+        [...document.querySelectorAll<HTMLElement>(selector)].find(
+            (element) => element.getClientRects().length > 0,
+        );
+
     return (
-        document.querySelector<HTMLElement>('[data-queue-target="panel"]') ??
-        document.querySelector<HTMLElement>('[data-queue-target]')
+        shown('[data-queue-target="panel"]') ??
+        shown('[data-queue-target]') ??
+        null
     );
 }
 

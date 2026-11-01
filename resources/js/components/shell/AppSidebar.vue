@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { useLocalStorage } from '@vueuse/core';
+import { useLocalStorage, useMediaQuery } from '@vueuse/core';
 import {
     BarChart3,
     ListFilter,
@@ -40,7 +40,20 @@ const { toast } = useToast();
 const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 const { getInitials } = useInitials();
 
-const collapsed = useLocalStorage('sonder.sidebar.collapsed', false);
+const collapsedByChoice = useLocalStorage('sonder.sidebar.collapsed', false);
+const isNarrow = useMediaQuery('(max-width: 1279px)');
+
+/**
+ * Folded by choice, or while the queue panel is open on a screen too narrow
+ * for both beside the content.
+ */
+const collapsed = computed({
+    get: () =>
+        collapsedByChoice.value || (isNarrow.value && player.state.queueOpen),
+    set: (value: boolean) => {
+        collapsedByChoice.value = value;
+    },
+});
 
 const library = computed(() => page.props.library);
 const user = computed(() => page.props.auth.user);

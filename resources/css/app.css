@@ -130,6 +130,12 @@
         height: 100%;
     }
 
+    /* No double-tap zoom: a second tap on a track replaces what is playing. */
+    html {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+
     body {
         @apply text-foreground;
         font-variant-numeric: tabular-nums;
@@ -227,6 +233,27 @@
         background-image: var(--grain);
         opacity: 0.2;
         mix-blend-mode: overlay;
+    }
+
+    /* Full-screen sheet on phones (now playing, up next). */
+    .sheet {
+        transform: translateY(var(--drag, 0px));
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        transition: transform 320ms var(--ease-out-quint);
+    }
+
+    .sheet.is-dragging {
+        transition: none;
+    }
+
+    .sheet-enter-from,
+    .sheet-leave-to {
+        transform: translateY(100%);
+    }
+
+    .sheet-leave-active {
+        transition-duration: 260ms;
     }
 
     .accent-fill {

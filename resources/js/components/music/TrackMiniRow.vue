@@ -39,7 +39,9 @@ defineEmits<{
         >
             <span
                 class="transition-opacity duration-150"
-                :class="{ 'group-hover:opacity-0': sortable }"
+                :class="{
+                    'group-hover:opacity-0 pointer-coarse:opacity-0': sortable,
+                }"
                 >{{ number }}</span
             >
             <span
@@ -160,6 +162,19 @@ defineEmits<{
 .mini-row:hover .remove,
 .mini-row.is-selected .remove {
     opacity: 1;
+}
+
+/* Touch has no hover: the grip and remove stay visible, at finger size. */
+@media (pointer: coarse) {
+    .mini-row .grip {
+        opacity: 1;
+    }
+
+    .remove {
+        width: 36px;
+        height: 36px;
+        opacity: 1;
+    }
 }
 
 .remove:hover {

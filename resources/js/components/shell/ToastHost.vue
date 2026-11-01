@@ -6,7 +6,7 @@ const { toasts } = useToast();
 
 <template>
     <div
-        class="pointer-events-none absolute inset-x-0 bottom-28 z-40 flex justify-center"
+        class="pointer-events-none absolute inset-x-0 bottom-28 z-40 flex justify-center max-lg:fixed max-lg:bottom-[calc(140px+env(safe-area-inset-bottom))]"
         aria-live="polite"
     >
         <TransitionGroup name="toast">
