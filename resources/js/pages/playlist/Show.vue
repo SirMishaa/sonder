@@ -122,7 +122,7 @@ useShortcuts({ r: refresh });
             />
         </div>
 
-        <div class="relative max-w-[1480px] px-8 pt-8">
+        <div class="relative max-w-[1480px] px-4 pt-6 md:px-8 md:pt-8">
             <Alert
                 v-if="syncState.removedAt"
                 variant="destructive"
@@ -253,10 +253,10 @@ useShortcuts({ r: refresh });
                     <span class="head" role="columnheader">{{
                         $t('Title')
                     }}</span>
-                    <span class="head hidden md:flex" role="columnheader">{{
+                    <span class="head from-md" role="columnheader">{{
                         $t('Album')
                     }}</span>
-                    <span class="head hidden lg:flex" role="columnheader">{{
+                    <span class="head from-lg" role="columnheader">{{
                         $t('Genre')
                     }}</span>
                     <span class="head justify-end" role="columnheader">{{
@@ -325,10 +325,7 @@ useShortcuts({ r: refresh });
                             >
                         </span>
                     </span>
-                    <span
-                        class="cell relative hidden text-dim md:flex"
-                        role="cell"
-                    >
+                    <span class="cell from-md relative text-dim" role="cell">
                         <Waveform
                             v-if="isCurrent(index)"
                             :seed="track.title"
@@ -338,7 +335,7 @@ useShortcuts({ r: refresh });
                         <span class="relative truncate">{{ track.album }}</span>
                     </span>
                     <span
-                        class="cell hidden gap-1 overflow-hidden lg:flex"
+                        class="cell from-lg gap-1 overflow-hidden"
                         role="cell"
                     >
                         <span
@@ -506,6 +503,28 @@ useShortcuts({ r: refresh });
     padding: 7px 10px;
     border-bottom: 1px solid oklch(0.285 0.012 60 / 0.55);
     transition: background 140ms;
+}
+
+/* Scoped display rules outrank Tailwind's `hidden`, so columns hide here. */
+.head.from-md,
+.cell.from-md,
+.head.from-lg,
+.cell.from-lg {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .head.from-md,
+    .cell.from-md {
+        display: flex;
+    }
+}
+
+@media (min-width: 1024px) {
+    .head.from-lg,
+    .cell.from-lg {
+        display: flex;
+    }
 }
 
 .track:hover .cell,

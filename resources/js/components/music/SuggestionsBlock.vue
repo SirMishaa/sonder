@@ -131,10 +131,18 @@ useShortcuts({
             class="flex items-center gap-2.5 border-b border-line px-3.5 py-2.5"
         >
             <Sparkles class="size-[18px] text-amber" />
-            <h2 class="font-bold">{{ $t('Would fit this playlist') }}</h2>
-            <span class="text-[12.5px] font-medium text-faint">{{
-                $tChoice(':count never played|:count never played', remaining)
-            }}</span>
+            <h2 class="min-w-0 truncate font-bold">
+                {{ $t('Would fit this playlist') }}
+            </h2>
+            <span
+                class="shrink-0 text-[12.5px] font-medium whitespace-nowrap text-faint"
+                >{{
+                    $tChoice(
+                        ':count never played|:count never played',
+                        remaining,
+                    )
+                }}</span
+            >
             <span
                 class="ml-auto hidden items-center gap-1.5 text-xs font-medium text-faint md:flex"
             >
@@ -147,7 +155,7 @@ useShortcuts({
         <div
             v-for="(suggestion, index) in suggestions"
             :key="suggestion.key"
-            class="row grid grid-cols-[36px_minmax(0,1.2fr)_minmax(0,1.6fr)_auto] items-center gap-3.5 px-3.5 py-2"
+            class="row grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3.5 py-2 md:grid-cols-[36px_minmax(0,1.2fr)_minmax(0,1.6fr)_auto] md:gap-3.5"
             :class="{
                 'is-selected': index === selected,
                 'is-leaving': suggestion.leaving,
@@ -155,7 +163,7 @@ useShortcuts({
         >
             <button
                 type="button"
-                class="group size-9 rounded disabled:opacity-60"
+                class="group row-span-2 size-9 rounded disabled:opacity-60 md:row-span-1"
                 :aria-label="
                     $t('Play :title', { title: suggestion.track.title })
                 "
@@ -180,7 +188,7 @@ useShortcuts({
                 </p>
             </div>
             <div
-                class="flex flex-wrap items-center gap-1.5 text-[12.5px] font-medium text-faint"
+                class="col-start-2 row-start-2 flex min-w-0 flex-wrap items-center gap-1.5 text-[12.5px] font-medium text-faint md:col-start-auto md:row-start-auto"
             >
                 <template v-if="suggestion.near">
                     {{ $t('near') }}
@@ -196,7 +204,7 @@ useShortcuts({
                     {{ tag }}
                 </span>
             </div>
-            <div class="flex gap-1.5">
+            <div class="row-span-2 flex gap-1.5 md:row-span-1">
                 <button
                     type="button"
                     class="action add"

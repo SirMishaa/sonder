@@ -21,7 +21,7 @@ const removedCount = computed(
 <template>
     <Head :title="$t('Library')" />
 
-    <div class="max-w-[1480px] px-8 pt-8">
+    <div class="max-w-[1480px] px-4 pt-6 md:px-8 md:pt-8">
         <h1
             class="reveal text-[30px] leading-[1.1] font-extrabold tracking-[-0.03em]"
         >
@@ -46,7 +46,7 @@ const removedCount = computed(
         </p>
 
         <div
-            class="grid grid-cols-[repeat(auto-fill,minmax(168px,1fr))] gap-x-4 gap-y-7"
+            class="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-[repeat(auto-fill,minmax(168px,1fr))] sm:gap-x-4 sm:gap-y-7"
         >
             <Link
                 v-for="(playlist, index) in playlists"

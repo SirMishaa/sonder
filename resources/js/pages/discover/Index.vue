@@ -81,7 +81,7 @@ function playFind(find: App.Data.SampledTrackData): void {
     <Head :title="$t('Discover')" />
 
     <div
-        class="grid max-w-[1480px] gap-10 px-8 pt-8 xl:grid-cols-[minmax(0,1fr)_320px]"
+        class="grid max-w-[1480px] gap-10 px-4 pt-6 md:px-8 md:pt-8 xl:grid-cols-[minmax(0,1fr)_320px]"
         :class="{ 'xl:grid-cols-1': player.state.queueOpen }"
     >
         <section class="min-w-0">
@@ -114,7 +114,7 @@ function playFind(find: App.Data.SampledTrackData): void {
             <Deferred data="freshFinds">
                 <template #fallback>
                     <div
-                        class="mt-6 mb-2 grid grid-cols-3 gap-4 lg:grid-cols-6"
+                        class="mt-6 mb-2 grid grid-cols-3 gap-x-3 gap-y-5 md:gap-4 lg:grid-cols-6"
                     >
                         <div v-for="card in 6" :key="card">
                             <div class="skeleton aspect-square" />
@@ -126,7 +126,7 @@ function playFind(find: App.Data.SampledTrackData): void {
 
                 <div
                     v-if="freshFinds?.length"
-                    class="mt-6 mb-2 grid grid-cols-3 gap-4 lg:grid-cols-6"
+                    class="mt-6 mb-2 grid grid-cols-3 gap-x-3 gap-y-5 md:gap-4 lg:grid-cols-6"
                 >
                     <button
                         v-for="(find, index) in freshFinds"
@@ -183,19 +183,22 @@ function playFind(find: App.Data.SampledTrackData): void {
                 class="reveal mb-3.5 flex items-baseline gap-2.5"
                 style="--i: 8"
             >
-                <h2 class="text-sm font-bold">{{ $t('Jump back in') }}</h2>
-                <span class="text-[12.5px] font-medium text-faint">{{
-                    $t('recently changed')
-                }}</span>
+                <h2 class="shrink-0 text-sm font-bold">
+                    {{ $t('Jump back in') }}
+                </h2>
+                <span
+                    class="truncate text-[12.5px] font-medium text-faint max-sm:hidden"
+                    >{{ $t('recently changed') }}</span
+                >
                 <Link
                     :href="PlaylistController.index()"
-                    class="ml-auto text-[12.5px] font-semibold text-dim hover:text-paper"
+                    class="ml-auto shrink-0 text-[12.5px] font-semibold text-dim hover:text-paper"
                 >
                     {{ $t('All playlists →') }}
                 </Link>
             </div>
             <div
-                class="grid grid-cols-[repeat(auto-fill,minmax(156px,1fr))] gap-x-4 gap-y-6"
+                class="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-[repeat(auto-fill,minmax(156px,1fr))] sm:gap-x-4"
             >
                 <Link
                     v-for="(playlist, index) in recentPlaylists"
