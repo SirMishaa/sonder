@@ -14,6 +14,7 @@ import type { Listen } from '@/lib/player/listenTracker';
 import { createQueueSync } from '@/lib/player/queueSync';
 import type { QueueSnapshot, QueueSync } from '@/lib/player/queueSync';
 import type { PlaybackState, PlayerTransport } from '@/lib/player/transport';
+import { shuffled } from '@/lib/utils';
 
 /**
  * The player store: queue, current track and listening history, driving a
@@ -673,6 +674,35 @@ export function createPlayer(deps: PlayerDeps) {
             playable.findIndex(({ position }) => position === startAt),
         );
 
+        replaceQueue(playable, start, source, origin);
+    }
+
+    /**
+     * Plays the available tracks in a random order. Each queued track keeps
+     * its position in `tracks`, so isCurrentTrack still finds its row.
+     */
+    function playShuffled(
+        tracks: App.Data.TrackData[],
+        source: QueueSource,
+        origin: App.Enums.ListenOrigin = 'playlist',
+    ): void {
+        const playable = shuffled(
+            tracks
+                .map((track, position) => ({ track, position }))
+                .filter(({ track }) => track.isAvailable),
+        );
+
+        if (playable.length > 0) {
+            replaceQueue(playable, 0, source, origin);
+        }
+    }
+
+    function replaceQueue(
+        playable: { track: App.Data.TrackData; position: number }[],
+        start: number,
+        source: QueueSource,
+        origin: App.Enums.ListenOrigin,
+    ): void {
         endListen('replaced');
         state.queue = playable.map(({ track, position }) =>
             toQueueTrack(track, position, source.playlistId),
@@ -955,6 +985,7 @@ export function createPlayer(deps: PlayerDeps) {
         attachTransport,
         hydrate,
         playTracks,
+        playShuffled,
         playNext,
         queueNext,
         queueFirst,

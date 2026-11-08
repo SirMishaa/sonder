@@ -545,6 +545,35 @@ describe('usePlayer', () => {
         expect(player.isCurrentTrack('PL1', track('c'), 2)).toBe(false);
     });
 
+    it('keeps list positions when shuffling, so the playing row stays recognized', () => {
+        const { player } = setup();
+        const tracks = [
+            track('a'),
+            track('b', { isAvailable: false }),
+            track('c'),
+            track('d'),
+        ];
+
+        player.playShuffled(tracks, SOURCE);
+
+        expect(player.state.queue.map((item) => item.videoId)).toHaveLength(3);
+        expect(player.state.queue.map((item) => item.videoId)).toEqual(
+            expect.arrayContaining(['a', 'c', 'd']),
+        );
+
+        for (let step = 0; step < 3; step++) {
+            const position = tracks.findIndex(
+                (candidate) =>
+                    candidate.videoId === player.current.value?.videoId,
+            );
+
+            expect(
+                player.isCurrentTrack('PL1', tracks[position], position),
+            ).toBe(true);
+            player.next();
+        }
+    });
+
     it('takes back a queued track that has not played yet', () => {
         const { player } = setup();
         player.playTracks([track('a'), track('b')], 0, SOURCE);

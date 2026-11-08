@@ -8,7 +8,6 @@ import TrackRow from '@/components/music/TrackRow.vue';
 import { usePlayer } from '@/composables/usePlayer';
 import type { QueueSource } from '@/composables/usePlayer';
 import { useTrackTap } from '@/composables/useTrackTap';
-import { shuffled } from '@/lib/utils';
 
 /**
  * The top artist of a search as a block tinted by its own picture: portrait,
@@ -43,7 +42,7 @@ function play(): void {
 }
 
 function shuffle(): void {
-    player.playTracks(shuffled(props.tracks), 0, props.source, 'search');
+    player.playShuffled(props.tracks, props.source, 'search');
 }
 
 function playRow(index: number): void {

@@ -2,7 +2,6 @@ import { computed } from 'vue';
 import { usePlayer } from '@/composables/usePlayer';
 import type { QueueSource } from '@/composables/usePlayer';
 import { useTrackTap } from '@/composables/useTrackTap';
-import { shuffled } from '@/lib/utils';
 
 /**
  * Playback wiring for a page's track list: play from a track, shuffle the
@@ -35,7 +34,7 @@ export function useTrackListPlayback(
     }
 
     function shuffle(): void {
-        player.playTracks(shuffled(tracks()), 0, source(), origin);
+        player.playShuffled(tracks(), source(), origin);
     }
 
     function onTrackTap(event: MouseEvent, index: number): void {

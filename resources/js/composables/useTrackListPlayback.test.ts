@@ -3,6 +3,7 @@ import { useTrackListPlayback } from '@/composables/useTrackListPlayback';
 
 const player = vi.hoisted(() => ({
     playTracks: vi.fn(),
+    playShuffled: vi.fn(),
     isCurrentTrack: vi.fn(() => false),
 }));
 const tap = vi.hoisted(() => vi.fn());
@@ -52,7 +53,7 @@ describe('useTrackListPlayback', () => {
         );
     });
 
-    it('shuffles a copy of the list and starts at its first track', () => {
+    it('shuffles the whole list with the given origin', () => {
         const tracks = [track('a'), track('b'), track('c')];
         const playback = useTrackListPlayback(
             () => tracks,
@@ -62,11 +63,11 @@ describe('useTrackListPlayback', () => {
 
         playback.shuffle();
 
-        const [queued, start] = player.playTracks.mock.calls[0];
-        expect(start).toBe(0);
-        expect(queued).not.toBe(tracks);
-        expect(queued).toHaveLength(tracks.length);
-        expect(queued).toEqual(expect.arrayContaining(tracks));
+        expect(player.playShuffled).toHaveBeenCalledWith(
+            tracks,
+            SOURCE,
+            'search',
+        );
     });
 
     it('ignores taps on unavailable tracks and is unplayable without any', () => {
