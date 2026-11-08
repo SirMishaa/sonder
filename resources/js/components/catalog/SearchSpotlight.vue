@@ -103,7 +103,7 @@ function onRowTap(event: MouseEvent, index: number): void {
                 <div class="mt-4 flex flex-wrap items-center gap-2.5">
                     <button
                         type="button"
-                        class="play"
+                        class="round-play"
                         :disabled="!playable"
                         :aria-label="$t('Play')"
                         :title="$t('Play')"
@@ -113,7 +113,7 @@ function onRowTap(event: MouseEvent, index: number): void {
                     </button>
                     <button
                         type="button"
-                        class="button"
+                        class="action-button"
                         :disabled="!playable"
                         @click="shuffle"
                     >
@@ -123,7 +123,7 @@ function onRowTap(event: MouseEvent, index: number): void {
                     </button>
                     <Link
                         :href="ArtistController.show(artist.id)"
-                        class="button"
+                        class="action-button"
                         >{{ $t('See artist') }}</Link
                     >
                 </div>
@@ -301,57 +301,5 @@ function onRowTap(event: MouseEvent, index: number): void {
         border-top: 0;
         border-left: 1px solid oklch(1 0 0 / 0.08);
     }
-}
-
-.play {
-    display: grid;
-    place-items: center;
-    width: 46px;
-    height: 46px;
-    border-radius: 999px;
-    background: var(--accent-grad-d);
-    color: var(--color-amber-ink);
-    box-shadow: 0 10px 24px -12px oklch(0.66 0.17 48 / 0.8);
-    transition:
-        transform 140ms,
-        filter 140ms;
-}
-
-.play:hover:not(:disabled) {
-    filter: brightness(1.06);
-}
-
-.play:active:not(:disabled) {
-    transform: scale(0.95);
-}
-
-.button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    border: 1px solid var(--color-line);
-    border-radius: 9px;
-    background: oklch(0.19 0.013 60 / 0.8);
-    font-weight: 600;
-    transition:
-        background 140ms,
-        border-color 140ms,
-        transform 140ms;
-}
-
-.button:hover:not(:disabled) {
-    border-color: oklch(0.38 0.014 60);
-    background: var(--color-raised);
-}
-
-.button:active:not(:disabled) {
-    transform: scale(0.97);
-}
-
-.play:disabled,
-.button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 </style>

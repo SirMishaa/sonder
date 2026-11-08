@@ -135,10 +135,12 @@ function onKeydownEnter(event: KeyboardEvent): void {
                         <Link
                             v-if="catalog.artistId"
                             :href="ArtistController.show(catalog.artistId)"
-                            class="truncate hover:text-paper hover:underline"
+                            class="max-w-full shrink-0 truncate hover:text-paper hover:underline"
                             >{{ track.artists }}</Link
                         >
-                        <span v-else class="truncate">{{ track.artists }}</span>
+                        <span v-else class="max-w-full shrink-0 truncate">{{
+                            track.artists
+                        }}</span>
                     </template>
                     <GenreTags
                         v-if="!genreColumn"
