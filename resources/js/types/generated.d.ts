@@ -1,8 +1,88 @@
 declare namespace App {
 namespace Data {
+export type AlbumPageData = {
+album: App.Data.CatalogAlbumData,
+description: string | null,
+durationSeconds: number | null,
+totalPlays: number,
+genres: string[],
+inLibraryCount: number,
+tracks: App.Data.CatalogTrackData[],
+};
+export type ArtistInLibraryData = {
+trackCount: number,
+albumCount: number,
+listenCount: number,
+listenedMinutes: number,
+firstListenedAt: string | null,
+lastListenedAt: string | null,
+topTracks: {
+title: string,
+listens: number,
+}[],
+};
+export type ArtistPageData = {
+artist: App.Data.CatalogArtistData,
+monthlyListeners: string | null,
+views: number | null,
+description: string | null,
+genres: string[],
+tracks: App.Data.CatalogTrackData[],
+albums: App.Data.CatalogAlbumData[],
+singles: App.Data.CatalogAlbumData[],
+videos: App.Data.CatalogVideoData[],
+related: App.Data.CatalogArtistData[],
+inLibrary: App.Data.ArtistInLibraryData,
+};
 export type ArtistTallyData = {
 name: string,
 trackCount: number,
+};
+export type CatalogAlbumData = {
+id: string,
+title: string,
+type: string,
+year: number | null,
+artists: string,
+artistId: string | null,
+thumbnailUrl: string | null,
+trackCount: number | null,
+};
+export type CatalogArtistData = {
+id: string,
+name: string,
+thumbnailUrl: string | null,
+subscribers: string | null,
+};
+export type CatalogPlaylistData = {
+id: string,
+title: string,
+author: string | null,
+trackCount: number | null,
+thumbnailUrl: string | null,
+};
+export type CatalogTrackData = {
+videoId: string | null,
+title: string,
+artists: string,
+album: string | null,
+duration: string | null,
+durationSeconds: number | null,
+thumbnailUrl: string | null,
+isExplicit: boolean,
+isAvailable: boolean,
+genres: string[],
+artistId: string | null,
+albumId: string | null,
+year: number | null,
+plays: number | null,
+inLibrary: boolean,
+};
+export type CatalogVideoData = {
+videoId: string | null,
+title: string,
+thumbnailUrl: string | null,
+views: number | null,
 };
 export type ExtensionTokenData = {
 id: string,
@@ -88,6 +168,11 @@ lastCheckedAt: string,
 lastChangedAt: string | null,
 removedAt: string | null,
 };
+export type PublicPlaylistPageData = {
+playlist: App.Data.CatalogPlaylistData,
+description: string | null,
+tracks: App.Data.CatalogTrackData[],
+};
 export type QueueSourceData = {
 playlistId: string | null,
 title: string,
@@ -123,6 +208,15 @@ track: App.Data.TrackData,
 playlistId: string,
 playlistTitle: string,
 };
+export type SearchResultsData = {
+topArtist: App.Data.CatalogArtistData | null,
+topArtistInLibrary: App.Data.ArtistInLibraryData | null,
+topArtistLibraryTracks: App.Data.CatalogTrackData[],
+tracks: App.Data.CatalogTrackData[],
+albums: App.Data.CatalogAlbumData[],
+artists: App.Data.CatalogArtistData[],
+playlists: App.Data.CatalogPlaylistData[],
+};
 export type TrackData = {
 videoId: string | null,
 title: string,
@@ -152,6 +246,7 @@ errorMessage: string | null,
 }
 namespace Enums {
 export type ArtistRole = 'main' | 'featured';
+export type CatalogFilter = 'tracks' | 'albums' | 'artists' | 'playlists';
 export type CreditType = 'artist' | 'songwriter' | 'publisher' | 'producer' | 'performer';
 export type EnrichmentStatus = 'done' | 'not_found' | 'failed';
 export type LibraryEnrichmentState = 'idle' | 'running' | 'paused' | 'done' | 'attention';

@@ -835,3 +835,6 @@ describe('usePlayer', () => {
         });
     });
 });
+
+const catalogTrackIsATrack = (track: App.Data.CatalogTrackData): App.Data.TrackData => track
+void catalogTrackIsATrack
