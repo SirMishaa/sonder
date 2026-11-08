@@ -7,7 +7,6 @@ namespace App\Actions;
 use App\Data\ArtistPageData;
 use App\Data\CatalogAlbumData;
 use App\Data\CatalogArtistData;
-use App\Data\CatalogTrackData;
 use App\Data\CatalogVideoData;
 use App\Exceptions\Providers\ProviderException;
 use App\Models\User;
@@ -28,8 +27,7 @@ final readonly class BuildArtistPage
         private DescribeArtist $describeArtist,
         private DescribeArtistInLibrary $describeArtistInLibrary,
         private ArtistGenres $artistGenres,
-        private MatchLibraryTracks $matchLibraryTracks,
-        private TrackGenres $trackGenres,
+        private BuildCatalogTracks $buildCatalogTracks,
     ) {}
 
     /**
@@ -42,30 +40,13 @@ final readonly class BuildArtistPage
 
     private function compose(User $user, CatalogArtist $artist): ArtistPageData
     {
-        $tracks = $artist->topTracks;
-        $inLibrary = $this->matchLibraryTracks->handle($user, $tracks);
-        $genres = $this->trackGenres->handle(array_values(array_filter(
-            array_map(fn (RemoteTrack $track): ?string => $track->ref?->externalId, $tracks),
-            is_string(...),
-        )));
-
-        $topTracks = [];
-
-        foreach ($tracks as $index => $track) {
-            $topTracks[] = CatalogTrackData::fromRemote(
-                $this->withDuration($track, $artist),
-                $genres[$track->ref->externalId ?? ''] ?? [],
-                $inLibrary[$index] ?? false,
-            );
-        }
-
         return new ArtistPageData(
             artist: CatalogArtistData::fromSummary($artist->summary),
             monthlyListeners: $artist->monthlyListeners,
             views: $artist->views,
             description: $artist->description,
             genres: $this->artistGenres->handle($artist->summary->name),
-            tracks: $topTracks,
+            tracks: $this->buildCatalogTracks->handle($user, array_map(fn (RemoteTrack $track): RemoteTrack => $this->withDuration($track, $artist), $artist->topTracks)),
             albums: array_map(fn (CatalogAlbumSummary $album): CatalogAlbumData => CatalogAlbumData::fromSummary($album), $artist->albums),
             singles: array_map(fn (CatalogAlbumSummary $album): CatalogAlbumData => CatalogAlbumData::fromSummary($album), $artist->singles),
             videos: array_map(fn (CatalogVideo $video): CatalogVideoData => CatalogVideoData::fromCatalog($video), $artist->videos),

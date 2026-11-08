@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Actions\BuildArtistPage;
 use App\Actions\CountAlbumTracks;
 use App\Actions\DescribeArtist;
+use App\Data\ArtistPageData;
 use App\Exceptions\Providers\ProviderException;
 use App\Models\User;
 use App\Services\Music\Data\CatalogAlbumSummary;
@@ -18,14 +19,23 @@ final readonly class ArtistController
 {
     public function show(string $artistId, #[CurrentUser] User $user, BuildArtistPage $build, DescribeArtist $describe, CountAlbumTracks $countAlbumTracks): Response
     {
-        try {
-            $page = $build->handle($user, $artistId);
-        } catch (ProviderException $exception) {
-            return Inertia::render('artist/Show', ['page' => null, 'catalogError' => $exception->userMessage()]);
-        }
+        // `page` and `catalogError` share one build, and a partial reload that asks for neither skips it.
+        $outcome = null;
+        $resolve = function () use (&$outcome, $build, $user, $artistId): array {
+            if ($outcome !== null) {
+                return $outcome;
+            }
+
+            try {
+                return $outcome = ['page' => $build->handle($user, $artistId), 'error' => null];
+            } catch (ProviderException $exception) {
+                return $outcome = ['page' => null, 'error' => $exception->userMessage()];
+            }
+        };
 
         return Inertia::render('artist/Show', [
-            'page' => $page,
+            'page' => fn (): ?ArtistPageData => $resolve()['page'],
+            'catalogError' => fn (): ?string => $resolve()['error'],
             'albumTrackCounts' => Inertia::defer(function () use ($describe, $countAlbumTracks, $artistId): array {
                 try {
                     $artist = $describe->handle($artistId);
@@ -37,7 +47,7 @@ final readonly class ArtistController
                     fn (CatalogAlbumSummary $album): string => $album->ref->externalId,
                     [...$artist->albums, ...$artist->singles],
                 ));
-            }),
+            }, 'counts'),
         ]);
     }
 }

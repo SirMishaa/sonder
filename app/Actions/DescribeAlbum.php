@@ -9,7 +9,7 @@ use App\Exceptions\Providers\ProviderException;
 use App\Services\Music\Contracts\BrowsesCatalog;
 use App\Services\Music\Data\CatalogAlbum;
 use App\Services\Music\ProviderRegistry;
-use Illuminate\Support\Facades\Cache;
+use App\Support\CatalogCache;
 
 /**
  * Reads a catalog album page, remembering it for a day.
@@ -28,7 +28,7 @@ final readonly class DescribeAlbum
      */
     public function handle(string $albumId): CatalogAlbum
     {
-        return Cache::remember(
+        return CatalogCache::remember(
             self::cacheKey($albumId),
             now()->addDay(),
             fn (): CatalogAlbum => $this->providers

@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\BuildAlbumPage;
 use App\Actions\CountAlbumTracks;
+use App\Actions\DescribeAlbum;
 use App\Actions\DescribeArtist;
 use App\Data\AlbumPageData;
 use App\Data\CatalogAlbumData;
@@ -18,17 +19,28 @@ use Inertia\Response;
 
 final readonly class AlbumController
 {
-    public function show(string $albumId, #[CurrentUser] User $user, BuildAlbumPage $build, DescribeArtist $describeArtist, CountAlbumTracks $countAlbumTracks): Response
+    public function show(string $albumId, #[CurrentUser] User $user, BuildAlbumPage $build, DescribeAlbum $describeAlbum, DescribeArtist $describeArtist, CountAlbumTracks $countAlbumTracks): Response
     {
-        try {
-            $page = $build->handle($user, $albumId);
-        } catch (ProviderException $exception) {
-            return Inertia::render('album/Show', ['page' => null, 'catalogError' => $exception->userMessage()]);
-        }
+        // `page` and `catalogError` share one build, and a partial reload that asks for neither skips it.
+        $outcome = null;
+        $resolve = function () use (&$outcome, $build, $user, $albumId): array {
+            if ($outcome !== null) {
+                return $outcome;
+            }
+
+            try {
+                return $outcome = ['page' => $build->handle($user, $albumId), 'error' => null];
+            } catch (ProviderException $exception) {
+                return $outcome = ['page' => null, 'error' => $exception->userMessage()];
+            }
+        };
 
         return Inertia::render('album/Show', [
-            'page' => $page,
-            'moreByArtist' => Inertia::defer(fn (): array => $this->moreByArtist($page, $describeArtist, $countAlbumTracks)),
+            'page' => fn (): ?AlbumPageData => $resolve()['page'],
+            'catalogError' => fn (): ?string => $resolve()['error'],
+            'moreByArtist' => Inertia::defer(function () use ($albumId, $describeAlbum, $describeArtist, $countAlbumTracks): array {
+                return $this->moreByArtist($albumId, $describeAlbum, $describeArtist, $countAlbumTracks);
+            }),
         ]);
     }
 
@@ -37,21 +49,24 @@ final readonly class AlbumController
      *
      * @return list<CatalogAlbumData>
      */
-    private function moreByArtist(AlbumPageData $page, DescribeArtist $describeArtist, CountAlbumTracks $countAlbumTracks): array
+    private function moreByArtist(string $albumId, DescribeAlbum $describeAlbum, DescribeArtist $describeArtist, CountAlbumTracks $countAlbumTracks): array
     {
-        if ($page->album->artistId === null) {
-            return [];
-        }
-
         try {
-            $artist = $describeArtist->handle($page->album->artistId);
+            $current = $describeAlbum->handle($albumId)->summary;
+            $artistId = ($current->artists[0] ?? null)?->ref?->externalId;
+
+            if ($artistId === null) {
+                return [];
+            }
+
+            $artist = $describeArtist->handle($artistId);
         } catch (ProviderException) {
             return [];
         }
 
         $others = array_values(array_filter(
             [...$artist->albums, ...$artist->singles],
-            fn (CatalogAlbumSummary $album): bool => $album->ref->externalId !== $page->album->id,
+            fn (CatalogAlbumSummary $album): bool => $album->ref->externalId !== $albumId,
         ));
         $counts = $countAlbumTracks->handle(array_map(fn (CatalogAlbumSummary $album): string => $album->ref->externalId, $others), cachedOnly: true);
 

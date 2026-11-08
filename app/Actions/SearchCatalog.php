@@ -10,7 +10,7 @@ use App\Exceptions\Providers\ProviderException;
 use App\Services\Music\Contracts\BrowsesCatalog;
 use App\Services\Music\Data\CatalogResults;
 use App\Services\Music\ProviderRegistry;
-use Illuminate\Support\Facades\Cache;
+use App\Support\CatalogCache;
 use Illuminate\Support\Str;
 
 /**
@@ -33,7 +33,7 @@ final readonly class SearchCatalog
 
         $key = sprintf('catalog:search:%s:%s:%d', hash('xxh128', $normalized), $filter instanceof CatalogFilter ? $filter->value : 'all', $limit);
 
-        return Cache::remember(
+        return CatalogCache::remember(
             $key,
             now()->addMinutes(10),
             fn (): CatalogResults => $this->providers

@@ -127,3 +127,32 @@ it('gets cached catalog data back equal after a real serialize round-trip', func
             ->and($this->fakeProvider()->callCount($method))->toBe(1);
     }
 });
+
+it('fetches at most twelve uncached albums per call', function (): void {
+    $ids = array_map(fn (int $n): string => "MPREb_{$n}", range(1, 15));
+
+    foreach ($ids as $id) {
+        $this->fakeProvider()->albums[$id] = FakeProviderAdapter::aCatalogAlbum($id, trackCount: 5);
+    }
+
+    resolve(DescribeAlbum::class)->handle('MPREb_15');
+    $this->fakeProvider()->calls = [];
+
+    $counts = resolve(CountAlbumTracks::class)->handle($ids);
+
+    expect($this->fakeProvider()->callCount('album'))->toBe(12)
+        ->and($counts)->toHaveCount(13)
+        ->and($counts)->toHaveKey('MPREb_15')
+        ->and($counts)->not->toHaveKey('MPREb_14');
+});
+
+it('fills a cold catalog entry under a lock it releases', function (): void {
+    $this->fakeProvider()->artists['UC1'] = FakeProviderAdapter::aCatalogArtist('UC1');
+
+    $first = resolve(DescribeArtist::class)->handle('UC1');
+    $second = resolve(DescribeArtist::class)->handle('UC1');
+
+    expect($second)->toEqual($first)
+        ->and($this->fakeProvider()->callCount('artist'))->toBe(1)
+        ->and(Cache::lock(DescribeArtist::cacheKey('UC1').':lock', 1)->get())->toBeTrue();
+});

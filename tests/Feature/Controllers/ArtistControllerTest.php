@@ -45,7 +45,7 @@ it('takes a missing top track duration from a cached album', function (): void {
         ->assertInertia(fn (AssertableInertia $page) => $page->where('page.tracks.0.durationSeconds', null));
 
     Cache::put(App\Actions\DescribeAlbum::cacheKey('MPREb_LJSVi8szMQL'), FakeProviderAdapter::aCatalogAlbum());
-    Cache::forget('catalog:artist:UC1');
+    Cache::forget(App\Actions\DescribeArtist::cacheKey('UC1'));
 
     $this->actingAs(User::factory()->create())->get(route('artist.show', 'UC1'))
         ->assertInertia(fn (AssertableInertia $page) => $page->where('page.tracks.0.durationSeconds', 199));

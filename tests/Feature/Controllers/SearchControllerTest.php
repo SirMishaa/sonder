@@ -6,7 +6,6 @@ use App\Enums\CatalogFilter;
 use App\Models\Playlist;
 use App\Models\User;
 use App\Models\YouTubeMusicAccount;
-use Illuminate\Support\Facades\RateLimiter;
 use Inertia\Testing\AssertableInertia;
 use Tests\Support\FakeProviderAdapter;
 
@@ -165,7 +164,6 @@ it('requires authentication', function (string $route): void {
 ]);
 
 it('throttles suggestions per user', function (): void {
-    RateLimiter::clear('catalog-suggestions');
     $this->fakeProvider()->searchResults = FakeProviderAdapter::aCatalogResults();
     $user = User::factory()->create();
 

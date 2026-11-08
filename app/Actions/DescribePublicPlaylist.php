@@ -9,7 +9,7 @@ use App\Exceptions\Providers\ProviderException;
 use App\Services\Music\Contracts\BrowsesCatalog;
 use App\Services\Music\Data\RemotePlaylist;
 use App\Services\Music\ProviderRegistry;
-use Illuminate\Support\Facades\Cache;
+use App\Support\CatalogCache;
 
 /**
  * Reads a public catalog playlist, remembering it for a day.
@@ -23,7 +23,7 @@ final readonly class DescribePublicPlaylist
      */
     public function handle(string $playlistId): RemotePlaylist
     {
-        return Cache::remember(
+        return CatalogCache::remember(
             "catalog:playlist:{$playlistId}",
             now()->addDay(),
             fn (): RemotePlaylist => $this->providers

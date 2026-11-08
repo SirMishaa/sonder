@@ -17,7 +17,6 @@ use App\Services\Music\Data\CatalogAlbumSummary;
 use App\Services\Music\Data\CatalogArtistSummary;
 use App\Services\Music\Data\CatalogPlaylistSummary;
 use App\Services\Music\Data\CatalogResults;
-use App\Services\Music\Data\RemoteTrack;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -33,7 +32,7 @@ final readonly class BuildSearchResults
     private const int LIBRARY_TRACKS = 3;
 
     public function __construct(
-        private MatchLibraryTracks $matchLibraryTracks,
+        private BuildCatalogTracks $buildCatalogTracks,
         private TrackGenres $trackGenres,
         private DescribeArtistInLibrary $describeArtistInLibrary,
         private CountAlbumTracks $countAlbumTracks,
@@ -59,33 +58,10 @@ final readonly class BuildSearchResults
             topArtist: $topArtist instanceof CatalogArtistSummary ? CatalogArtistData::fromSummary($topArtist) : null,
             topArtistInLibrary: $topArtist instanceof CatalogArtistSummary ? $this->describeArtistInLibrary->handle($user, $topArtist->name) : null,
             topArtistLibraryTracks: $topArtist instanceof CatalogArtistSummary ? $this->libraryTracks($user, $topArtist->name) : [],
-            tracks: $this->tracks($user, $tracks),
+            tracks: $this->buildCatalogTracks->handle($user, $tracks),
             albums: array_map(fn (CatalogAlbumSummary $album): CatalogAlbumData => CatalogAlbumData::fromSummary($album, $counts[$album->ref->externalId] ?? null), $albums),
             artists: array_map(CatalogArtistData::fromSummary(...), $artists),
             playlists: array_map(fn (CatalogPlaylistSummary $playlist): CatalogPlaylistData => CatalogPlaylistData::fromSummary($playlist), $playlists),
-        );
-    }
-
-    /**
-     * @param  list<RemoteTrack>  $tracks
-     * @return list<CatalogTrackData>
-     */
-    private function tracks(User $user, array $tracks): array
-    {
-        $inLibrary = $this->matchLibraryTracks->handle($user, $tracks);
-        $genres = $this->trackGenres->handle(array_values(array_filter(
-            array_map(fn (RemoteTrack $track): ?string => $track->ref?->externalId, $tracks),
-            is_string(...),
-        )));
-
-        return array_map(
-            fn (RemoteTrack $track, int $index): CatalogTrackData => CatalogTrackData::fromRemote(
-                $track,
-                $genres[$track->ref->externalId ?? ''] ?? [],
-                $inLibrary[$index] ?? false,
-            ),
-            $tracks,
-            array_keys($tracks),
         );
     }
 
@@ -108,8 +84,9 @@ final readonly class BuildSearchResults
                 ->orWhereRaw("lower(artists) like ? escape '\\'", [addcslashes($name, '\\%_').',%']))
             ->latest()
             ->latest('id')
-            ->limit(self::LIBRARY_TRACKS)
-            ->get();
+            ->get()
+            ->unique(fn (Track $track): string => $track->youtube_video_id ?? 'row:'.$track->id)
+            ->take(self::LIBRARY_TRACKS);
 
         $genres = $this->trackGenres->handle(array_values(array_filter($owned->pluck('youtube_video_id')->all(), is_string(...))));
 

@@ -9,7 +9,6 @@ use App\Data\CatalogAlbumData;
 use App\Data\CatalogTrackData;
 use App\Exceptions\Providers\ProviderException;
 use App\Models\User;
-use App\Services\Music\Data\RemoteTrack;
 
 /**
  * Composes an album page for one user: the catalog album with plays,
@@ -21,8 +20,7 @@ final readonly class BuildAlbumPage
     public function __construct(
         private DescribeAlbum $describeAlbum,
         private ArtistGenres $artistGenres,
-        private MatchLibraryTracks $matchLibraryTracks,
-        private TrackGenres $trackGenres,
+        private BuildCatalogTracks $buildCatalogTracks,
     ) {}
 
     /**
@@ -31,19 +29,7 @@ final readonly class BuildAlbumPage
     public function handle(User $user, string $albumId): AlbumPageData
     {
         $album = $this->describeAlbum->handle($albumId);
-        $inLibrary = $this->matchLibraryTracks->handle($user, $album->tracks);
-        $genres = $this->trackGenres->handle(array_values(array_filter(
-            array_map(fn (RemoteTrack $track): ?string => $track->ref?->externalId, $album->tracks),
-            is_string(...),
-        )));
-
-        $tracks = [];
-
-        foreach ($album->tracks as $index => $track) {
-            $videoId = $track->ref->externalId ?? '';
-
-            $tracks[] = CatalogTrackData::fromRemote($track, $genres[$videoId] ?? [], $inLibrary[$index] ?? false, $album->playsByVideoId[$videoId] ?? null);
-        }
+        $tracks = $this->buildCatalogTracks->handle($user, $album->tracks, $album->playsByVideoId);
 
         $artist = $album->summary->artists[0] ?? null;
 
@@ -53,7 +39,7 @@ final readonly class BuildAlbumPage
             durationSeconds: $album->durationSeconds,
             totalPlays: array_sum($album->playsByVideoId),
             genres: $artist === null ? [] : $this->artistGenres->handle($artist->name),
-            inLibraryCount: count(array_filter($inLibrary)),
+            inLibraryCount: count(array_filter($tracks, fn (CatalogTrackData $track): bool => $track->inLibrary)),
             tracks: $tracks,
         );
     }
