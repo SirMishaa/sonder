@@ -4,6 +4,7 @@ import { Search, Sparkles, SquareLibrary } from 'lucide-vue-next';
 import { computed } from 'vue';
 import DiscoverController from '@/actions/App/Http/Controllers/DiscoverController';
 import PlaylistController from '@/actions/App/Http/Controllers/PlaylistController';
+import SearchController from '@/actions/App/Http/Controllers/SearchController';
 import SyncStatus from '@/components/shell/SyncStatus.vue';
 import {
     DropdownMenu,
@@ -15,14 +16,12 @@ import {
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { useInitials } from '@/composables/useInitials';
-import { usePalette } from '@/composables/usePalette';
 
 /**
  * The phone's navigation, in thumb reach: Discover, Library (which holds
- * the playlists), search and the account menu with the sync state.
+ * the playlists), the search page and the account menu with the sync state.
  */
 const page = usePage();
-const palette = usePalette();
 const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 const { getInitials } = useInitials();
 
@@ -57,10 +56,14 @@ const isOnLibrary = computed(
             <SquareLibrary class="size-[22px]" />
             <span>{{ $t('Library') }}</span>
         </Link>
-        <button type="button" class="tab" @click="palette.show">
+        <Link
+            :href="SearchController.index()"
+            class="tab"
+            :data-active="isCurrentUrl(SearchController.index())"
+        >
             <Search class="size-[22px]" />
             <span>{{ $t('Search') }}</span>
-        </button>
+        </Link>
         <DropdownMenu>
             <DropdownMenuTrigger class="tab">
                 <span

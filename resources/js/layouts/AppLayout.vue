@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router, usePage } from '@inertiajs/vue3';
-import { onBeforeUnmount, onMounted } from 'vue';
+import { computed, onBeforeUnmount, onMounted } from 'vue';
 import DiscoverController from '@/actions/App/Http/Controllers/DiscoverController';
 import PlaylistController from '@/actions/App/Http/Controllers/PlaylistController';
 import AppSidebar from '@/components/shell/AppSidebar.vue';
@@ -38,6 +38,9 @@ const player = usePlayer();
 const palette = usePalette();
 const { closeAll } = useMobileSheets();
 
+/** Re-enter the view on a new page, not on a query change (typing a search). */
+const viewKey = computed(() => page.url.split('?')[0]);
+
 let stopClosingSheets: (() => void) | null = null;
 
 onMounted(() => {
@@ -67,7 +70,7 @@ useShortcuts({
                 scroll-region
             >
                 <YouTubeMusicCookieAlert />
-                <div :key="page.url" class="view-enter">
+                <div :key="viewKey" class="view-enter">
                     <slot />
                 </div>
             </main>
