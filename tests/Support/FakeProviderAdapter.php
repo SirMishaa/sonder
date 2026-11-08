@@ -5,14 +5,21 @@ declare(strict_types=1);
 namespace Tests\Support;
 
 use App\Enums\ArtistRole;
+use App\Enums\CatalogFilter;
 use App\Enums\Provider;
 use App\Enums\SourceKind;
 use App\Exceptions\Providers\CredentialsRejected;
 use App\Exceptions\Providers\ProviderRateLimited;
 use App\Exceptions\Providers\ProviderUnavailable;
+use App\Services\Music\Contracts\BrowsesCatalog;
 use App\Services\Music\Contracts\ProviderAdapter;
 use App\Services\Music\Contracts\ProviderCredentials;
 use App\Services\Music\Contracts\ReadsPlaylists;
+use App\Services\Music\Data\CatalogAlbum;
+use App\Services\Music\Data\CatalogAlbumSummary;
+use App\Services\Music\Data\CatalogArtist;
+use App\Services\Music\Data\CatalogArtistSummary;
+use App\Services\Music\Data\CatalogResults;
 use App\Services\Music\Data\ProviderRef;
 use App\Services\Music\Data\RemoteAccount;
 use App\Services\Music\Data\RemoteAlbum;
@@ -29,7 +36,7 @@ use RuntimeException;
  * by accident. That guard has to live here rather than rely on
  * `Http::preventStrayRequests()`: ytmusicapi ships its own HTTP layer.
  */
-final class FakeProviderAdapter implements ProviderAdapter, ReadsPlaylists
+final class FakeProviderAdapter implements BrowsesCatalog, ProviderAdapter, ReadsPlaylists
 {
     /** Throws CredentialsRejected on every call (an expired cookie). */
     public bool $shouldFail = false;
@@ -48,7 +55,18 @@ final class FakeProviderAdapter implements ProviderAdapter, ReadsPlaylists
     /** @var array<string, RemotePlaylist> */
     public array $tracks = [];
 
-    /** @var list<array{method: string, credentials: array<string, string>, playlistId?: string, trackCount?: int|null}> */
+    public ?CatalogResults $searchResults = null;
+
+    /** @var array<string, CatalogArtist> */
+    public array $artists = [];
+
+    /** @var array<string, CatalogAlbum> */
+    public array $albums = [];
+
+    /** @var array<string, RemotePlaylist> */
+    public array $publicPlaylists = [];
+
+    /** @var list<array{method: string, credentials?: array<string, string>, playlistId?: string, trackCount?: int|null, query?: string, filter?: CatalogFilter|null, limit?: int, artistId?: string, albumId?: string}> */
     public array $calls = [];
 
     public static function anAccount(string $name = 'Test Listener'): RemoteAccount
@@ -92,6 +110,55 @@ final class FakeProviderAdapter implements ProviderAdapter, ReadsPlaylists
         );
     }
 
+    /**
+     * @param  non-empty-string  $id
+     */
+    public static function aCatalogArtist(string $id = 'UCs6GGpd9zvsYghuYe0VDFUQ', string $name = 'Rammstein'): CatalogArtist
+    {
+        $summary = self::aCatalogArtistSummary($id, $name);
+        $album = self::aCatalogAlbumSummary();
+
+        return new CatalogArtist(
+            summary: $summary,
+            monthlyListeners: '9.1M',
+            views: 1200000,
+            description: 'German industrial metal band.',
+            topTracks: [self::aTrack()],
+            albums: [$album],
+            singles: [],
+            videos: [],
+            related: [],
+        );
+    }
+
+    /**
+     * @param  non-empty-string  $id
+     */
+    public static function aCatalogAlbum(string $id = 'MPREb_LJSVi8szMQL', string $title = 'Zeit', int $year = 2022, int $trackCount = 11): CatalogAlbum
+    {
+        $track = self::aTrack();
+
+        return new CatalogAlbum(
+            summary: self::aCatalogAlbumSummary($id, $title, $year),
+            description: null,
+            trackCount: $trackCount,
+            durationSeconds: 2700,
+            tracks: [$track],
+            playsByVideoId: $track->ref !== null ? [$track->ref->externalId => 1000] : [],
+        );
+    }
+
+    public static function aCatalogResults(): CatalogResults
+    {
+        return new CatalogResults(
+            topArtist: self::aCatalogArtistSummary(),
+            tracks: [self::aTrack()],
+            albums: [self::aCatalogAlbumSummary()],
+            artists: [self::aCatalogArtistSummary()],
+            playlists: [],
+        );
+    }
+
     public function provider(): Provider
     {
         return Provider::YouTubeMusic;
@@ -118,13 +185,65 @@ final class FakeProviderAdapter implements ProviderAdapter, ReadsPlaylists
         return $this->tracks[$externalId] ?? throw new RuntimeException("The fake provider has no playlist registered for [{$externalId}].");
     }
 
+    public function search(string $query, ?CatalogFilter $filter = null, int $limit = 20): CatalogResults
+    {
+        $this->record(['method' => 'search', 'query' => $query, 'filter' => $filter, 'limit' => $limit]);
+
+        return $this->searchResults ?? new CatalogResults(null, [], [], [], []);
+    }
+
+    public function artist(string $artistId): CatalogArtist
+    {
+        $this->record(['method' => 'artist', 'artistId' => $artistId]);
+
+        return $this->artists[$artistId] ?? throw new RuntimeException("The fake provider has no artist registered for [{$artistId}].");
+    }
+
+    public function album(string $albumId): CatalogAlbum
+    {
+        $this->record(['method' => 'album', 'albumId' => $albumId]);
+
+        return $this->albums[$albumId] ?? throw new RuntimeException("The fake provider has no album registered for [{$albumId}].");
+    }
+
+    public function publicPlaylist(string $playlistId): RemotePlaylist
+    {
+        $this->record(['method' => 'publicPlaylist', 'playlistId' => $playlistId]);
+
+        return $this->publicPlaylists[$playlistId] ?? throw new RuntimeException("The fake provider has no public playlist registered for [{$playlistId}].");
+    }
+
     public function callCount(string $method): int
     {
         return count(array_filter($this->calls, fn (array $call): bool => $call['method'] === $method));
     }
 
     /**
-     * @param  array{method: string, credentials: array<string, string>, playlistId?: string, trackCount?: int|null}  $call
+     * @param  non-empty-string  $id
+     */
+    private static function aCatalogArtistSummary(string $id = 'UCs6GGpd9zvsYghuYe0VDFUQ', string $name = 'Rammstein'): CatalogArtistSummary
+    {
+        return new CatalogArtistSummary(new ProviderRef(Provider::YouTubeMusic, $id), $name, 'https://example.test/artist.jpg', '4.2M');
+    }
+
+    /**
+     * @param  non-empty-string  $id
+     */
+    private static function aCatalogAlbumSummary(string $id = 'MPREb_LJSVi8szMQL', string $title = 'Zeit', int $year = 2022): CatalogAlbumSummary
+    {
+        return new CatalogAlbumSummary(
+            ref: new ProviderRef(Provider::YouTubeMusic, $id),
+            title: $title,
+            type: 'Album',
+            year: $year,
+            artists: [new RemoteArtist(null, 'Rammstein', ArtistRole::Main)],
+            thumbnailUrl: 'https://example.test/album.jpg',
+            isExplicit: false,
+        );
+    }
+
+    /**
+     * @param  array{method: string, credentials?: array<string, string>, playlistId?: string, trackCount?: int|null, query?: string, filter?: CatalogFilter|null, limit?: int, artistId?: string, albumId?: string}  $call
      */
     private function record(array $call): void
     {
