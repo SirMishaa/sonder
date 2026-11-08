@@ -30,10 +30,11 @@ export function httpSuggestionFetcher(): SuggestionFetcher {
 
 /**
  * Catalog suggestions for the palette's text, debounced, from two characters
- * on. Each new query cancels the request in flight, and a response for an
- * older query is dropped. A failed request clears the results and sets
- * `failed`, so the palette keeps its library results and says the catalog is
- * unavailable.
+ * on. Each new query cancels the request in flight, a response for an older
+ * query is dropped, and the text already requested is not requested again.
+ * A failed request clears the results and sets `failed`, so the palette
+ * keeps its library results and says the catalog is unavailable; the next
+ * request clears it. `cancel()` drops the request in flight (palette closed).
  */
 export function useCatalogSuggestions(
     query: Ref<string>,
@@ -42,12 +43,15 @@ export function useCatalogSuggestions(
     results: Ref<App.Data.SearchResultsData | null>;
     loading: Ref<boolean>;
     failed: Ref<boolean>;
+    cancel: () => void;
 } {
     const results = ref<App.Data.SearchResultsData | null>(null);
     const loading = ref(false);
     const failed = ref(false);
     let latest = 0;
     let pending = '';
+    let requested = '';
+    let settled = true;
 
     const debounce = useTimeoutFn(
         () => {
@@ -60,6 +64,8 @@ export function useCatalogSuggestions(
     async function request(text: string): Promise<void> {
         const ticket = ++latest;
         fetcher.cancel();
+        requested = text;
+        settled = false;
 
         try {
             const response = await fetcher.fetch(text);
@@ -83,6 +89,16 @@ export function useCatalogSuggestions(
             failed.value = true;
         }
 
+        settled = true;
+        loading.value = false;
+    }
+
+    function cancel(): void {
+        debounce.stop();
+        latest++;
+        fetcher.cancel();
+        requested = '';
+        settled = true;
         loading.value = false;
     }
 
@@ -90,20 +106,25 @@ export function useCatalogSuggestions(
         const text = value.replace(/\s+/g, ' ').trim();
 
         if (text.length < MIN_LENGTH) {
-            debounce.stop();
-            latest++;
-            fetcher.cancel();
+            cancel();
             results.value = null;
-            loading.value = false;
             failed.value = false;
+
+            return;
+        }
+
+        if (text === requested && !failed.value) {
+            debounce.stop();
+            loading.value = !settled;
 
             return;
         }
 
         pending = text;
         loading.value = true;
+        failed.value = false;
         debounce.start();
     });
 
-    return { results, loading, failed };
+    return { results, loading, failed, cancel };
 }

@@ -130,4 +130,50 @@ describe('useCatalogSuggestions', () => {
         expect(results.value).toBeNull();
         expect(loading.value).toBe(false);
     });
+
+    it('does not request the same text again', async () => {
+        const query = ref('');
+        const fetcher = fakeFetcher();
+        const { loading } = useCatalogSuggestions(query, fetcher);
+
+        await type(query, 'ramm');
+        fetcher.requests[0].resolve(resultsFor('ramm'));
+        await vi.runAllTimersAsync();
+        await type(query, 'ramm ');
+
+        expect(fetcher.requests).toHaveLength(1);
+        expect(loading.value).toBe(false);
+    });
+
+    it('clears the failure while retrying', async () => {
+        const query = ref('');
+        const fetcher = fakeFetcher();
+        const { loading, failed } = useCatalogSuggestions(query, fetcher);
+
+        await type(query, 'ra');
+        fetcher.requests[0].reject(new Error('Request failed with status 429'));
+        await vi.runAllTimersAsync();
+        await type(query, 'ram');
+
+        expect(failed.value).toBe(false);
+        expect(loading.value).toBe(true);
+    });
+
+    it('cancels the request in flight', async () => {
+        const query = ref('');
+        const fetcher = fakeFetcher();
+        const { results, loading, cancel } = useCatalogSuggestions(
+            query,
+            fetcher,
+        );
+
+        await type(query, 'ra');
+        cancel();
+        fetcher.requests[0].resolve(resultsFor('ra'));
+        await vi.runAllTimersAsync();
+
+        expect(fetcher.cancel).toHaveBeenCalled();
+        expect(results.value).toBeNull();
+        expect(loading.value).toBe(false);
+    });
 });

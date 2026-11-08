@@ -37,6 +37,7 @@ import YouTubeMusicConnectionController from '@/actions/App/Http/Controllers/You
 import Artwork from '@/components/music/Artwork.vue';
 import PalettePreview from '@/components/shell/PalettePreview.vue';
 import { useCatalogSuggestions } from '@/composables/useCatalogSuggestions';
+import { useListSelection } from '@/composables/useListSelection';
 import { usePalette } from '@/composables/usePalette';
 import { usePlayer } from '@/composables/usePlayer';
 import { useRecentSearches } from '@/composables/useRecentSearches';
@@ -93,7 +94,6 @@ const { toast } = useToast();
 const collapsed = useLocalStorage('sonder.sidebar.collapsed', false);
 
 const query = ref('');
-const selected = ref(0);
 const list = ref<HTMLElement | null>(null);
 
 const suggestions = useCatalogSuggestions(query);
@@ -354,7 +354,7 @@ const items = computed<Item[]>(() => {
     const playlists: Item[] = (page.props.library?.playlists ?? []).map(
         (playlist) => ({
             id: `playlist-${playlist.id}`,
-            group: 'In your library',
+            group: isTyping.value ? 'In your library' : 'Playlists',
             label: playlist.title,
             sub: playlist.trackCount
                 ? transChoice(':count track|:count tracks', playlist.trackCount)
@@ -448,7 +448,12 @@ const items = computed<Item[]>(() => {
     ];
 
     if (!isTyping.value) {
-        return [recent.items.value.map(recentItem), pages, actions].flat();
+        return [
+            recent.items.value.map(recentItem),
+            ...[playlists, upNext, pages, actions].map((group) =>
+                group.slice(0, MAX_PER_GROUP),
+            ),
+        ].flat();
     }
 
     const lowered = needle.value.toLowerCase();
@@ -464,6 +469,12 @@ const items = computed<Item[]>(() => {
         ),
     ];
 });
+
+const {
+    selected,
+    select,
+    move: moveSelection,
+} = useListSelection(items, query);
 
 const selectedItem = computed<Item | undefined>(
     () => items.value[selected.value],
@@ -505,33 +516,29 @@ const catalogFailed = computed(
     () => searchesCatalog.value && suggestions.failed.value,
 );
 
-watch(query, () => {
-    selected.value = 0;
-});
-
-watch(
-    () => items.value.length,
-    (length) => {
-        if (selected.value >= length) {
-            selected.value = Math.max(0, length - 1);
-        }
-    },
-);
-
 watch(palette.open, (open) => {
     if (open) {
         query.value = '';
-        selected.value = 0;
+        select(0);
+    } else {
+        suggestions.cancel();
     }
 });
 
-async function move(delta: number): Promise<void> {
-    if (!items.value.length) {
+let pointer = { x: -1, y: -1 };
+
+/** Hover selects only when the pointer moves, not when rows move under it. */
+function hover(event: MouseEvent, index: number): void {
+    if (event.screenX === pointer.x && event.screenY === pointer.y) {
         return;
     }
 
-    selected.value =
-        (selected.value + delta + items.value.length) % items.value.length;
+    pointer = { x: event.screenX, y: event.screenY };
+    select(index);
+}
+
+async function move(delta: number): Promise<void> {
+    moveSelection(delta);
     await nextTick();
     list.value
         ?.querySelector('[data-selected="true"]')
@@ -558,9 +565,12 @@ function play(item: Item): void {
 }
 
 function onEnter(event: KeyboardEvent): void {
-    if (event.isComposing) {
+    // Enter on a focused button (the footer's "All results") is its own.
+    if (event.isComposing || !(event.target instanceof HTMLInputElement)) {
         return;
     }
+
+    event.preventDefault();
 
     if (event.metaKey || event.ctrlKey) {
         searchAll();
@@ -598,7 +608,7 @@ function onEnter(event: KeyboardEvent): void {
                 <div
                     @keydown.down.prevent="move(1)"
                     @keydown.up.prevent="move(-1)"
-                    @keydown.enter.prevent="onEnter"
+                    @keydown.enter="onEnter"
                 >
                     <DialogTitle class="sr-only">{{
                         $t('Search Sonder')
@@ -667,7 +677,7 @@ function onEnter(event: KeyboardEvent): void {
                                                 ? 'bg-raised'
                                                 : 'hover:bg-hover',
                                         ]"
-                                        @mouseenter="selected = index"
+                                        @mousemove="hover($event, index)"
                                         @click="run(item)"
                                     >
                                         <Artwork
