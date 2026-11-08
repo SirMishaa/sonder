@@ -53,8 +53,18 @@ const plays = computed(() =>
           ),
 );
 
-function onKeydownEnter(): void {
-    if (props.track.isAvailable) {
+function isFromLink(event: Event): boolean {
+    return (event.target as HTMLElement).closest('a') !== null;
+}
+
+function onClick(event: MouseEvent): void {
+    if (!isFromLink(event)) {
+        emit('tap', event);
+    }
+}
+
+function onKeydownEnter(event: KeyboardEvent): void {
+    if (props.track.isAvailable && !isFromLink(event)) {
         emit('play');
     }
 }
@@ -69,7 +79,7 @@ function onKeydownEnter(): void {
         }"
         role="row"
         :tabindex="track.isAvailable ? 0 : -1"
-        @click="emit('tap', $event)"
+        @click="onClick"
         @keydown.enter="onKeydownEnter"
     >
         <span
@@ -120,7 +130,6 @@ function onKeydownEnter(): void {
                             v-if="catalog.artistId"
                             :href="ArtistController.show(catalog.artistId)"
                             class="truncate hover:text-ink hover:underline"
-                            @click.stop
                             >{{ track.artists }}</Link
                         >
                         <span v-else class="truncate">{{ track.artists }}</span>
@@ -148,7 +157,6 @@ function onKeydownEnter(): void {
                 v-if="catalog.albumId && track.album"
                 :href="AlbumController.show(catalog.albumId)"
                 class="relative truncate hover:text-ink hover:underline"
-                @click.stop
                 >{{ track.album }}</Link
             >
             <span v-else class="relative truncate">{{ track.album }}</span>

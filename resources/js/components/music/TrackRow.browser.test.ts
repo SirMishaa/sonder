@@ -1,5 +1,6 @@
 import '../../../css/app.css';
-import { expect, it } from 'vite-plus/test';
+import { router } from '@inertiajs/vue3';
+import { expect, it, vi } from 'vite-plus/test';
 import { page } from 'vite-plus/test/browser';
 import { render } from 'vitest-browser-vue';
 import TrackRow from '@/components/music/TrackRow.vue';
@@ -93,5 +94,16 @@ it('emits play from the play button without tapping', async () => {
     await page.getByRole('button', { name: 'Play Survival' }).click();
 
     expect(plays).toBe(1);
+    expect(taps).toHaveLength(0);
+});
+
+it('does not tap when a link inside the row is clicked', async () => {
+    const visit = vi.spyOn(router, 'visit').mockImplementation(() => {});
+    const taps: MouseEvent[] = [];
+    await mount({}, { onTap: (event: MouseEvent) => taps.push(event) });
+
+    await page.getByRole('link', { name: 'Muse' }).click();
+
+    expect(visit).toHaveBeenCalledOnce();
     expect(taps).toHaveLength(0);
 });
