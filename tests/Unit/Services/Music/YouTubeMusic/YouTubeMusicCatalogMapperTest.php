@@ -108,6 +108,13 @@ it('maps an album with its plays', function () use ($fixture): void {
         ->and($album->tracks[0]->album?->ref?->externalId)->toBe('MPREb_LJSVi8szMQL');
 });
 
+it('gives album tracks without artwork the album cover', function () use ($fixture): void {
+    $album = (new YouTubeMusicMapper())->album($fixture('catalog-album'), 'MPREb_LJSVi8szMQL');
+
+    expect($album->summary->thumbnailUrl)->not->toBeNull()
+        ->and($album->tracks[0]->thumbnailUrl)->toBe($album->summary->thumbnailUrl);
+});
+
 it('skips non-object search hits', function (): void {
     $results = (new YouTubeMusicMapper())->searchResults([
         null,

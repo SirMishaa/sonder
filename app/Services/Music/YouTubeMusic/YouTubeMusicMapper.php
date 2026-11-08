@@ -218,12 +218,13 @@ final readonly class YouTubeMusicMapper
         $ref = $this->idRef($browseId);
         $title = $this->string($payload, 'title') ?? 'Untitled album';
         $albumRef = new RemoteAlbum($ref, $title, null);
+        $cover = $this->thumbnail($payload);
 
         $tracks = [];
         $plays = [];
 
         foreach (is_array($payload->tracks ?? null) ? $payload->tracks : [] as $track) {
-            if (! is_object($track) || ($mapped = $this->mapTrack($track, false, $albumRef)) === null) {
+            if (! is_object($track) || ($mapped = $this->mapTrack($track, false, $albumRef, $cover)) === null) {
                 continue;
             }
 
@@ -244,7 +245,7 @@ final readonly class YouTubeMusicMapper
                 type: $this->string($payload, 'type') ?? 'Album',
                 year: $this->year($payload),
                 artists: $this->artists($payload, $title, false),
-                thumbnailUrl: $this->thumbnail($payload),
+                thumbnailUrl: $cover,
                 isExplicit: (bool) ($payload->isExplicit ?? false),
             ),
             description: $this->string($payload, 'description'),
@@ -255,7 +256,10 @@ final readonly class YouTubeMusicMapper
         );
     }
 
-    private function mapTrack(object $payload, bool $unknownArtistFallback, ?RemoteAlbum $album = null): ?RemoteTrack
+    /**
+     * Album tracks carry no artwork of their own; `$fallbackThumbnail` lends them the cover.
+     */
+    private function mapTrack(object $payload, bool $unknownArtistFallback, ?RemoteAlbum $album = null, ?string $fallbackThumbnail = null): ?RemoteTrack
     {
         $videoType = $this->string($payload, 'videoType');
 
@@ -279,7 +283,7 @@ final readonly class YouTubeMusicMapper
             kind: $videoType === null || in_array($videoType, self::AUDIO_TYPES, true) ? SourceKind::Audio : SourceKind::Video,
             isExplicit: (bool) ($payload->isExplicit ?? false),
             isAvailable: (bool) ($payload->isAvailable ?? true),
-            thumbnailUrl: $this->thumbnail($payload),
+            thumbnailUrl: $this->thumbnail($payload) ?? $fallbackThumbnail,
         );
     }
 
