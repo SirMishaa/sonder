@@ -1,0 +1,250 @@
+{
+    "id": "MPREb_LJSVi8szMQL",
+    "title": "Zeit",
+    "isExplicit": false,
+    "type": "Album",
+    "thumbnails": [
+        {
+            "url": "https://yt3.googleusercontent.com/2Ymw5pdEXxSzeQeCqnApjx3zDghn3WDiREvSk992pfXy-tQlsO-kwYkD1QM5G8BVg-0Jvrs31O5nM1wt=w60-h60-l90-rj",
+            "width": 60,
+            "height": 60
+        },
+        {
+            "url": "https://yt3.googleusercontent.com/2Ymw5pdEXxSzeQeCqnApjx3zDghn3WDiREvSk992pfXy-tQlsO-kwYkD1QM5G8BVg-0Jvrs31O5nM1wt=w120-h120-l90-rj",
+            "width": 120,
+            "height": 120
+        },
+        {
+            "url": "https://yt3.googleusercontent.com/2Ymw5pdEXxSzeQeCqnApjx3zDghn3WDiREvSk992pfXy-tQlsO-kwYkD1QM5G8BVg-0Jvrs31O5nM1wt=w226-h226-l90-rj",
+            "width": 226,
+            "height": 226
+        },
+        {
+            "url": "https://yt3.googleusercontent.com/2Ymw5pdEXxSzeQeCqnApjx3zDghn3WDiREvSk992pfXy-tQlsO-kwYkD1QM5G8BVg-0Jvrs31O5nM1wt=w544-h544-l90-rj",
+            "width": 544,
+            "height": 544
+        }
+    ],
+    "description": "Zeit is the eighth studio album by German Neue Deutsche Härte band Rammstein, released on 29 April 2022 through Universal Music. Produced by the band with Olsen Involtini, the album was unplanned and recorded as a result of the band's tour being postponed due to the COVID-19 pandemic. According to the band, the enforced lockdowns due to the pandemic spurred the band's creativity, resulting in spontaneous writing and recording sessions. Rammstein recorded the album in late 2020 and early 2021 at La Fabrique Studios in Saint-Rémy-de-Provence, France, where they recorded their previous album. The album's title track was released as the lead single on 10 March 2022.\n\nFrom Wikipedia (https://en.wikipedia.org/wiki/Zeit_(R...) under Creative Commons Attribution CC-BY-SA 3.0 (https://creativecommons.org/licenses/...)",
+    "descriptionRuns": [
+        {
+            "text": "Zeit is the eighth studio album by German Neue Deutsche Härte band Rammstein, released on 29 April 2022 through Universal Music. Produced by the band with Olsen Involtini, the album was unplanned and recorded as a result of the band's tour being postponed due to the COVID-19 pandemic. According to the band, the enforced lockdowns due to the pandemic spurred the band's creativity, resulting in spontaneous writing and recording sessions. Rammstein recorded the album in late 2020 and early 2021 at La Fabrique Studios in Saint-Rémy-de-Provence, France, where they recorded their previous album. The album's title track was released as the lead single on 10 March 2022.\n\nFrom Wikipedia ("
+        },
+        {
+            "text": "https://en.wikipedia.org/wiki/Zeit_(R...",
+            "url": "https://en.wikipedia.org/wiki/Zeit_(Rammstein_album)"
+        },
+        {
+            "text": ") under Creative Commons Attribution CC-BY-SA 3.0 ("
+        },
+        {
+            "text": "https://creativecommons.org/licenses/...",
+            "url": "https://creativecommons.org/licenses/by-sa/3.0/legalcode"
+        },
+        {
+            "text": ")"
+        }
+    ],
+    "artists": [
+        {
+            "name": "Rammstein",
+            "id": "UCs6GGpd9zvsYghuYe0VDFUQ"
+        }
+    ],
+    "year": "2022",
+    "trackCount": 11,
+    "duration": "44 minutes",
+    "likeStatus": "INDIFFERENT",
+    "audioPlaylistId": "OLAK5uy_nl5CYbyn0jhWQiRJ17yvqRDN96eTx7sWQ",
+    "tracks": [
+        {
+            "videoId": "t-NUBR2kufw",
+            "title": "Armee der Tristen",
+            "artists": [
+                {
+                    "name": "Rammstein",
+                    "id": "UCs6GGpd9zvsYghuYe0VDFUQ"
+                }
+            ],
+            "album": "Zeit",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "duration": "3:26",
+            "duration_seconds": 206,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpKBpwDkwOics_Yiy9Xl5JdmZdf_eloSqB36xlifIgfUYy91NAM5GxdOhA3omaOGuhjjy8spXByxG3wIQqLZMyibJUhnqw"
+            },
+            "views": "36M plays",
+            "trackNumber": 1,
+            "playCount": "36M plays",
+            "pinnedToListenAgain": false,
+            "listenAgainFeedbackTokens": null,
+            "creditsBrowseId": "MPTCt-NUBR2kufw",
+            "setVideoId": "",
+            "communityVoteStatus": null
+        },
+        {
+            "videoId": "EbHGS_bVkXY",
+            "title": "Zeit",
+            "artists": [
+                {
+                    "name": "Rammstein",
+                    "id": "UCs6GGpd9zvsYghuYe0VDFUQ"
+                }
+            ],
+            "album": "Zeit",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "duration": "5:22",
+            "duration_seconds": 322,
+            "videoType": "MUSIC_VIDEO_TYPE_OMV",
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpIGfVXGvVCkU_9kVz-s4OUznsFaXULTJMqCM4Rt5wqRdVncxlqOxUvCzR3Z9m0sWxN4bEnjRxXheOOFG4CKEW0115exIQ"
+            },
+            "views": "88M plays",
+            "trackNumber": 2,
+            "playCount": "88M plays",
+            "pinnedToListenAgain": false,
+            "listenAgainFeedbackTokens": null,
+            "creditsBrowseId": "MPTCN20ZRxw59gI",
+            "setVideoId": "",
+            "communityVoteStatus": null
+        },
+        {
+            "videoId": "YnuE46kO8wU",
+            "title": "Schwarz",
+            "artists": [
+                {
+                    "name": "Rammstein",
+                    "id": "UCs6GGpd9zvsYghuYe0VDFUQ"
+                }
+            ],
+            "album": "Zeit",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": true,
+            "duration": "4:19",
+            "duration_seconds": 259,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpLlxUYpwIA-SC_eCzAaz3Nob_rw_OM0bY5H5vDI3XarubI_32iX3kfJvA6f-fOcjotauM1DmaeYKw_yOXHM3mko5tLmoA"
+            },
+            "views": "10M plays",
+            "trackNumber": 3,
+            "playCount": "10M plays",
+            "pinnedToListenAgain": false,
+            "listenAgainFeedbackTokens": null,
+            "creditsBrowseId": "MPTCYnuE46kO8wU",
+            "setVideoId": "",
+            "communityVoteStatus": null
+        },
+        {
+            "videoId": "unCXitq0Cfk",
+            "title": "Giftig",
+            "artists": [
+                {
+                    "name": "Rammstein",
+                    "id": "UCs6GGpd9zvsYghuYe0VDFUQ"
+                }
+            ],
+            "album": "Zeit",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "duration": "3:09",
+            "duration_seconds": 189,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpJE9sjDg8-3hhXnSt8qqlUTgw_gaFdWNq1PzYvCEPh1IjQVP-FxSqtVXSgUVPMYD3ZWNMXiGgmN2c6ezVWMPssoJCNAfA"
+            },
+            "views": "22M plays",
+            "trackNumber": 4,
+            "playCount": "22M plays",
+            "pinnedToListenAgain": false,
+            "listenAgainFeedbackTokens": null,
+            "creditsBrowseId": "MPTCunCXitq0Cfk",
+            "setVideoId": "",
+            "communityVoteStatus": null
+        },
+        {
+            "videoId": "hBTNyJ33LWI",
+            "title": "Zick Zack",
+            "artists": [
+                {
+                    "name": "Rammstein",
+                    "id": "UCs6GGpd9zvsYghuYe0VDFUQ"
+                }
+            ],
+            "album": "Zeit",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "duration": "4:05",
+            "duration_seconds": 245,
+            "videoType": "MUSIC_VIDEO_TYPE_OMV",
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpITIJioa8JVzd7q3oN1UTIBgjc45mCM0mhc_l2KOmX2tW8_7uZ1F8V5kfP0hwX8UI0pMUibxjkUPpCsy-5GALM2J2kjsA"
+            },
+            "views": "103M plays",
+            "trackNumber": 5,
+            "playCount": "103M plays",
+            "pinnedToListenAgain": false,
+            "listenAgainFeedbackTokens": null,
+            "creditsBrowseId": "MPTClbX2aTXGRug",
+            "setVideoId": "",
+            "communityVoteStatus": null
+        },
+        {
+            "videoId": "iuCWXN_YUN8",
+            "title": "OK",
+            "artists": [
+                {
+                    "name": "Rammstein",
+                    "id": "UCs6GGpd9zvsYghuYe0VDFUQ"
+                }
+            ],
+            "album": "Zeit",
+            "likeStatus": "INDIFFERENT",
+            "inLibrary": false,
+            "thumbnails": null,
+            "isAvailable": true,
+            "isExplicit": false,
+            "duration": "4:04",
+            "duration_seconds": 244,
+            "videoType": "MUSIC_VIDEO_TYPE_ATV",
+            "feedbackTokens": {
+                "add": null,
+                "remove": "AB9zfpLvzaPdp-2nObUdO433TucmQk-wqeKK3j3LIzo-bfHurCGA0dBlhOIn4tLpsLIIiwYPyEka0PXXN2o7QeDL-pgonNkCdg"
+            },
+            "views": "8.5M plays",
+            "trackNumber": 6,
+            "playCount": "8.5M plays",
+            "pinnedToListenAgain": false,
+            "listenAgainFeedbackTokens": null,
+            "creditsBrowseId": "MPTCiuCWXN_YUN8",
+            "setVideoId": "",
+            "communityVoteStatus": null
+        }
+    ],
+    "duration_seconds": 2656,
+    "other_versions": [],
+    "related_recommendations": []
+}

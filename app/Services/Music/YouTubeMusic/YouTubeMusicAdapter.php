@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace App\Services\Music\YouTubeMusic;
 
+use App\Enums\CatalogFilter;
 use App\Enums\Provider;
 use App\Exceptions\Providers\CredentialsRejected;
+use App\Services\Music\Contracts\BrowsesCatalog;
 use App\Services\Music\Contracts\ProviderAdapter;
 use App\Services\Music\Contracts\ProviderCredentials;
 use App\Services\Music\Contracts\ReadsPlaylists;
+use App\Services\Music\Data\CatalogAlbum;
+use App\Services\Music\Data\CatalogArtist;
+use App\Services\Music\Data\CatalogResults;
 use App\Services\Music\Data\RemoteAccount;
 use App\Services\Music\Data\RemotePlaylist;
 use App\Services\Music\YouTubeMusic\Gateway\YouTubeMusicGateway;
@@ -17,7 +22,7 @@ use LogicException;
 /**
  * YouTube Music behind Sonder's provider contracts.
  */
-final readonly class YouTubeMusicAdapter implements ProviderAdapter, ReadsPlaylists
+final readonly class YouTubeMusicAdapter implements BrowsesCatalog, ProviderAdapter, ReadsPlaylists
 {
     /**
      * Library entries that are not music. "Liked Music" (LM) stays listed
@@ -73,6 +78,30 @@ final readonly class YouTubeMusicAdapter implements ProviderAdapter, ReadsPlayli
             $externalId,
             $trackCountHint,
         );
+    }
+
+    public function search(string $query, ?CatalogFilter $filter = null, int $limit = 20): CatalogResults
+    {
+        return $this->mapper->searchResults($this->gateway->search($query, match ($filter) {
+            CatalogFilter::Tracks => 'songs',
+            null => null,
+            default => $filter->value,
+        }, $limit));
+    }
+
+    public function artist(string $artistId): CatalogArtist
+    {
+        return $this->mapper->artist($this->gateway->artist($artistId), $artistId);
+    }
+
+    public function album(string $albumId): CatalogAlbum
+    {
+        return $this->mapper->album($this->gateway->album($albumId), $albumId);
+    }
+
+    public function publicPlaylist(string $playlistId): RemotePlaylist
+    {
+        return $this->mapper->playlist($this->gateway->publicPlaylist($playlistId), $playlistId);
     }
 
     private function cookie(ProviderCredentials $credentials): string

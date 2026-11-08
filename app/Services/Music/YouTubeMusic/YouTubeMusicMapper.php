@@ -7,6 +7,13 @@ namespace App\Services\Music\YouTubeMusic;
 use App\Enums\ArtistRole;
 use App\Enums\Provider;
 use App\Enums\SourceKind;
+use App\Services\Music\Data\CatalogAlbum;
+use App\Services\Music\Data\CatalogAlbumSummary;
+use App\Services\Music\Data\CatalogArtist;
+use App\Services\Music\Data\CatalogArtistSummary;
+use App\Services\Music\Data\CatalogPlaylistSummary;
+use App\Services\Music\Data\CatalogResults;
+use App\Services\Music\Data\CatalogVideo;
 use App\Services\Music\Data\ProviderRef;
 use App\Services\Music\Data\RemoteAccount;
 use App\Services\Music\Data\RemoteAlbum;
@@ -14,6 +21,7 @@ use App\Services\Music\Data\RemoteArtist;
 use App\Services\Music\Data\RemotePlaylist;
 use App\Services\Music\Data\RemotePlaylistSummary;
 use App\Services\Music\Data\RemoteTrack;
+use Illuminate\Support\Str;
 
 /**
  * Turns ytmusicapi's untyped payloads into Sonder's exchange data.
@@ -74,6 +82,165 @@ final readonly class YouTubeMusicMapper
      */
     public function track(object $payload): ?RemoteTrack
     {
+        return $this->mapTrack($payload, true);
+    }
+
+    /**
+     * Catalog hits keep an empty artist list when YouTube credits none, so the
+     * caller can tell "unknown" from a real artist named so.
+     *
+     * @param  list<object>  $payload
+     */
+    public function searchResults(array $payload): CatalogResults
+    {
+        $topArtist = null;
+        $tracks = $albums = $artists = $playlists = [];
+
+        foreach ($payload as $hit) {
+            switch ($this->string($hit, 'resultType')) {
+                case 'artist':
+                    if ($this->string($hit, 'category') === 'Top result') {
+                        $topArtist ??= $this->topResultArtist($hit);
+
+                        break;
+                    }
+
+                    if (($artist = $this->artistSummary($hit, $this->string($hit, 'artist') ?? $this->string($hit, 'title'))) !== null) {
+                        $artists[] = $artist;
+                    }
+
+                    break;
+                case 'song':
+                    if (($track = $this->mapTrack($hit, false)) !== null) {
+                        $tracks[] = $track;
+                    }
+
+                    break;
+                case 'album':
+                    if (($album = $this->albumSummary($hit)) !== null) {
+                        $albums[] = $album;
+                    }
+
+                    break;
+                case 'playlist':
+                    if (($playlist = $this->playlistHit($hit)) !== null) {
+                        $playlists[] = $playlist;
+                    }
+
+                    break;
+            }
+        }
+
+        return new CatalogResults($topArtist, $tracks, $albums, $artists, $playlists);
+    }
+
+    public function artist(object $payload, string $channelId): CatalogArtist
+    {
+        $summary = new CatalogArtistSummary(
+            ref: $this->idRef($channelId),
+            name: $this->string($payload, 'name') ?? 'Unknown artist',
+            thumbnailUrl: $this->thumbnail($payload),
+            subscribers: $this->string($payload, 'subscribers'),
+        );
+
+        $topTracks = [];
+
+        foreach ($this->results($payload, 'songs') as $track) {
+            if (($mapped = $this->mapTrack($track, false)) !== null) {
+                $topTracks[] = $mapped;
+            }
+        }
+
+        $albums = $singles = $videos = $related = [];
+
+        foreach ($this->results($payload, 'albums') as $album) {
+            if (($mapped = $this->albumSummary($album, 'Album')) !== null) {
+                $albums[] = $mapped;
+            }
+        }
+
+        foreach ($this->results($payload, 'singles') as $single) {
+            if (($mapped = $this->albumSummary($single, 'Single')) !== null) {
+                $singles[] = $mapped;
+            }
+        }
+
+        foreach ($this->results($payload, 'videos') as $video) {
+            $videoId = $this->string($video, 'videoId');
+
+            if ($videoId !== null) {
+                $videos[] = new CatalogVideo(
+                    ref: new ProviderRef(Provider::YouTubeMusic, $videoId),
+                    title: $this->string($video, 'title') ?? 'Untitled video',
+                    thumbnailUrl: $this->thumbnail($video),
+                    views: $this->count($this->string($video, 'views')),
+                );
+            }
+        }
+
+        foreach ($this->results($payload, 'related') as $artist) {
+            if (($mapped = $this->artistSummary($artist, $this->string($artist, 'title'))) !== null) {
+                $related[] = $mapped;
+            }
+        }
+
+        return new CatalogArtist(
+            summary: $summary,
+            monthlyListeners: $this->string($payload, 'monthlyListeners'),
+            views: $this->count($this->string($payload, 'views')),
+            description: $this->string($payload, 'description'),
+            topTracks: $topTracks,
+            albums: $albums,
+            singles: $singles,
+            videos: $videos,
+            related: $related,
+        );
+    }
+
+    public function album(object $payload, string $browseId): CatalogAlbum
+    {
+        $ref = $this->idRef($browseId);
+        $title = $this->string($payload, 'title') ?? 'Untitled album';
+        $albumRef = new RemoteAlbum($ref, $title, null);
+
+        $tracks = [];
+        $plays = [];
+
+        foreach (is_array($payload->tracks ?? null) ? $payload->tracks : [] as $track) {
+            if (! is_object($track) || ($mapped = $this->mapTrack($track, false, $albumRef)) === null) {
+                continue;
+            }
+
+            $tracks[] = $mapped;
+
+            if ($mapped->ref !== null && ($count = $this->count($this->string($track, 'playCount') ?? $this->string($track, 'views'))) !== null) {
+                $plays[$mapped->ref->externalId] = $count;
+            }
+        }
+
+        $trackCount = $payload->trackCount ?? null;
+        $duration = $payload->duration_seconds ?? null;
+
+        return new CatalogAlbum(
+            summary: new CatalogAlbumSummary(
+                ref: $ref,
+                title: $title,
+                type: $this->string($payload, 'type') ?? 'Album',
+                year: $this->year($payload),
+                artists: $this->artists($payload, $title, false),
+                thumbnailUrl: $this->thumbnail($payload),
+                isExplicit: (bool) ($payload->isExplicit ?? false),
+            ),
+            description: $this->string($payload, 'description'),
+            trackCount: is_int($trackCount) && $trackCount > 0 ? $trackCount : count($tracks),
+            durationSeconds: is_int($duration) ? $duration : null,
+            tracks: $tracks,
+            playsByVideoId: $plays,
+        );
+    }
+
+    private function mapTrack(object $payload, bool $unknownArtistFallback, ?RemoteAlbum $album = null): ?RemoteTrack
+    {
         $videoType = $this->string($payload, 'videoType');
 
         if ($videoType === self::PODCAST_EPISODE) {
@@ -82,15 +249,15 @@ final readonly class YouTubeMusicMapper
 
         $title = $this->string($payload, 'title') ?? 'Untitled track';
         $videoId = $this->string($payload, 'videoId');
-        $album = $payload->album ?? null;
+        $rawAlbum = $payload->album ?? null;
 
         return new RemoteTrack(
             ref: $videoId === null ? null : new ProviderRef(Provider::YouTubeMusic, $videoId),
             title: $title,
-            artists: $this->artists($payload, $title),
-            album: is_object($album) && ($albumTitle = $this->string($album, 'name')) !== null
-                ? new RemoteAlbum($this->ref($album, 'id'), $albumTitle, null)
-                : null,
+            artists: $this->artists($payload, $title, $unknownArtistFallback),
+            album: $album ?? (is_object($rawAlbum) && ($albumTitle = $this->string($rawAlbum, 'name')) !== null
+                ? new RemoteAlbum($this->ref($rawAlbum, 'id'), $albumTitle, null)
+                : null),
             durationSeconds: is_int($payload->duration_seconds ?? null) ? $payload->duration_seconds : null,
             isrc: null,
             kind: $videoType === null || in_array($videoType, self::AUDIO_TYPES, true) ? SourceKind::Audio : SourceKind::Video,
@@ -98,6 +265,117 @@ final readonly class YouTubeMusicMapper
             isAvailable: (bool) ($payload->isAvailable ?? true),
             thumbnailUrl: $this->thumbnail($payload),
         );
+    }
+
+    /**
+     * The "Top result" card carries no browse id: the artist hides in its artists list.
+     */
+    private function topResultArtist(object $hit): ?CatalogArtistSummary
+    {
+        $artists = is_array($hit->artists ?? null) ? $hit->artists : [];
+        $first = $artists[0] ?? null;
+
+        if (! is_object($first) || ($ref = $this->ref($first, 'id')) === null || ($name = $this->string($first, 'name')) === null) {
+            return null;
+        }
+
+        return new CatalogArtistSummary($ref, $name, $this->thumbnail($hit), $this->string($hit, 'subscribers'));
+    }
+
+    private function artistSummary(object $hit, ?string $name): ?CatalogArtistSummary
+    {
+        $ref = $this->ref($hit, 'browseId');
+
+        return $ref === null || $name === null
+            ? null
+            : new CatalogArtistSummary($ref, $name, $this->thumbnail($hit), $this->string($hit, 'subscribers'));
+    }
+
+    private function albumSummary(object $hit, string $defaultType = 'Album'): ?CatalogAlbumSummary
+    {
+        $ref = $this->ref($hit, 'browseId');
+
+        if ($ref === null) {
+            return null;
+        }
+
+        $title = $this->string($hit, 'title') ?? 'Untitled album';
+
+        return new CatalogAlbumSummary(
+            ref: $ref,
+            title: $title,
+            type: $this->string($hit, 'type') ?? $defaultType,
+            year: $this->year($hit),
+            artists: $this->artists($hit, $title, false),
+            thumbnailUrl: $this->thumbnail($hit),
+            isExplicit: (bool) ($hit->isExplicit ?? false),
+        );
+    }
+
+    /**
+     * Search lists playlists by their "VL" browse id; the playlist id is what follows.
+     */
+    private function playlistHit(object $hit): ?CatalogPlaylistSummary
+    {
+        $id = $this->string($hit, 'playlistId') ?? $this->string($hit, 'browseId');
+
+        if ($id === null) {
+            return null;
+        }
+
+        $id = Str::chopStart($id, 'VL');
+        $author = $hit->author ?? null;
+
+        return new CatalogPlaylistSummary(
+            ref: $this->idRef($id),
+            title: $this->string($hit, 'title') ?? 'Untitled playlist',
+            author: is_string($author) && mb_trim($author) !== '' ? $author : $this->author($hit),
+            trackCount: $this->count($this->string($hit, 'itemCount')),
+            thumbnailUrl: $this->thumbnail($hit),
+        );
+    }
+
+    /**
+     * @return list<object>
+     */
+    private function results(object $payload, string $section): array
+    {
+        $shelf = $payload->{$section} ?? null;
+        $results = is_object($shelf) && is_array($shelf->results ?? null) ? $shelf->results : [];
+
+        return array_values(array_filter($results, is_object(...)));
+    }
+
+    private function year(object $payload): ?int
+    {
+        $year = $payload->year ?? null;
+
+        return is_numeric($year) && (int) $year > 0 ? (int) $year : null;
+    }
+
+    /**
+     * Reads counts such as "36M plays", "312K" or "8,401,443,283 views".
+     */
+    private function count(?string $text): ?int
+    {
+        if ($text === null || preg_match('/(\d[\d.,\x{00A0}\x{202F} ]*)\s*([KMB])?/iu', $text, $match) !== 1) {
+            return null;
+        }
+
+        $multiplier = match (mb_strtoupper($match[2] ?? '')) {
+            'K' => 1_000,
+            'M' => 1_000_000,
+            'B' => 1_000_000_000,
+            default => 1,
+        };
+
+        if ($multiplier === 1) {
+            $digits = preg_replace('/\D/u', '', $match[1]);
+
+            return $digits === null || $digits === '' ? null : (int) $digits;
+        }
+
+        return (int) round((float) str_replace(',', '.', mb_trim($match[1])) * $multiplier);
     }
 
     /**
@@ -121,7 +399,7 @@ final readonly class YouTubeMusicMapper
      *
      * @return list<RemoteArtist>
      */
-    private function artists(object $payload, string $title): array
+    private function artists(object $payload, string $title, bool $unknownFallback = true): array
     {
         $featuring = preg_match('/\b(?:feat\.?|ft\.?|featuring)\s+([^)\]]+)/iu', $title, $match) === 1
             ? mb_strtolower($match[1])
@@ -138,7 +416,7 @@ final readonly class YouTubeMusicMapper
             $artists[] = new RemoteArtist($this->ref($artist, 'id'), $name, $role);
         }
 
-        return $artists === [] ? [new RemoteArtist(null, 'Unknown artist', ArtistRole::Main)] : $artists;
+        return $artists === [] && $unknownFallback ? [new RemoteArtist(null, 'Unknown artist', ArtistRole::Main)] : $artists;
     }
 
     /**
@@ -202,6 +480,14 @@ final readonly class YouTubeMusicMapper
         $width = $thumbnail->width ?? 0;
 
         return is_int($width) ? $width : 0;
+    }
+
+    /**
+     * An empty id only comes from a caller bug; it is kept out of the exchange data.
+     */
+    private function idRef(string $id): ProviderRef
+    {
+        return new ProviderRef(Provider::YouTubeMusic, $id !== '' ? $id : 'unknown');
     }
 
     private function ref(object $payload, string $key): ?ProviderRef

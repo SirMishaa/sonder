@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\CatalogFilter;
 use App\Enums\Provider;
 use App\Exceptions\Providers\CredentialsRejected;
 use App\Services\Music\Contracts\ProviderCredentials;
@@ -49,6 +50,21 @@ it('reads a playlist with the listing count as hint', function (): void {
     $this->gateway->playlists['PL1'] = (object) ['title' => 'Deep Focus', 'tracks' => []];
 
     expect($this->adapter->playlist($this->credentials, 'PL1', 7)->summary->trackCount)->toBe(7);
+});
+
+it('searches the catalog without a cookie', function (): void {
+    $this->gateway->searches['rammstein'] = [(object) ['resultType' => 'song', 'title' => 'Sonne', 'videoId' => 'v1']];
+
+    $results = $this->adapter->search('rammstein', CatalogFilter::Tracks);
+
+    expect($results->tracks[0]->title)->toBe('Sonne')
+        ->and($this->gateway->calls[0])->toMatchArray(['method' => 'search', 'cookie' => '', 'id' => 'rammstein']);
+});
+
+it('reads an album', function (): void {
+    $this->gateway->albums['MPREb1'] = (object) ['title' => 'Zeit', 'trackCount' => 11, 'tracks' => []];
+
+    expect($this->adapter->album('MPREb1')->trackCount)->toBe(11);
 });
 
 it('refuses credentials of another provider', function (): void {
