@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Deferred, Head, router } from '@inertiajs/vue3';
-import { useDebounceFn } from '@vueuse/core';
+import { useTimeoutFn } from '@vueuse/core';
 import { trans } from 'laravel-vue-i18n';
 import { Search, SearchX } from 'lucide-vue-next';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, useTemplateRef } from 'vue';
 import SearchController from '@/actions/App/Http/Controllers/SearchController';
 import AlbumCard from '@/components/catalog/AlbumCard.vue';
 import ArtistCard from '@/components/catalog/ArtistCard.vue';
@@ -19,6 +19,7 @@ import TrackRow from '@/components/music/TrackRow.vue';
 import { useAlbumGrouping } from '@/composables/useAlbumGrouping';
 import { useCatalogSort } from '@/composables/useCatalogSort';
 import { usePlayer } from '@/composables/usePlayer';
+import { useSearchText } from '@/composables/useSearchText';
 import { useTrackTap } from '@/composables/useTrackTap';
 import AppLayout from '@/layouts/AppLayout.vue';
 
@@ -47,7 +48,15 @@ const source = computed(() => ({
 }));
 const { tap, preventSelection } = useTrackTap(() => source.value);
 
-const text = ref(props.query);
+const { text, current, requested } = useSearchText(() => props.query);
+const input = useTemplateRef<HTMLInputElement>('input');
+const debounce = useTimeoutFn(submit, 300, { immediate: false });
+
+onMounted(() => {
+    if (!props.query) {
+        input.value?.focus();
+    }
+});
 
 const chips = computed<{ value: SearchType | null; label: string }[]>(() => [
     { value: null, label: trans('All') },
@@ -57,20 +66,9 @@ const chips = computed<{ value: SearchType | null; label: string }[]>(() => [
     { value: 'playlists', label: trans('Playlists') },
 ]);
 
-watch(
-    () => props.query,
-    (query) => {
-        if (squish(text.value) !== query) {
-            text.value = query;
-        }
-    },
-);
-
-function squish(value: string): string {
-    return value.replace(/\s+/g, ' ').trim();
-}
-
 function visit(query: string, type: SearchType | null, replace: boolean): void {
+    debounce.stop();
+    requested(query);
     router.get(
         SearchController.index({
             query: { q: query || undefined, type: type ?? undefined },
@@ -80,25 +78,20 @@ function visit(query: string, type: SearchType | null, replace: boolean): void {
     );
 }
 
-const search = useDebounceFn(() => {
-    const query = squish(text.value);
-
-    if (query !== props.query) {
-        visit(query, props.type, true);
-    }
-}, 300);
-
+/** Searches the typed text, unless it is what the page already shows. */
 function submit(): void {
-    const query = squish(text.value);
+    debounce.stop();
 
-    if (query !== props.query) {
-        visit(query, props.type, true);
+    if (current() !== props.query) {
+        visit(current(), props.type, true);
     }
 }
 
 function choose(type: SearchType | null): void {
+    debounce.stop();
+
     if (type !== props.type) {
-        visit(squish(text.value), type, false);
+        visit(current(), type, false);
     }
 }
 
@@ -223,11 +216,11 @@ function indexOf(track: App.Data.CatalogTrackData): number {
                 name="q"
                 enterkeyhint="search"
                 autocomplete="off"
-                :autofocus="!query"
+                ref="input"
                 :aria-label="$t('Search')"
                 :placeholder="$t('Artist, album, track…')"
                 class="min-w-0 flex-1 bg-transparent text-[17px] font-semibold outline-none placeholder:font-medium placeholder:text-faint"
-                @input="search"
+                @input="debounce.start()"
             />
         </form>
 
