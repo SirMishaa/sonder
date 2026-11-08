@@ -7,6 +7,7 @@ import AlbumCard from '@/components/catalog/AlbumCard.vue';
 import AlbumFacts from '@/components/catalog/AlbumFacts.vue';
 import CatalogError from '@/components/catalog/CatalogError.vue';
 import CatalogMenu from '@/components/catalog/CatalogMenu.vue';
+import AmbientBackdrop from '@/components/music/AmbientBackdrop.vue';
 import Artwork from '@/components/music/Artwork.vue';
 import TrackRow from '@/components/music/TrackRow.vue';
 import { useTrackListPlayback } from '@/composables/useTrackListPlayback';
@@ -76,15 +77,7 @@ const youTubeMusicUrl = computed(() =>
     </div>
 
     <div v-else class="relative">
-        <div class="ambient" aria-hidden="true">
-            <div
-                :style="{
-                    backgroundImage: page.album.thumbnailUrl
-                        ? `url('${page.album.thumbnailUrl}')`
-                        : undefined,
-                }"
-            />
-        </div>
+        <AmbientBackdrop :src="page.album.thumbnailUrl" />
 
         <div class="page relative max-w-[1320px] px-4 pt-6 md:px-8 md:pt-8">
             <div class="layout">
@@ -118,9 +111,11 @@ const youTubeMusicUrl = computed(() =>
                             page.album.artists
                         }}</span>
                         <template v-if="page.album.year">
-                            <i class="dot" /><span>{{ page.album.year }}</span>
+                            <i class="meta-dot" /><span>{{
+                                page.album.year
+                            }}</span>
                         </template>
-                        <i class="dot" />
+                        <i class="meta-dot" />
                         <span>{{
                             $tChoice(
                                 ':count track|:count tracks',
@@ -128,7 +123,7 @@ const youTubeMusicUrl = computed(() =>
                             )
                         }}</span>
                         <template v-if="duration">
-                            <i class="dot" /><span>{{ duration }}</span>
+                            <i class="meta-dot" /><span>{{ duration }}</span>
                         </template>
                     </p>
 
@@ -158,16 +153,26 @@ const youTubeMusicUrl = computed(() =>
                             <button
                                 type="button"
                                 class="action-button w-full"
-                                disabled
+                                aria-disabled="true"
+                                aria-describedby="save-as-playlist-reason"
                             >
                                 <ListPlus class="size-4" aria-hidden="true" />{{
                                     $t('Save as playlist')
                                 }}
                             </button>
+                            <span
+                                id="save-as-playlist-reason"
+                                class="sr-only"
+                                >{{ $t('Coming soon') }}</span
+                            >
                         </span>
                     </div>
 
-                    <AlbumFacts class="reveal" style="--i: 4" :page="page" />
+                    <AlbumFacts
+                        class="facts-beside reveal"
+                        style="--i: 4"
+                        :page="page"
+                    />
                 </header>
 
                 <div class="min-w-0">
@@ -179,19 +184,21 @@ const youTubeMusicUrl = computed(() =>
                         :aria-label="$t('Tracks')"
                     >
                         <div class="contents" role="row">
-                            <span class="head justify-end" role="columnheader"
+                            <span
+                                class="track-head justify-end"
+                                role="columnheader"
                                 >#</span
                             >
-                            <span class="head" role="columnheader">{{
+                            <span class="track-head" role="columnheader">{{
                                 $t('Title')
                             }}</span>
                             <span
-                                class="head from-md justify-end"
+                                class="track-head from-wide justify-end"
                                 role="columnheader"
                                 >{{ $t('Plays') }}</span
                             >
                             <span
-                                class="head justify-end"
+                                class="track-head justify-end"
                                 role="columnheader"
                                 :aria-label="$t('Time')"
                                 :title="$t('Time')"
@@ -210,6 +217,7 @@ const youTubeMusicUrl = computed(() =>
                             :show-album="false"
                             :show-artist="showsArtist(track)"
                             show-plays
+                            plays-from="wide"
                             @mousedown="preventSelection"
                             @tap="onTrackTap($event, index)"
                             @play="play(index)"
@@ -225,6 +233,8 @@ const youTubeMusicUrl = computed(() =>
                             {{ $t('This album has no tracks') }}
                         </p>
                     </div>
+
+                    <AlbumFacts class="facts-after" :page="page" />
 
                     <Deferred data="moreByArtist">
                         <template #fallback>
@@ -276,43 +286,6 @@ const youTubeMusicUrl = computed(() =>
 </template>
 
 <style scoped>
-.ambient {
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 520px;
-    overflow: hidden;
-    pointer-events: none;
-    mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
-}
-
-.ambient div {
-    position: absolute;
-    inset: -60px;
-    background-size: cover;
-    background-position: center;
-    filter: blur(70px) saturate(1.35);
-    opacity: 0.42;
-    animation: fade-in 900ms var(--ease-out-quint) both;
-}
-
-.ambient::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        180deg,
-        oklch(0.165 0.012 60 / 0.15),
-        oklch(0.165 0.012 60 / 0.7) 55%,
-        transparent 100%
-    );
-}
-
-@keyframes fade-in {
-    from {
-        opacity: 0;
-    }
-}
-
 .page {
     container-type: inline-size;
 }
@@ -355,13 +328,6 @@ const youTubeMusicUrl = computed(() =>
     }
 }
 
-.dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 999px;
-    background: var(--color-faint);
-}
-
 /* [Play][Shuffle, fills][⋯] then a full-width row, every control 40px high. */
 .actions {
     display: grid;
@@ -386,31 +352,24 @@ const youTubeMusicUrl = computed(() =>
     grid-template-columns: 36px minmax(0, 1fr) 64px;
 }
 
-@media (min-width: 768px) {
+/* Facts sit in the cover column when there is one, after the tracks otherwise. */
+.facts-after {
+    margin-top: 8px;
+}
+
+@container (min-width: 860px) {
     .track-table {
         grid-template-columns: 36px minmax(0, 1fr) 84px 64px;
     }
+
+    .facts-after {
+        display: none;
+    }
 }
 
-.head {
-    display: flex;
-    align-items: center;
-    height: 34px;
-    padding: 0 10px;
-    border-bottom: 1px solid var(--color-line);
-    color: var(--color-faint);
-    font-size: 12.5px;
-    font-weight: 600;
-}
-
-/* Scoped display rules outrank Tailwind's `hidden`, so columns hide here. */
-.head.from-md {
-    display: none;
-}
-
-@media (min-width: 768px) {
-    .head.from-md {
-        display: flex;
+@container (max-width: 859.98px) {
+    .facts-beside {
+        display: none;
     }
 }
 

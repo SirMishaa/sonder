@@ -5,6 +5,7 @@ import { computed } from 'vue';
 import CatalogError from '@/components/catalog/CatalogError.vue';
 import CatalogMenu from '@/components/catalog/CatalogMenu.vue';
 import ClampedDescription from '@/components/catalog/ClampedDescription.vue';
+import AmbientBackdrop from '@/components/music/AmbientBackdrop.vue';
 import Artwork from '@/components/music/Artwork.vue';
 import TrackRow from '@/components/music/TrackRow.vue';
 import { useTrackListPlayback } from '@/composables/useTrackListPlayback';
@@ -55,15 +56,7 @@ const youTubeMusicUrl = computed(() =>
     </div>
 
     <div v-else class="relative">
-        <div class="ambient" aria-hidden="true">
-            <div
-                :style="{
-                    backgroundImage: page.playlist.thumbnailUrl
-                        ? `url('${page.playlist.thumbnailUrl}')`
-                        : undefined,
-                }"
-            />
-        </div>
+        <AmbientBackdrop :src="page.playlist.thumbnailUrl" />
 
         <div class="relative max-w-[1320px] px-4 pt-6 md:px-8 md:pt-8">
             <header class="hero">
@@ -91,7 +84,7 @@ const youTubeMusicUrl = computed(() =>
                             <span class="font-bold text-paper">{{
                                 page.playlist.author
                             }}</span>
-                            <i class="dot" />
+                            <i class="meta-dot" />
                         </template>
                         <span>{{
                             $tChoice(
@@ -144,14 +137,16 @@ const youTubeMusicUrl = computed(() =>
                 :aria-label="$t('Tracks')"
             >
                 <div class="contents" role="row">
-                    <span class="head justify-end" role="columnheader">#</span>
-                    <span class="head" role="columnheader">{{
+                    <span class="track-head justify-end" role="columnheader"
+                        >#</span
+                    >
+                    <span class="track-head" role="columnheader">{{
                         $t('Title')
                     }}</span>
-                    <span class="head from-md" role="columnheader">{{
+                    <span class="track-head from-md" role="columnheader">{{
                         $t('Album')
                     }}</span>
-                    <span class="head justify-end" role="columnheader">{{
+                    <span class="track-head justify-end" role="columnheader">{{
                         $t('Time')
                     }}</span>
                 </div>
@@ -180,43 +175,6 @@ const youTubeMusicUrl = computed(() =>
 </template>
 
 <style scoped>
-.ambient {
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 520px;
-    overflow: hidden;
-    pointer-events: none;
-    mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
-}
-
-.ambient div {
-    position: absolute;
-    inset: -60px;
-    background-size: cover;
-    background-position: center;
-    filter: blur(70px) saturate(1.35);
-    opacity: 0.42;
-    animation: fade-in 900ms var(--ease-out-quint) both;
-}
-
-.ambient::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        180deg,
-        oklch(0.165 0.012 60 / 0.15),
-        oklch(0.165 0.012 60 / 0.7) 55%,
-        transparent 100%
-    );
-}
-
-@keyframes fade-in {
-    from {
-        opacity: 0;
-    }
-}
-
 .hero {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -250,13 +208,6 @@ const youTubeMusicUrl = computed(() =>
     }
 }
 
-.dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 999px;
-    background: var(--color-faint);
-}
-
 .track-table {
     display: grid;
     grid-template-columns: 36px minmax(0, 1fr) 64px;
@@ -265,26 +216,6 @@ const youTubeMusicUrl = computed(() =>
 @media (min-width: 768px) {
     .track-table {
         grid-template-columns: 36px minmax(0, 1.4fr) minmax(0, 1fr) 64px;
-    }
-}
-
-.head {
-    display: flex;
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--color-line);
-    color: var(--color-faint);
-    font-size: 12px;
-    font-weight: 600;
-}
-
-/* Scoped display rules outrank Tailwind's `hidden`, so columns hide here. */
-.head.from-md {
-    display: none;
-}
-
-@media (min-width: 768px) {
-    .head.from-md {
-        display: flex;
     }
 }
 </style>

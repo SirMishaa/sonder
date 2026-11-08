@@ -11,6 +11,7 @@ import {
 } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 import PlaylistRefreshController from '@/actions/App/Http/Controllers/PlaylistRefreshController';
+import AmbientBackdrop from '@/components/music/AmbientBackdrop.vue';
 import Artwork from '@/components/music/Artwork.vue';
 import SuggestionsBlock from '@/components/music/SuggestionsBlock.vue';
 import TrackRow from '@/components/music/TrackRow.vue';
@@ -111,15 +112,7 @@ useShortcuts({ r: refresh });
     <Head :title="summary.title" />
 
     <div class="relative">
-        <div class="ambient" aria-hidden="true">
-            <div
-                :style="{
-                    backgroundImage: summary.thumbnailUrl
-                        ? `url('${summary.thumbnailUrl}')`
-                        : undefined,
-                }"
-            />
-        </div>
+        <AmbientBackdrop :src="summary.thumbnailUrl" />
 
         <div class="relative max-w-[1480px] px-4 pt-6 md:px-8 md:pt-8">
             <Alert
@@ -170,11 +163,11 @@ useShortcuts({ r: refresh });
                             )
                         }}</span>
                         <template v-if="playlist.duration">
-                            <i class="dot" /><span>{{
+                            <i class="meta-dot" /><span>{{
                                 playlist.duration
                             }}</span>
                         </template>
-                        <i class="dot" />
+                        <i class="meta-dot" />
                         <span
                             class="inline-flex items-center gap-1.5"
                             :title="formatDateTime(syncState.lastCheckedAt)"
@@ -184,7 +177,7 @@ useShortcuts({ r: refresh });
                             }}
                         </span>
                         <template v-if="syncState.lastChangedAt">
-                            <i class="dot" /><span>{{
+                            <i class="meta-dot" /><span>{{
                                 $t('Changed :ago', { ago: changedAgo })
                             }}</span>
                         </template>
@@ -248,17 +241,19 @@ useShortcuts({ r: refresh });
                 :aria-label="$t('Tracks')"
             >
                 <div class="contents" role="row">
-                    <span class="head justify-end" role="columnheader">#</span>
-                    <span class="head" role="columnheader">{{
+                    <span class="track-head justify-end" role="columnheader"
+                        >#</span
+                    >
+                    <span class="track-head" role="columnheader">{{
                         $t('Title')
                     }}</span>
-                    <span class="head from-md" role="columnheader">{{
+                    <span class="track-head from-md" role="columnheader">{{
                         $t('Album')
                     }}</span>
-                    <span class="head from-lg" role="columnheader">{{
+                    <span class="track-head from-lg" role="columnheader">{{
                         $t('Genre')
                     }}</span>
-                    <span class="head justify-end" role="columnheader">{{
+                    <span class="track-head justify-end" role="columnheader">{{
                         $t('Time')
                     }}</span>
                 </div>
@@ -289,54 +284,10 @@ useShortcuts({ r: refresh });
 </template>
 
 <style scoped>
-.ambient {
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 520px;
-    overflow: hidden;
-    pointer-events: none;
-    mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
-}
-
-.ambient div {
-    position: absolute;
-    inset: -60px;
-    background-size: cover;
-    background-position: center;
-    filter: blur(70px) saturate(1.35);
-    opacity: 0.42;
-    animation: fade-in 900ms var(--ease-out-quint) both;
-}
-
-.ambient::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        180deg,
-        oklch(0.165 0.012 60 / 0.15),
-        oklch(0.165 0.012 60 / 0.7) 55%,
-        transparent 100%
-    );
-}
-
-@keyframes fade-in {
-    from {
-        opacity: 0;
-    }
-}
-
 .cover {
     box-shadow:
         0 34px 60px -28px oklch(0 0 0 / 0.95),
         0 0 0 1px oklch(1 0 0 / 0.08);
-}
-
-.dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 999px;
-    background: var(--color-faint);
 }
 
 .button {
@@ -391,33 +342,6 @@ useShortcuts({ r: refresh });
         grid-template-columns:
             36px minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.9fr)
             64px;
-    }
-}
-
-.head {
-    display: flex;
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--color-line);
-    color: var(--color-faint);
-    font-size: 12px;
-    font-weight: 600;
-}
-
-/* Scoped display rules outrank Tailwind's `hidden`, so columns hide here. */
-.head.from-md,
-.head.from-lg {
-    display: none;
-}
-
-@media (min-width: 768px) {
-    .head.from-md {
-        display: flex;
-    }
-}
-
-@media (min-width: 1024px) {
-    .head.from-lg {
-        display: flex;
     }
 }
 </style>

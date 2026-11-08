@@ -10,6 +10,7 @@ import CatalogError from '@/components/catalog/CatalogError.vue';
 import CatalogMenu from '@/components/catalog/CatalogMenu.vue';
 import VideoCard from '@/components/catalog/VideoCard.vue';
 import AlbumGroup from '@/components/music/AlbumGroup.vue';
+import AmbientBackdrop from '@/components/music/AmbientBackdrop.vue';
 import Artwork from '@/components/music/Artwork.vue';
 import GenreTags from '@/components/music/GenreTags.vue';
 import GroupToggle from '@/components/music/GroupToggle.vue';
@@ -203,15 +204,7 @@ const youTubeMusicUrl = computed(() =>
     </div>
 
     <div v-else class="relative">
-        <div class="ambient" aria-hidden="true">
-            <div
-                :style="{
-                    backgroundImage: page.artist.thumbnailUrl
-                        ? `url('${page.artist.thumbnailUrl}')`
-                        : undefined,
-                }"
-            />
-        </div>
+        <AmbientBackdrop :src="page.artist.thumbnailUrl" />
 
         <div class="page relative max-w-[1320px] px-4 pt-6 md:px-8 md:pt-8">
             <header class="hero">
@@ -237,7 +230,7 @@ const youTubeMusicUrl = computed(() =>
                         style="--i: 2"
                     >
                         <template v-for="(stat, index) in stats" :key="stat">
-                            <i v-if="index > 0" class="dot" />
+                            <i v-if="index > 0" class="meta-dot" />
                             <span>{{ stat }}</span>
                         </template>
                     </p>
@@ -411,43 +404,6 @@ const youTubeMusicUrl = computed(() =>
 </template>
 
 <style scoped>
-.ambient {
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 520px;
-    overflow: hidden;
-    pointer-events: none;
-    mask-image: linear-gradient(180deg, #000 45%, transparent 100%);
-}
-
-.ambient div {
-    position: absolute;
-    inset: -60px;
-    background-size: cover;
-    background-position: center;
-    filter: blur(70px) saturate(1.35);
-    opacity: 0.42;
-    animation: fade-in 900ms var(--ease-out-quint) both;
-}
-
-.ambient::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        180deg,
-        oklch(0.165 0.012 60 / 0.15),
-        oklch(0.165 0.012 60 / 0.7) 55%,
-        transparent 100%
-    );
-}
-
-@keyframes fade-in {
-    from {
-        opacity: 0;
-    }
-}
-
 .page {
     container-type: inline-size;
 }
@@ -480,13 +436,6 @@ const youTubeMusicUrl = computed(() =>
         width: 188px;
         height: 188px;
     }
-}
-
-.dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 999px;
-    background: var(--color-faint);
 }
 
 /* The aside sits beside the content once the page itself is wide enough. */

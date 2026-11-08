@@ -261,6 +261,14 @@
         color: var(--color-amber-ink);
     }
 
+    /* The separator between items of a page's meta line. */
+    .meta-dot {
+        width: 3px;
+        height: 3px;
+        border-radius: 999px;
+        background: var(--color-faint);
+    }
+
     /* The round amber play button that leads a catalog page's actions. */
     .round-play {
         display: grid;
@@ -308,20 +316,57 @@
         padding: 0;
     }
 
-    .action-button:hover:not(:disabled),
+    .action-button:hover:not(:disabled, [aria-disabled='true']),
     .action-button[data-state='open'] {
         border-color: oklch(0.38 0.014 60);
         background: var(--color-raised);
     }
 
-    .action-button:active:not(:disabled) {
+    .action-button:active:not(:disabled, [aria-disabled='true']) {
         transform: scale(0.97);
     }
 
     .round-play:disabled,
-    .action-button:disabled {
+    .action-button:disabled,
+    .action-button[aria-disabled='true'] {
         opacity: 0.5;
         cursor: not-allowed;
+    }
+
+    /* A track table's column headers, over TrackRow cells. */
+    .track-head {
+        display: flex;
+        align-items: center;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--color-line);
+        color: var(--color-faint);
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    /* Columns shown from md / lg up, or once the page container is 860px wide. */
+    .track-head.from-md,
+    .track-head.from-lg,
+    .track-head.from-wide {
+        display: none;
+    }
+
+    @media (min-width: 768px) {
+        .track-head.from-md {
+            display: flex;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .track-head.from-lg {
+            display: flex;
+        }
+    }
+
+    @container (min-width: 860px) {
+        .track-head.from-wide {
+            display: flex;
+        }
     }
 
     .skeleton {

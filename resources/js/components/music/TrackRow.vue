@@ -24,6 +24,11 @@ type Props = {
     showArtwork?: boolean;
     showArtist?: boolean;
     showPlays?: boolean;
+    /**
+     * When the plays column appears: from the md viewport, or once the
+     * nearest size container (the page) is 860px wide.
+     */
+    playsFrom?: 'md' | 'wide';
     /** Genres in their own column (playlist table) instead of after the artist. */
     genreColumn?: boolean;
 };
@@ -33,6 +38,7 @@ const props = withDefaults(defineProps<Props>(), {
     showArtwork: true,
     showArtist: true,
     showPlays: false,
+    playsFrom: 'md',
     genreColumn: false,
 });
 
@@ -170,7 +176,8 @@ function onKeydownEnter(event: KeyboardEvent): void {
         </span>
         <span
             v-if="showPlays"
-            class="cell from-md justify-end text-[12.5px] font-medium text-faint tabular-nums"
+            :class="playsFrom === 'wide' ? 'from-wide' : 'from-md'"
+            class="cell justify-end text-[12.5px] font-medium text-faint tabular-nums"
             role="cell"
             >{{ plays }}</span
         >
@@ -200,8 +207,15 @@ function onKeydownEnter(event: KeyboardEvent): void {
 
 /* Scoped display rules outrank Tailwind's `hidden`, so columns hide here. */
 .cell.from-md,
-.cell.from-lg {
+.cell.from-lg,
+.cell.from-wide {
     display: none;
+}
+
+@container (min-width: 860px) {
+    .cell.from-wide {
+        display: flex;
+    }
 }
 
 @media (min-width: 768px) {
