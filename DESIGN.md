@@ -103,6 +103,18 @@ components:
     textColor: "{colors.amber-ink}"
     rounded: "{rounded.pill}"
     size: "38px"
+  button-play-page:
+    backgroundColor: "{colors.amber}"
+    textColor: "{colors.amber-ink}"
+    rounded: "{rounded.pill}"
+    size: "46px"
+  button-action:
+    backgroundColor: "{colors.panel}"
+    textColor: "{colors.paper-text}"
+    typography: "{typography.title}"
+    rounded: "{rounded.md}"
+    height: "40px"
+    padding: "0 16px"
   nav-item:
     textColor: "{colors.muted-text}"
     typography: "{typography.title}"
@@ -121,6 +133,11 @@ components:
     typography: "{typography.meta}"
     rounded: "{rounded.pill}"
     padding: "1px 8px"
+  tag-genre:
+    textColor: "{colors.muted-text}"
+    rounded: "{rounded.pill}"
+    fontSize: "11.5px"
+    padding: "0 8px"
   track-row:
     textColor: "{colors.paper-text}"
     typography: "{typography.body}"
@@ -177,7 +194,7 @@ Warm near-black neutrals lit by a single amber voice, with the artwork of the cu
 ### Named Rules
 **The One Voice Rule.** Amber is the only accent, and it always means action or "now playing". If something amber is neither clickable nor currently playing, it is wrong.
 
-**The Artwork Owns Its Page Rule.** A playlist page may be tinted by its own artwork (blurred, faded into the page). Nowhere else borrows artwork color; the sidebar glow is amber, never the artwork.
+**The Artwork Owns Its Page Rule.** A page about one record or one artist may be tinted by its own artwork (blurred, faded into the page): a playlist, an album, an artist, and the top-result block of a search, which is tinted by that result's image. Nowhere else borrows artwork color; the sidebar glow is amber, never the artwork.
 
 **The Never-Pure Rule.** No `#000`, no `#fff`. Every neutral carries chroma 0.012–0.018 at hue 60–80.
 
@@ -229,14 +246,17 @@ Depth comes from three materials, not from shadows. Shadows exist only to lift f
 - **Secondary:** Panel background at 80% with a Groove Line border; hover strengthens the border.
 - **Icon:** 30–32px square or circle, Muted Text icon; hover gets Raised background and Paper Text.
 - **Keyboard hint:** a keycap inside the button when a shortcut exists ("Refresh R").
+- **Page actions** (`.round-play` + `.action-button`): the row that leads an artist, album or playlist page, and the search top result. A round amber play button (46px; 40px on the album page, where every control in the cover column is 40px high), then 40px secondary actions (Shuffle, See artist, the ⋯ menu as a 40px square) on Panel at 80% with a Groove Line border. Hover raises the background and strengthens the border, press scales to 0.97 (0.95 for play), disabled drops to 50%.
 
 ### Tags
-- **Style:** pill (999px), 1px Groove Line border, Muted Text, Meta type. Used for genre tags on suggestions.
+- **Style:** pill (999px), 1px Groove Line border, Muted Text, Meta type. Used for genre tags on suggestions and in the facts of artist and album pages.
+- **Genre tags on track rows:** a smaller pill (11.5px, 0 8px), at most two, strongest first, after the artist name on the second line. The artist keeps its width; tags are clipped first when the row is narrow. The playlist table gives them their own column instead.
 
 ### Track list
 - **Structure:** four columns (number, title with 32px artwork and artist, album, time), 1px half-opacity dividers, no zebra.
 - **Hover:** Hover background; the number turns into an amber ▶. Nothing else moves.
 - **Playing:** title in amber, number replaced by an animated three-bar equalizer, and the track's own waveform animates behind the album column on a faint amber wash.
+- **In your library:** a catalog track the user already owns gets a small Faint Text library icon after its title (with an "In your library" label for assistive tech). Never amber, never a pill: it is a fact, not an action.
 
 ### Suggestions block
 - **Style:** a Panel container at 72% with light backdrop blur, rounded 12px. Each row: artwork, title and artist, then "near **Artist**" in amber plus genre tags, then add (+) and skip (×) icon buttons.
@@ -268,7 +288,7 @@ Depth comes from three materials, not from shadows. Shadows exist only to lift f
 - **Do** give every load a skeleton that matches the final layout; never a centered spinner in content.
 - **Do** keep motion between 140ms and 520ms on exponential ease-out (`cubic-bezier(0.22, 1, 0.36, 1)`), and honor `prefers-reduced-motion` everywhere.
 - **Do** show the keyboard shortcut next to any action that has one.
-- **Do** let a playlist's artwork tint its own header, blurred and faded, never with a hard edge.
+- **Do** let a playlist's, album's or artist's artwork (or the search top result's) tint its own header, blurred and faded, never with a hard edge.
 
 ### Don't:
 - **Don't** look like the generic starter kit: grey on white, no identity, "Laravel Starter Kit" in the corner.
