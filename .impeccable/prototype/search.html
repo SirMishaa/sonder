@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sonder · recherche catalogue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: oklch(0.165 0.012 60);
+  --side: oklch(0.182 0.013 60);
+  --panel: oklch(0.19 0.013 60);
+  --raised: oklch(0.235 0.014 60);
+  --hover: oklch(0.215 0.014 60);
+  --line: oklch(0.285 0.012 60);
+  --line-soft: oklch(0.285 0.012 60 / 0.55);
+  --text: oklch(0.94 0.012 80);
+  --muted: oklch(0.72 0.018 70);
+  --faint: oklch(0.60 0.016 70);
+  --amber: oklch(0.80 0.15 68);
+  --amber-ink: oklch(0.22 0.04 60);
+  --amber-dim: oklch(0.80 0.15 68 / 0.14);
+  --grad: linear-gradient(135deg, oklch(0.84 0.14 75), oklch(0.66 0.17 48));
+  --ok: oklch(0.78 0.12 150);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --t-fast: 140ms; --t-mid: 240ms; --t-slow: 520ms;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+html { color-scheme: dark; }
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body { background: radial-gradient(90% 70% at 20% -10%, oklch(0.215 0.02 62), transparent 60%), radial-gradient(70% 60% at 100% 110%, oklch(0.13 0.012 55), transparent 70%), var(--bg); color: var(--text); font: 14.5px/1.5 'Hanken Grotesk', system-ui, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; overflow: hidden; }
+body::before { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: var(--grain); opacity: 0.05; mix-blend-mode: overlay; }
+button, input { font: inherit; color: inherit; background: none; border: 0; }
+button { cursor: pointer; }
+svg { width: 18px; height: 18px; flex: none; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 6px; }
+kbd { font: 600 10.5px 'Hanken Grotesk'; color: var(--faint); min-width: 18px; text-align: center; padding: 1px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--bg); }
+.scroll { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+
+/* artwork stand-ins: warm sleeves, each its own hue */
+.art { position: relative; overflow: hidden; flex: none; background:
+  radial-gradient(120% 90% at 20% 15%, oklch(0.62 0.13 var(--h, 40) / 0.95), transparent 60%),
+  radial-gradient(90% 90% at 90% 100%, oklch(0.32 0.09 calc(var(--h, 40) + 40)), transparent 70%),
+  oklch(0.24 0.04 var(--h, 40)); }
+.art::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.06); border-radius: inherit; }
+.round { border-radius: 50% !important; }
+.art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ---------- shell ---------- */
+.app { position: relative; z-index: 1; height: 100%; display: grid; grid-template-columns: 264px minmax(0, 1fr); }
+.side { position: relative; isolation: isolate; background: linear-gradient(180deg, oklch(0.195 0.014 62 / 0.92), oklch(0.17 0.012 58 / 0.92)); border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.side::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: var(--grain); opacity: 0.09; mix-blend-mode: overlay; }
+.side::after { content: ''; position: absolute; inset: 0 0 auto 0; height: 360px; z-index: -1; pointer-events: none; background: radial-gradient(120% 70% at 12% 0%, oklch(0.80 0.15 68 / 0.26), transparent 62%); }
+.brandrow { display: flex; align-items: center; gap: 10px; padding: 20px 14px 16px 18px; }
+.word { font: 800 25px/1 'Bricolage Grotesque'; font-variation-settings: 'opsz' 96; letter-spacing: -0.02em; }
+.word i { font-style: normal; color: var(--amber); }
+.sbox { margin: 4px 10px 10px; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border: 1px solid oklch(1 0 0 / 0.08); border-radius: 10px; color: var(--faint); background: oklch(0.14 0.01 60 / 0.55); width: calc(100% - 20px); text-align: left; }
+.sbox kbd { margin-left: auto; }
+.sbox:hover { border-color: oklch(0.36 0.014 60); }
+.nav { display: flex; flex-direction: column; gap: 2px; padding: 0 10px; }
+.nav button { display: flex; align-items: center; gap: 12px; padding: 7px 10px; border-radius: 8px; color: var(--muted); font-weight: 600; text-align: left; }
+.nav button:hover { color: var(--text); background: oklch(1 0 0 / 0.04); }
+.nav button.on { color: var(--text); background: linear-gradient(90deg, oklch(0.80 0.15 68 / 0.16), oklch(0.235 0.014 60 / 0.7)); box-shadow: inset 0 0 0 1px oklch(0.80 0.15 68 / 0.22); }
+.nav button.on svg { color: var(--amber); }
+.plhead { padding: 18px 20px 8px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.plhead span { color: var(--faint); font-weight: 500; }
+.list { flex: 1; min-height: 0; overflow: auto; padding: 0 10px 12px; }
+.li { width: 100%; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: center; padding: 5px 6px; border-radius: 8px; text-align: left; }
+.li:hover { background: var(--hover); }
+.li .art { width: 34px; height: 34px; border-radius: 5px; }
+.li img { width: 34px; height: 34px; border-radius: 5px; object-fit: cover; }
+.li .t { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.view { min-width: 0; min-height: 0; overflow: auto; position: relative; padding-bottom: 130px; }
+.view.enter { animation: view-in var(--t-slow) var(--ease) both; }
+@keyframes view-in { from { opacity: 0; transform: translateY(8px); filter: blur(4px); } }
+.page { position: relative; padding: 30px 32px 0; max-width: 1320px; }
+.kicker { font-size: 13px; font-weight: 700; color: var(--amber); }
+.h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.03em; font-weight: 800; margin: 6px 0 4px; }
+.h2 { font-size: 14px; font-weight: 700; display: flex; align-items: baseline; gap: 10px; margin: 30px 0 12px; }
+.h2 span { font-size: 12.5px; color: var(--faint); font-weight: 500; }
+.h2 a, .h2 button.more { margin-left: auto; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.h2 a:hover, .h2 button.more:hover { color: var(--text); }
+.meta { font-size: 13px; color: var(--muted); font-weight: 500; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.meta .sep { width: 3px; height: 3px; border-radius: 50%; background: var(--faint); }
+.link { color: inherit; text-decoration: none; cursor: pointer; }
+.link:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line); }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 9px; border: 1px solid var(--line); background: oklch(0.19 0.013 60 / 0.8); font-weight: 600; transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast); }
+.btn:hover { border-color: oklch(0.38 0.014 60); background: var(--raised); }
+.btn:active { transform: scale(0.97); }
+.btn.primary { background: var(--grad); color: var(--amber-ink); border-color: transparent; }
+.btn.primary:hover { filter: brightness(1.06); }
+.play { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--grad); color: var(--amber-ink); box-shadow: 0 10px 24px -12px oklch(0.66 0.17 48 / 0.8); transition: transform var(--t-fast); }
+.play:active { transform: scale(0.95); }
+.play svg { width: 20px; height: 20px; }
+.iconbtn { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; color: var(--muted); }
+.iconbtn:hover { background: var(--raised); color: var(--text); }
+
+/* track rows: same as library */
+.tracks { display: flex; flex-direction: column; }
+.row { width: 100%; display: grid; grid-template-columns: 26px 36px minmax(0, 1.4fr) minmax(0, 1fr) 52px; gap: 12px; align-items: center; padding: 6px 8px; border-radius: 8px; text-align: left; border-bottom: 1px solid var(--line-soft); cursor: default; transition: background var(--t-fast); }
+.row:last-child { border-bottom-color: transparent; }
+.row.noalbum { grid-template-columns: 26px 36px minmax(0, 1fr) 52px; }
+.row:hover { background: var(--hover); }
+.row .n { font-size: 12.5px; color: var(--faint); text-align: right; font-weight: 500; position: relative; height: 22px; display: grid; place-items: center end; }
+.row .n .pb { position: absolute; inset: 0; display: none; place-items: center end; color: var(--amber); }
+.row .n .pb svg { width: 16px; height: 16px; }
+.row:hover .n .num { visibility: hidden; }
+.row:hover .n .pb { display: grid; }
+.row .art { width: 36px; height: 36px; border-radius: 4px; }
+.row .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .a, .row .al { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .d { font-size: 12.5px; color: var(--faint); font-weight: 500; text-align: right; }
+.row.playing .t { color: var(--amber); }
+.row .lib { display: inline-block; margin-left: 6px; font-size: 11.5px; color: var(--faint); font-weight: 500; border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; vertical-align: 1px; }
+.eq { display: inline-flex; gap: 2px; align-items: flex-end; height: 12px; }
+.eq i { width: 2.5px; background: var(--amber); border-radius: 1px; animation: eq 900ms ease-in-out infinite; }
+.eq i:nth-child(2) { animation-delay: -300ms; } .eq i:nth-child(3) { animation-delay: -600ms; }
+@keyframes eq { 0%, 100% { height: 3px; } 50% { height: 12px; } }
+.row.flash { animation: flash 700ms var(--ease); }
+@keyframes flash { 0% { background: oklch(0.80 0.15 68 / 0.18); } }
+
+/* cards */
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 22px 16px; }
+.card { text-align: left; min-width: 0; cursor: pointer; }
+.card .art { aspect-ratio: 1; width: 100%; border-radius: 6px; box-shadow: 0 18px 30px -20px oklch(0 0 0 / 0.8); transition: box-shadow var(--t-mid) var(--ease); }
+.card:hover .art { box-shadow: 0 0 0 1px var(--amber-dim), 0 20px 34px -20px oklch(0 0 0 / 0.9); }
+.card .ph { position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 50%; background: var(--grad); color: var(--amber-ink); display: grid; place-items: center; opacity: 0; transform: translateY(6px); transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease); z-index: 1; }
+.card:hover .ph, .card:focus-visible .ph { opacity: 1; transform: none; }
+.card .t { margin-top: 9px; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card .a { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.artists { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 20px 16px; }
+.artist { text-align: center; cursor: pointer; min-width: 0; }
+.artist .art { width: 100%; aspect-ratio: 1; border-radius: 50%; box-shadow: 0 18px 30px -20px oklch(0 0 0 / 0.8); }
+.artist:hover .art { box-shadow: 0 0 0 1px var(--amber-dim), 0 20px 34px -20px oklch(0 0 0 / 0.9); }
+.artist .t { margin-top: 9px; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.artist .a { color: var(--faint); font-size: 12.5px; font-weight: 500; }
+
+/* ambient (artwork owns its page) */
+.ambient { position: absolute; inset: 0 0 auto 0; height: 520px; overflow: hidden; pointer-events: none; -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent 100%); mask-image: linear-gradient(180deg, #000 45%, transparent 100%); }
+.ambient .art { position: absolute; inset: -60px; filter: blur(70px) saturate(1.35); opacity: 0.42; }
+.ambient::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, oklch(0.165 0.012 60 / 0.15) 0%, oklch(0.165 0.012 60 / 0.7) 55%, oklch(0.165 0.012 60 / 0) 100%); }
+
+/* ---------- search page ---------- */
+.sfield { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; background: oklch(0.14 0.01 60 / 0.6); max-width: 640px; margin-top: 14px; }
+.sfield:focus-within { border-color: oklch(0.80 0.15 68 / 0.5); box-shadow: 0 0 0 3px oklch(0.80 0.15 68 / 0.12); }
+.sfield input { flex: 1; font-size: 17px; font-weight: 600; outline: none; min-width: 0; }
+.sfield svg { color: var(--faint); }
+.chips { display: flex; gap: 8px; margin-top: 16px; overflow-x: auto; scrollbar-width: none; }
+.chip { padding: 5px 13px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-weight: 600; font-size: 13.5px; white-space: nowrap; transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast); }
+.chip:hover { color: var(--text); border-color: oklch(0.38 0.014 60); }
+.chip.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+.chip .c { color: var(--faint); font-weight: 500; margin-left: 4px; }
+.chip.on .c { color: oklch(0.45 0.02 60); }
+.sticky { position: sticky; top: 0; z-index: 3; padding: 14px 0 12px; margin: 0 -32px; padding-left: 32px; padding-right: 32px; background: linear-gradient(180deg, oklch(0.165 0.012 60 / 0.96) 70%, oklch(0.165 0.012 60 / 0)); }
+
+.libsec { margin-top: 22px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: oklch(0.19 0.013 60 / 0.5); }
+.libsec .h2 { margin: 8px 10px 4px; }
+.libgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2px; }
+.libitem { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 8px; border-radius: 8px; text-align: left; }
+.libitem:hover { background: var(--hover); }
+.libitem .art { width: 36px; height: 36px; border-radius: 4px; }
+.libitem .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.libitem .a { font-size: 12.5px; color: var(--faint); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* variant A: top result + tracks */
+.topsplit { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 28px; }
+.top { position: relative; padding: 20px; border-radius: 14px; background: linear-gradient(160deg, oklch(0.235 0.02 62 / 0.9), oklch(0.19 0.013 60 / 0.7)); border: 1px solid var(--line); cursor: pointer; overflow: hidden; transition: border-color var(--t-mid); }
+.top:hover { border-color: oklch(0.38 0.014 60); }
+.top .art { width: 112px; height: 112px; border-radius: 50%; box-shadow: 0 24px 40px -22px oklch(0 0 0 / 0.95); }
+.top .name { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; margin-top: 18px; }
+.top .play { position: absolute; right: 20px; bottom: 20px; opacity: 0; transform: translateY(6px); transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease); }
+.top:hover .play { opacity: 1; transform: none; }
+
+/* variant B: tinted top-result block */
+.spot { position: relative; isolation: isolate; overflow: hidden; margin-top: 18px; border-radius: 16px; border: 1px solid oklch(1 0 0 / 0.07); display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px; padding: 26px; box-shadow: 0 30px 60px -36px oklch(0 0 0 / 0.9); }
+.spot-bg { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.spot-bg .art { position: absolute; inset: -80px; filter: blur(60px) saturate(1.5); opacity: 0.55; }
+.spot-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, oklch(0.165 0.012 60 / 0.25) 0%, oklch(0.165 0.012 60 / 0.72) 58%, oklch(0.165 0.012 60 / 0.88) 100%); }
+.spot-bg::before { content: ''; position: absolute; inset: 0; z-index: 1; background-image: var(--grain); opacity: 0.08; mix-blend-mode: overlay; }
+.spot-main { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 24px; align-items: center; cursor: pointer; }
+.spot-main > .art { width: 148px; height: 148px; box-shadow: 0 30px 50px -24px oklch(0 0 0 / 0.95), 0 0 0 1px oklch(1 0 0 / 0.1); }
+.spot-name { font-size: 44px; line-height: 1; letter-spacing: -0.04em; font-weight: 800; margin: 6px 0 10px; }
+.spot .actions { margin-top: 16px; }
+.spot-lib { border-left: 1px solid oklch(1 0 0 / 0.08); padding-left: 24px; min-width: 0; }
+.spot-lib .row { border-bottom-color: oklch(1 0 0 / 0.06); }
+.spot-lib .row:hover { background: oklch(1 0 0 / 0.05); }
+.spot-more { display: inline-block; margin: 8px 8px 0; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.spot-more:hover { color: var(--text); }
+
+.cnt { color: var(--faint); font-weight: 500; }
+.mini-seg { margin-left: 6px; }
+.mini-seg button { padding: 2px 9px; font-size: 12px; }
+.agroup { margin-bottom: 14px; }
+.ahead { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 8px 8px 6px; cursor: pointer; border-radius: 8px; }
+.ahead:hover .t { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line); }
+.ahead .art { width: 44px; height: 44px; border-radius: 5px; box-shadow: 0 10px 20px -12px oklch(0 0 0 / 0.9); }
+.ahead .t { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ahead .a { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+.ahead-n { font-size: 12.5px; color: var(--faint); font-weight: 500; }
+.agroup .tracks { padding-left: 8px; }
+.agroup .row.noalbum { grid-template-columns: 26px minmax(0, 1fr) 52px; }
+.agroup .row > .art { display: none; }
+
+.sortc { position: relative; display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; padding: 2px 8px 2px 7px; border-radius: 7px; border: 1px solid var(--line); color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; transition: border-color var(--t-fast), color var(--t-fast); }
+.sortc:hover, .sortc:focus-within { border-color: oklch(0.38 0.014 60); color: var(--text); }
+.sortc svg { width: 14px; height: 14px; }
+.sortc select { appearance: none; background: transparent; border: 0; color: inherit; font: inherit; cursor: pointer; padding-right: 12px; outline: none; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-size: 4px 4px; background-position: right 3px center, right 0 center; background-repeat: no-repeat; }
+.sortc select option { background: var(--panel); color: var(--text); }
+
+/* variant B: dense columns */
+.dense { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px; }
+.mini { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+.mini:hover { background: var(--hover); }
+.mini .art { width: 44px; height: 44px; border-radius: 5px; }
+.mini .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini .a { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini .type { font-size: 12.5px; color: var(--faint); font-weight: 500; }
+
+/* ---------- artist ---------- */
+.ahero { position: relative; display: grid; grid-template-columns: 188px minmax(0, 1fr); gap: 28px; align-items: end; margin-bottom: 28px; }
+.ahero .art.sq { border-radius: 10px !important; }
+.ahero .art { width: 188px; height: 188px; border-radius: 50%; box-shadow: 0 34px 60px -28px oklch(0 0 0 / 0.95), 0 0 0 1px oklch(1 0 0 / 0.08); }
+.display { font-size: 44px; line-height: 1; letter-spacing: -0.04em; font-weight: 800; margin: 6px 0 12px; }
+.actions { display: flex; gap: 10px; align-items: center; margin-top: 18px; }
+.banner { position: relative; margin: -30px -32px 0; padding: 120px 32px 28px; overflow: hidden; }
+.banner > .art { position: absolute; inset: 0; border-radius: 0; }
+.banner > .art::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, oklch(0.165 0.012 60 / 0) 20%, oklch(0.165 0.012 60 / 0.75) 70%, var(--bg)); }
+.banner .inner { position: relative; }
+.banner .display { font-size: 72px; margin-bottom: 6px; }
+.acols { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 36px; }
+.disc-tabs { display: flex; gap: 6px; }
+.disc-tabs .chip { font-size: 12.5px; padding: 3px 11px; }
+
+/* ---------- album ---------- */
+.aside-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 36px; align-items: start; }
+.aside-layout .cover { position: sticky; top: 30px; max-height: calc(100vh - 140px); overflow-y: auto; scrollbar-width: none; padding-bottom: 8px; }
+.aside-layout .cover .art { width: 280px; height: 280px; border-radius: 10px; box-shadow: 0 34px 60px -28px oklch(0 0 0 / 0.95), 0 0 0 1px oklch(1 0 0 / 0.08); }
+.aside-layout .cover h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.03em; font-weight: 800; margin: 16px 0 6px; }
+.more-by { margin-top: 40px; }
+.foot-note { margin-top: 18px; font-size: 12.5px; color: var(--faint); font-weight: 500; }
+
+
+/* album page */
+.album-actions { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; margin-top: 20px; }
+.album-actions .btn { justify-content: center; height: 40px; }
+.album-actions .iconbtn { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 9px; }
+.album-actions .wide { grid-column: 1 / -1; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:disabled:hover { background: oklch(0.19 0.013 60 / 0.8); border-color: var(--line); }
+.facts { margin: 26px 0 0; padding-top: 18px; border-top: 1px solid var(--line-soft); display: grid; gap: 9px; }
+.facts div { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; font-size: 13px; }
+.facts dt { color: var(--faint); font-weight: 500; }
+.facts dd { margin: 0; color: var(--text); font-weight: 500; }
+.genres { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.tag { font-size: 12.5px; font-weight: 500; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; }
+.desc { margin-top: 18px; font-size: 13px; line-height: 1.55; color: var(--muted); }
+.desc p { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.desc.open p { -webkit-line-clamp: unset; }
+.desc button { margin-top: 6px; font-size: 12.5px; font-weight: 600; color: var(--text); }
+.desc .src { margin-left: 10px; font-size: 12px; color: var(--faint); }
+.atl-head, .arow { display: grid; grid-template-columns: 28px minmax(0, 1fr) 84px 52px; gap: 14px; align-items: center; padding: 0 10px; }
+.atl-head { height: 34px; font-size: 12.5px; color: var(--faint); font-weight: 600; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.atl-head span:first-child { text-align: right; }
+.atl-head svg { width: 14px; height: 14px; }
+.atl-head .r, .arow .p, .arow .d { text-align: right; justify-self: end; }
+.arow { min-height: 48px; border-radius: 8px; transition: background var(--t-fast); }
+.arow:hover { background: var(--hover); }
+.arow .n { font-size: 13px; color: var(--faint); text-align: right; font-weight: 500; position: relative; height: 22px; display: grid; place-items: center end; }
+.arow .n .pb { position: absolute; inset: 0; display: none; place-items: center end; color: var(--amber); }
+.arow .n .pb svg { width: 16px; height: 16px; }
+.arow:hover .n .num { visibility: hidden; }
+.arow:hover .n .pb { display: grid; }
+.arow .t { font-weight: 600; }
+.arow .a { font-size: 13px; color: var(--muted); }
+.arow .lib { display: inline-block; margin-left: 8px; font-size: 11.5px; color: var(--faint); font-weight: 500; border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; vertical-align: 1px; }
+.arow .p, .arow .d { font-size: 12.5px; color: var(--faint); font-weight: 500; }
+.album-a { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 40px; align-items: start; }
+.album-a aside .facts { margin-top: 0; padding-top: 0; border-top: 0; }
+
+
+/* genre tags on tracks */
+.gtag { display: inline-block; margin-left: 6px; font-size: 11.5px; line-height: 16px; color: var(--faint); font-weight: 500; border: 1px solid var(--line-soft); border-radius: 999px; padding: 0 6px; vertical-align: 1px; white-space: nowrap; }
+.row .a, .arow .a { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arow .a .gtag:first-child { margin-left: 0; }
+
+/* artist page */
+.artist-actions { grid-template-columns: auto auto auto auto; justify-content: start; }
+.artist-actions .btn { padding: 0 16px; }
+.artist-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 40px; align-items: start; }
+.artist-aside { position: sticky; top: 24px; display: grid; gap: 28px; }
+.artist-aside section + section { padding-top: 24px; border-top: 1px solid var(--line-soft); }
+.mine { padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: oklch(0.19 0.013 60 / 0.6); }
+.mine-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.mine-stats div { display: flex; flex-direction: column; }
+.mine-stats b { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+.mine-stats span { font-size: 12.5px; color: var(--faint); font-weight: 500; }
+.mine-note { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+.mine-row { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 10px; font-size: 13px; padding: 5px 0; }
+.mine-row .n { color: var(--faint); text-align: right; }
+.mine-row .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mine-row .c { color: var(--faint); font-weight: 500; font-size: 12.5px; }
+.videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px 16px; }
+.video { min-width: 0; cursor: pointer; }
+.video .art { aspect-ratio: 16 / 9; width: 100%; border-radius: 8px; box-shadow: 0 18px 30px -20px oklch(0 0 0 / 0.8); }
+.video .ph { position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 50%; background: var(--grad); color: var(--amber-ink); display: grid; place-items: center; opacity: 0; transform: translateY(6px); transition: opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease); z-index: 1; }
+.video:hover .ph { opacity: 1; transform: none; }
+.video .t { margin-top: 8px; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.video .a { font-size: 12.5px; color: var(--faint); font-weight: 500; }
+
+/* ---------- palette ---------- */
+.overlay { position: fixed; inset: 0; z-index: 50; background: oklch(0.1 0.01 60 / 0.55); backdrop-filter: blur(3px); animation: fade 160ms ease-out; }
+@keyframes fade { from { opacity: 0; } }
+.palette { position: fixed; top: 12vh; left: 50%; z-index: 51; transform: translateX(-50%); width: min(660px, calc(100% - 32px)); border-radius: 14px; overflow: hidden; background: linear-gradient(180deg, oklch(0.23 0.016 62 / 0.78), oklch(0.19 0.013 60 / 0.86)); backdrop-filter: blur(16px) saturate(1.4); box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.08), 0 30px 60px -24px oklch(0 0 0 / 0.85), 0 0 0 1px oklch(1 0 0 / 0.07); animation: pin 220ms var(--ease); isolation: isolate; }
+.palette::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: var(--grain); opacity: 0.2; mix-blend-mode: overlay; }
+.palette.wide { width: min(880px, calc(100% - 32px)); }
+@keyframes pin { from { opacity: 0; transform: translate(-50%, -8px) scale(0.98); } }
+.pin { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); padding: 0 16px; }
+.pin input { flex: 1; padding: 15px 0; font-size: 16px; outline: none; }
+.pin input::placeholder { color: var(--faint); }
+.pin svg { color: var(--faint); }
+.pbody { display: grid; grid-template-columns: minmax(0, 1fr); }
+.palette.wide .pbody { grid-template-columns: minmax(0, 1fr) 300px; }
+.plist { max-height: 440px; overflow-y: auto; padding: 6px; }
+.pg { padding: 10px 10px 4px; font-size: 12px; font-weight: 700; color: var(--faint); display: flex; align-items: center; gap: 8px; }
+.pg .line { flex: 1; }
+.pi { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 10px; border-radius: 8px; text-align: left; }
+.pi.sel { background: var(--raised); }
+.pi .art { width: 30px; height: 30px; border-radius: 4px; }
+.pi .lbl { min-width: 0; flex: 1; display: flex; flex-direction: column; line-height: 1.3; }
+.pi .lbl b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pi .lbl small { font-size: 12.5px; color: var(--faint); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pi .hint { font-size: 12px; color: var(--faint); font-weight: 500; }
+.pi .ret { display: none; }
+.pi.sel .ret { display: inline-block; }
+.pi .pplay { width: 26px; height: 26px; border-radius: 50%; display: none; place-items: center; background: var(--grad); color: var(--amber-ink); }
+.pi .pplay svg { width: 13px; height: 13px; }
+.pi.sel .pplay { display: grid; }
+.ptop { display: flex; align-items: center; gap: 14px; width: 100%; padding: 10px; border-radius: 10px; text-align: left; }
+.ptop.sel { background: var(--raised); }
+.ptop .art { width: 52px; height: 52px; }
+.ptop b { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
+.pfoot { display: flex; gap: 16px; align-items: center; border-top: 1px solid var(--line); padding: 8px 14px; font-size: 12px; color: var(--faint); font-weight: 500; }
+.pfoot span { display: inline-flex; gap: 6px; align-items: center; }
+.pfoot .all { margin-left: auto; color: var(--muted); font-weight: 600; }
+.preview { border-left: 1px solid var(--line); padding: 18px; max-height: 440px; overflow: auto; }
+.preview .art { width: 100%; aspect-ratio: 1; border-radius: 50%; max-width: 132px; margin: 0 auto; box-shadow: 0 24px 40px -22px oklch(0 0 0 / 0.95); }
+.preview .art.sqp { border-radius: 8px; }
+.preview h3 { text-align: center; font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-top: 14px; }
+.preview .sub { text-align: center; font-size: 12.5px; color: var(--faint); font-weight: 500; margin-bottom: 14px; }
+.preview .pt { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px; font-size: 13px; padding: 4px 0; }
+.preview .pt span:first-child { color: var(--faint); text-align: right; }
+.preview .pt span:last-child { color: var(--faint); }
+.recent .pi .x { margin-left: auto; color: var(--faint); opacity: 0; }
+.recent .pi:hover .x, .recent .pi.sel .x { opacity: 1; }
+.skrow { display: flex; align-items: center; gap: 10px; padding: 7px 10px; }
+.sk { position: relative; overflow: hidden; background: var(--raised); border-radius: 5px; }
+.sk::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.05), transparent); animation: shimmer 1.3s var(--ease) infinite; }
+@keyframes shimmer { to { transform: translateX(100%); } }
+.reveal { animation: reveal 480ms var(--ease) both; animation-delay: calc(var(--i, 0) * 40ms); }
+@keyframes reveal { from { opacity: 0; transform: translateY(6px); } }
+
+/* ---------- player stub ---------- */
+.player { position: fixed; left: calc(264px + 16px); right: 16px; bottom: 14px; z-index: 20; height: 72px; border-radius: 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 16px; padding: 0 14px; background: linear-gradient(180deg, oklch(0.23 0.016 62 / 0.6), oklch(0.18 0.013 60 / 0.66)); backdrop-filter: blur(14px) saturate(1.4); box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.08), 0 30px 60px -24px oklch(0 0 0 / 0.85), 0 0 0 1px oklch(1 0 0 / 0.06); isolation: isolate; }
+.player::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image: var(--grain); opacity: 0.2; mix-blend-mode: overlay; border-radius: inherit; }
+.player .now { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.player .now .art { width: 46px; height: 46px; border-radius: 6px; }
+.player .now b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player .now small { color: var(--muted); font-size: 12.5px; }
+.player .ctl { display: flex; gap: 10px; align-items: center; }
+.player .ctl .play { width: 38px; height: 38px; }
+.player .upn { justify-self: end; font-size: 12.5px; color: var(--faint); font-weight: 500; display: flex; gap: 8px; align-items: center; }
+
+/* ---------- decision dock ---------- */
+.dock { position: fixed; top: 14px; right: 16px; z-index: 60; display: flex; gap: 6px; align-items: center; padding: 6px; border-radius: 12px; background: oklch(0.12 0.01 60 / 0.92); border: 1px solid var(--line); box-shadow: 0 20px 40px -20px oklch(0 0 0 / 0.9); }
+.dock .lab { font-size: 12px; font-weight: 700; color: var(--faint); padding: 0 6px 0 4px; }
+.seg { display: flex; padding: 2px; border-radius: 8px; background: var(--panel); }
+.seg button { padding: 4px 10px; font-size: 12.5px; font-weight: 600; color: var(--muted); border-radius: 6px; white-space: nowrap; }
+.seg button.on { background: var(--raised); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
+.dock .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 2px; }
+.vnote { position: fixed; top: 62px; right: 16px; z-index: 60; max-width: 340px; font-size: 12.5px; color: var(--muted); background: oklch(0.12 0.01 60 / 0.92); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.vnote b { color: var(--text); }
+.toast { position: fixed; left: 50%; bottom: 100px; z-index: 70; transform: translateX(-50%); padding: 8px 14px; border-radius: 10px; background: var(--raised); border: 1px solid var(--line); font-weight: 600; font-size: 13.5px; box-shadow: 0 20px 40px -20px oklch(0 0 0 / 0.9); animation: reveal 240ms var(--ease); }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { display: none; }
+  .player { left: 8px; right: 8px; bottom: 8px; grid-template-columns: minmax(0, 1fr) auto; }
+  .player .upn { display: none; }
+  .page { padding: 20px 16px 0; }
+  .sticky { margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+  .banner { margin: -20px -16px 0; padding: 90px 16px 22px; }
+  .banner .display { font-size: 44px; }
+  .album-a, .artist-layout { grid-template-columns: minmax(0, 1fr); }
+  .artist-aside { position: static; }
+  .artist-actions { grid-template-columns: auto 1fr auto; }
+  .artist-actions .btn:nth-child(3) { display: none; }
+  .atl-head, .arow { grid-template-columns: 24px minmax(0, 1fr) 44px; }
+  .atl-head .r:nth-child(3), .arow .p { display: none; }
+  .topsplit, .dense, .acols, .aside-layout, .spot { grid-template-columns: minmax(0, 1fr); }
+  .spot { padding: 18px; gap: 18px; }
+  .spot-main { grid-template-columns: 88px minmax(0, 1fr); gap: 16px; }
+  .spot-main > .art { width: 88px; height: 88px; }
+  .spot-name { font-size: 32px; }
+  .spot-lib { border-left: 0; padding-left: 0; border-top: 1px solid oklch(1 0 0 / 0.08); padding-top: 14px; }
+  .ahero { grid-template-columns: minmax(0, 1fr); justify-items: start; }
+  .ahero .art { width: 132px; height: 132px; }
+  .aside-layout .cover { position: static; }
+  .aside-layout .cover .art { width: 100%; height: auto; aspect-ratio: 1; max-width: 320px; }
+  .display { font-size: 34px; }
+  .row { grid-template-columns: 22px 36px minmax(0, 1fr) 44px; }
+  .row .al { display: none; }
+  .palette.wide .pbody { grid-template-columns: minmax(0, 1fr); }
+  .preview { display: none; }
+  .dock { left: 8px; right: 8px; top: 8px; overflow-x: auto; }
+  .vnote { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brandrow"><span class="word">s<i>◎</i>nder</span></div>
+    <button class="sbox" data-open-palette>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      Rechercher <kbd>⌘K</kbd>
+    </button>
+    <nav class="nav">
+      <button data-go="discover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>Découvrir</button>
+      <button data-go="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Rechercher</button>
+      <button data-go="library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="18" rx="1.5"/></svg>Bibliothèque</button>
+    </nav>
+    <div class="plhead">Playlists <span id="plcount"></span></div>
+    <div class="list scroll" id="pl"></div>
+  </aside>
+  <main class="view scroll" id="view"></main>
+</div>
+
+<div class="player">
+  <div class="now"><div class="art"><img src="https://yt3.googleusercontent.com/VzLpbmiJJz1FeC7qHpu7VLQkreNqZwDDIEVFRch-6Mikd3z0VDKcLDpLb_qRPKHkIRmrULJp-GiX_3Oc=w120-h120-s-l90-rj" alt=""></div><div style="min-width:0"><b>Sonne</b><small>Rammstein</small></div></div>
+  <div class="ctl">
+    <button class="iconbtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+    <button class="play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg></button>
+    <button class="iconbtn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+  </div>
+  <div class="upn">À suivre <kbd>Q</kbd></div>
+</div>
+
+<div class="dock" id="dock"></div>
+<div class="vnote" id="vnote"></div>
+<div id="layer"></div>
+
+<script src="data.js"></script>
+<script src="rammstein.js"></script>
+<script>
+const I = {
+  radio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M4.9 19.1a10 10 0 0 1 0-14.2"/></svg>',
+  sort: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13M3 12h9M3 18h5M17 10v10M14 17l3 3 3-3"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>',
+  shuffle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  ret: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M9 10 4 15l5 5"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:14px;height:14px"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  dots: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+  plist: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h13M3 12h13M3 18h8M19 15v6M16 18h6"/></svg>',
+};
+
+/* Real YouTube Music data (anonymous ytmusicapi calls), see rammstein.js. */
+const R = window.RAMMSTEIN;
+const yt = (u) => u ? decodeURIComponent(u) : null;
+const durOf = (t) => (R.searchSongs.find((x) => x[0] === t) || [])[3] || '';
+const LIB_TITLES = ['Ich will', 'Benzin', 'Zerstören', 'Donaukinder', 'Küss mich (Fellfrosch)'];
+const ARTIST = { name: R.artist.name, sub: `Artiste · ${R.artist.listeners.replace('M', ' M')} auditeurs mensuels`, img: R.artist.img, listeners: R.artist.listeners.replace('M', ' M'), h: R.artist.img };
+const TOP = [...R.top, ...R.searchSongs.filter((s) => !R.top.some((t) => t[0] === s[0]))].slice(0, 8)
+  .map(([t, a, al, d, img]) => [t, a, al || 'Single', d || durOf(t) || '—', img, LIB_TITLES.includes(t)]);
+const COUNTS = {"Zeit": 11, "Rammstein": 11, "Liebe ist für alle da (Special Edition)": 16, "Rosenrot": 11, "Reise, Reise": 11, "Mutter": 11, "Sehnsucht": 11, "Herzeleid": 11, "Paris (Live)": 22, "Live aus Berlin": 15, "Du hast / Spiel mit mir (2023 Mix)": 2, "Angst (RMX by twocolors)": 1, "Dicke Titten (LaBrassBanda Version)": 1, "Zick Zack": 3, "Mein Herz brennt": 5, "Mein Land": 3, "Haifisch": 5, "Ich tu dir weh": 3, "Pussy": 3, "Engel (Live in Mexico City)": 1, "Deutschland (Live in Mexico City)": 1};
+/** Album subtitle with its track count, dimmed. */
+const withCount = (t, sub) => COUNTS[t] ? `${esc(sub)}<span class="cnt"> · ${COUNTS[t]} titre${COUNTS[t] > 1 ? 's' : ''}</span>` : esc(sub);
+const ALBUMS = [...R.albums, ...R.singles.slice(0, 2)].slice(0, 12).map(([t, sub, img]) => [t, sub, img]);
+const SIMILAR = R.related.slice(0, 8).map(([t, img]) => [t, img]);
+const PLAYLISTS = R.searchPlaylists.slice(0, 6);
+const ALBUM = R.album;
+const ALBUM_TRACKS = ALBUM.tracks.map(([t, a, d, plays]) => [t, d, a, plays]);
+const LIB_TRACKS = [
+  ['Ich will', 'Rammstein', 'Mutter', '3:37', 'https://yt3.googleusercontent.com/VzLpbmiJJz1FeC7qHpu7VLQkreNqZwDDIEVFRch-6Mikd3z0VDKcLDpLb_qRPKHkIRmrULJp-GiX_3Oc=w120-h120-s-l90-rj'],
+  ['Benzin', 'Rammstein', 'Rosenrot', '3:46', 'https://yt3.googleusercontent.com/ahYAhVBJHd0myXd59PCcblFgaIpknPgJtRnYVmoIBIoGV2wnb4UdOZuvrpWydXNCAosWdRkgPI5guQ-o=w120-h120-s-l90-rj'],
+  ['Donaukinder', 'Rammstein', 'Liebe ist für alle da', '4:47', 'https://yt3.googleusercontent.com/M38YDsPaMygELyTqGd5KLyYaVS75A7tJLfBomTfmHOjWeCjesL1UIRMplKImFd1VP7_nQB3Oqav9UKI9=w120-h120-l90-rj'],
+];
+const LIBRARY = [['Liked Music', '59 titres de Rammstein', 'https://www.gstatic.com/youtube/media/ytm/images/pbg/liked-songs-delhi-576.png'], ['Ich will', 'Rammstein · dans « Liked Music »', LIB_TRACKS[0][4]], ['Benzin', 'Rammstein · dans « Liked Music »', LIB_TRACKS[1][4]]];
+
+const state = {
+  view: 'search', q: 'rammstein', palette: false,
+  v: { palette: 'B', search: 'B', artist: 'B', album: 'B' },
+  chip: 'Tout', loading: false, sel: 0, emptyPalette: false, grouped: false, descOpen: false, discTab: 'all', sortTracks: 'recent', sortAlbums: 'recent',
+};
+
+const NOTES = {
+  palette: { A: '<b>A · Sections empilées.</b> La palette actuelle, prolongée : bibliothèque, puis meilleur résultat, artistes, albums, titres. Une colonne, rapide au clavier.', B: '<b>B · Liste + aperçu.</b> Palette plus large : l\'élément sélectionné s\'affiche à droite (top titres de l\'artiste, pistes de l\'album). Façon Raycast.' },
+  search: { A: '<b>A · Meilleur résultat + titres.</b> Une grande tuile pour le meilleur résultat à gauche, les titres à droite, puis les étagères d\'albums, d\'artistes et de playlists.', B: '<b>B · Bloc teinté + colonnes denses.</b> Le meilleur résultat dans un bloc teinté par sa propre image (comme la page artiste), avec ce que ta bibliothèque contient déjà de lui. Puis titres à gauche, albums, artistes et playlists à droite.' },
+  artist: { A: '<b>A · Bannière.</b> La photo de l\'artiste en bannière pleine largeur, fondue dans la page, avec un nom très grand. Le plus immersif.', B: '<b>B · Comme une playlist, enrichi.</b> En-tête avec stats et genres, titres (tri, groupement, tags), discographie filtrable, clips, similaires ; à droite « Chez toi » (tes écoutes) et « À propos ».' },
+  album: { A: '<b>A · Comme une playlist.</b> Même en-tête que les pages playlist, puis la liste des titres. Cohérent avec l\'existant.', B: '<b>B · Pochette collante.</b> Pochette, actions et fiche (sortie, durée, écoutes, label, genres, description) dans une colonne fixe à gauche ; la liste défile à droite.' },
+};
+
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const art = (h, cls = '') => typeof h === 'string' ? `<div class="art ${cls}"><img src="${esc(h)}" alt="" loading="lazy"></div>` : `<div class="art ${cls}" style="--h:${h}"></div>`;
+
+function sidebar() {
+  const pls = (window.SONDER?.playlists ?? []).filter((p) => p.id !== 'SE').slice(0, 30);
+  $('#plcount').textContent = pls.length || '';
+  $('#pl').innerHTML = pls.map((p) => `<button class="li">${p.img ? `<img src="${esc(p.img)}" alt="">` : art(40)}<span class="t">${esc(p.title)}</span></button>`).join('');
+  document.querySelectorAll('.nav button').forEach((b) => b.classList.toggle('on', b.dataset.go === state.view || (b.dataset.go === 'search' && ['search', 'artist', 'album'].includes(state.view))));
+}
+
+function trackRows(list, { album = true, numbered = true, start = 0, h } = {}) {
+  return `<div class="tracks">${list.map((t, i) => {
+    const [title, artists, alb, dur, hue, inLib] = t;
+    return `<div class="row ${album ? '' : 'noalbum'} ${i === 0 && state.view === 'artist' ? 'playing' : ''} reveal" style="--i:${i}" data-track="${esc(title)}">
+      <span class="n">${i === 0 && state.view === 'artist' ? '<span class="eq"><i></i><i></i><i></i></span>' : `<span class="num">${numbered ? start + i + 1 : ''}</span><button class="pb" data-play title="Lire">${I.play}</button>`}</span>
+      ${art(h ?? hue)}
+      <span style="min-width:0"><div class="t">${esc(title)}${inLib ? '<span class="lib">Dans ta bibliothèque</span>' : ''}</div><div class="a"><a class="link" data-go="artist">${esc(artists)}</a>${genreTags(title)}</div></span>
+      ${album ? `<span class="al"><a class="link" data-go="album">${esc(alb)}</a></span>` : ''}
+      <span class="d">${dur}</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+
+const SORTS = [['recent', 'Plus récents'], ['oldest', 'Plus anciens'], ['popular', 'Populaires'], ['az', 'A → Z']];
+/** Release year of an album title, from the subtitles YTM gives ("Album · 2022"). */
+function yearOf(album) {
+  const hit = [...R.albums, ...R.singles, ...R.searchAlbums].find((a) => a[0] === album);
+  const y = hit && hit[1].match(/(19|20)\d{2}/);
+  return y ? +y[0] : null;
+}
+/** Sorts a list by release (newest first by default), keeping YTM's popularity order as the tie-breaker. */
+function sorted(list, mode, titleOf, albumOf) {
+  const rows = list.map((item, i) => ({ item, i, y: yearOf(albumOf(item)) }));
+  const byYear = (dir) => (a, b) => (a.y === null) - (b.y === null) || dir * ((a.y ?? 0) - (b.y ?? 0)) || a.i - b.i;
+  if (mode === 'recent') rows.sort(byYear(-1));
+  if (mode === 'oldest') rows.sort(byYear(1));
+  if (mode === 'az') rows.sort((a, b) => titleOf(a.item).localeCompare(titleOf(b.item), 'fr'));
+  return rows.map((r) => r.item);
+}
+const sortTracks = (list) => sorted(list, state.sortTracks, (t) => t[0], (t) => t[2]);
+const sortAlbums = (list) => sorted(list, state.sortAlbums, (a) => a[0], (a) => a[0]);
+function sortControl(key) {
+  return `<label class="sortc" title="Trier">${I.sort}<select data-sort="${key}">${SORTS.map(([v, l]) => `<option value="${v}" ${state[key] === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
+}
+
+/** "List | By album" switch shown next to a track section title. */
+function groupToggle() {
+  return `<span class="seg mini-seg"><button class="${state.grouped ? '' : 'on'}" data-group="0">Liste</button><button class="${state.grouped ? 'on' : ''}" data-group="1">Par album</button></span>`;
+}
+
+/** Tracks as a flat list, or grouped under their album (cover, title, year and dimmed track count). */
+function tracksMaybeGrouped(list, opts = {}) {
+  if (!state.grouped) return trackRows(list, opts);
+  const groups = new Map();
+  list.forEach((t) => { const key = t[2] || 'Single'; groups.set(key, [...(groups.get(key) ?? []), t]); });
+  return [...groups.entries()].map(([album, tracks], gi) => {
+    const info = ALBUMS.find((a) => a[0] === album) || R.searchAlbums.find((a) => a[0] === album);
+    const sub = info ? info[1] : (album === 'Single' ? 'Singles' : 'Album');
+    return `<section class="agroup reveal" style="--i:${gi}">
+      <header class="ahead" data-go="album">${art(info ? info[2] : tracks[0][4])}<span style="min-width:0"><div class="t">${esc(album === 'Single' ? 'Singles' : album)}</div><div class="a">${withCount(album, sub)}</div></span><span class="ahead-n">${tracks.length} résultat${tracks.length > 1 ? 's' : ''}</span></header>
+      ${trackRows(tracks, { album: false })}
+    </section>`;
+  }).join('');
+}
+
+function albumCards(list) {
+  return `<div class="shelf">${list.map(([t, a, h], i) => `<div class="card reveal" style="--i:${i}" data-go="album" tabindex="0">${art(h).replace('</div>', `<span class="ph">${I.play}</span></div>`)}<div class="t">${esc(t)}</div><div class="a">${withCount(t, a)}</div></div>`).join('')}</div>`;
+}
+function artistCards(list) {
+  return `<div class="artists">${list.map(([t, h], i) => `<div class="artist reveal" style="--i:${i}" data-go="artist" tabindex="0">${art(h)}<div class="t">${esc(t)}</div><div class="a">Artiste</div></div>`).join('')}</div>`;
+}
+function playlistCards(list) {
+  return `<div class="shelf">${list.map(([t, a, h], i) => `<div class="card reveal" style="--i:${i}" tabindex="0">${art(h).replace('</div>', `<span class="ph">${I.play}</span></div>`)}<div class="t">${esc(t)}</div><div class="a">${esc(a)}</div></div>`).join('')}</div>`;
+}
+function librarySection() {
+  return `<section class="libsec reveal"><div class="h2">Dans ta bibliothèque <span>3</span></div><div class="libgrid">${LIBRARY.map(([t, a, h]) => `<button class="libitem">${art(h)}<span style="min-width:0"><div class="t">${esc(t)}</div><div class="a">${esc(a)}</div></span></button>`).join('')}</div></section>`;
+}
+
+function skeletonSearch() {
+  const rows = Array.from({ length: 6 }, () => `<div class="skrow"><div class="sk" style="width:36px;height:36px"></div><div style="flex:1"><div class="sk" style="height:11px;width:42%;margin-bottom:7px"></div><div class="sk" style="height:10px;width:26%"></div></div></div>`).join('');
+  return `<div class="topsplit" style="margin-top:22px"><div class="sk" style="height:240px;border-radius:14px"></div><div>${rows}</div></div>`;
+}
+
+/* The top result as a tinted block (its own artwork, like the artist page), with what the library already holds from it. */
+function spotlight() {
+  return `<section class="spot reveal">
+    <div class="spot-bg">${art(ARTIST.img)}</div>
+    <div class="spot-main" data-go="artist">
+      ${art(ARTIST.img, 'round')}
+      <div style="min-width:0">
+        <div class="kicker">Meilleur résultat · Artiste</div>
+        <h2 class="spot-name">${esc(ARTIST.name)}</h2>
+        <div class="meta"><span>${ARTIST.listeners} auditeurs mensuels</span><span class="sep"></span><span>${R.artist.subs.replace('M', ' M')} abonnés</span></div>
+        <div class="actions"><button class="play" data-play title="Lire">${I.play}</button><button class="btn" data-play>${I.shuffle} Aléatoire</button><button class="btn" data-go="artist">Voir l'artiste</button></div>
+      </div>
+    </div>
+    <div class="spot-lib">
+      <div class="h2" style="margin:0 0 6px">Dans ta bibliothèque <span>59 titres · 12 albums</span></div>
+      ${LIB_TRACKS.map(([t, a, al, d, img], i) => `<div class="row noalbum reveal" style="--i:${i + 1}"><span class="n"><span class="num"></span><button class="pb" data-play title="Lire">${I.play}</button></span>${art(img)}<span style="min-width:0"><div class="t">${esc(t)}</div><div class="a">${esc(al)}${genreTags(t)}</div></span><span class="d">${d}</span></div>`).join('')}
+      <a class="spot-more">Liked Music · voir les 59 titres</a>
+    </div>
+  </section>`;
+}
+
+function viewSearch() {
+  const chips = ['Tout', 'Titres', 'Albums', 'Artistes', 'Playlists'];
+  const counts = { Titres: '120+', Albums: 18, Artistes: 9, Playlists: '40+' };
+  const head = `<div class="kicker">Rechercher</div>
+    <div class="sfield">${I.search}<input value="${esc(state.q)}" aria-label="Rechercher" id="sinput"><kbd>⌘K</kbd></div>
+    <div class="sticky"><div class="chips" style="margin-top:0">${chips.map((c) => `<button class="chip ${state.chip === c ? 'on' : ''}" data-chip="${c}">${c}${counts[c] ? `<span class="c">${counts[c]}</span>` : ''}</button>`).join('')}</div></div>`;
+  if (state.loading) return `<div class="page">${head}${skeletonSearch()}</div>`;
+
+  let body = '';
+  if (state.chip === 'Titres') body = `<div class="h2" style="margin-top:12px">Titres ${groupToggle()}${sortControl('sortTracks')}</div>${tracksMaybeGrouped(sortTracks(TOP))}`;
+  else if (state.chip === 'Albums') body = `<div class="h2" style="margin-top:12px">Albums ${sortControl('sortAlbums')}</div>${albumCards(sortAlbums([...ALBUMS, ...R.singles]))}`;
+  else if (state.chip === 'Artistes') body = `<div class="h2" style="margin-top:12px">Artistes</div>${artistCards([[ARTIST.name, ARTIST.h], ...SIMILAR])}`;
+  else if (state.chip === 'Playlists') body = `<div class="h2" style="margin-top:12px">Playlists</div>${playlistCards([...PLAYLISTS, ...PLAYLISTS])}`;
+  else if (state.v.search === 'A') {
+    body = `${librarySection()}
+      <div class="topsplit">
+        <div><div class="h2">Meilleur résultat</div>
+          <div class="top reveal" data-go="artist">${art(ARTIST.h, 'round')}<div class="name">${ARTIST.name}</div><div class="meta" style="margin-top:4px"><span>Artiste</span><span class="sep"></span><span>1,9 M auditeurs mensuels</span></div><button class="play" data-play title="Lire">${I.play}</button></div>
+        </div>
+        <div><div class="h2">Titres <a data-chip="Titres">Tout voir</a></div>${trackRows(TOP.slice(0, 5), { album: false, numbered: false })}</div>
+      </div>
+      <div class="h2">Albums ${sortControl('sortAlbums')}<a data-chip="Albums">Tout voir</a></div>${albumCards(sortAlbums(ALBUMS))}
+      <div class="h2">Artistes <a data-chip="Artistes">Tout voir</a></div>${artistCards(SIMILAR)}
+      <div class="h2">Playlists <a data-chip="Playlists">Tout voir</a></div>${playlistCards(PLAYLISTS)}`;
+  } else {
+    const mini = (list, type, go, round) => list.map(([t, a, h], i) => `<div class="mini reveal" style="--i:${i}" ${go ? `data-go="${go}"` : ''}>${art(h, round ? 'round' : '')}<span style="min-width:0"><div class="t">${esc(t)}</div><div class="a">${go === 'album' ? withCount(t, a) : esc(a)}</div></span><span class="type">${type}</span></div>`).join('');
+    body = `${spotlight()}
+      <div class="dense">
+        <div><div class="h2">Titres ${groupToggle()}${sortControl('sortTracks')}<a data-chip="Titres">Tout voir</a></div>${tracksMaybeGrouped(sortTracks(TOP))}</div>
+        <div>
+          <div class="h2">Albums ${sortControl('sortAlbums')}<a data-chip="Albums">Tout voir</a></div>${mini(sortAlbums(R.searchAlbums.concat(ALBUMS.filter((a) => !R.searchAlbums.some((b) => b[0] === a[0])))).slice(0, 4), '', 'album')}
+          <div class="h2">Artistes <a data-chip="Artistes">Tout voir</a></div>${mini(SIMILAR.slice(0, 3).map(([t, h]) => [t, 'Artiste', h]), '', 'artist', true)}
+          <div class="h2">Playlists <a data-chip="Playlists">Tout voir</a></div>${mini(PLAYLISTS.slice(0, 3), '')}
+        </div>
+      </div>`;
+  }
+  return `<div class="page">${head}${body}</div>`;
+}
+
+function viewArtist() {
+  const actions = `<div class="actions"><button class="play" data-play title="Lire">${I.play}</button><button class="btn">${I.shuffle} Aléatoire</button><button class="iconbtn" title="Plus">${I.dots}</button></div>`;
+  if (state.v.artist === 'A') {
+    return `<div class="page">
+      <div class="banner">${art(ARTIST.img)}<div class="inner"><div class="kicker">Artiste</div><h1 class="display">${ARTIST.name}</h1><div class="meta"><span>${ARTIST.listeners} auditeurs mensuels</span><span class="sep"></span><span>59 titres dans ta bibliothèque</span></div>${actions}</div></div>
+      <div class="h2">Titres ${groupToggle()}${sortControl('sortTracks')}</div>${tracksMaybeGrouped(sortTracks(TOP))}
+      <div class="h2">Albums et singles <span class="disc-tabs"><button class="chip on">Tout</button><button class="chip">Albums</button><button class="chip">Singles et EP</button></span>${sortControl('sortAlbums')}<a>Tout voir</a></div>${albumCards(sortAlbums(ALBUMS))}
+      <div class="h2">Artistes similaires</div>${artistCards(SIMILAR)}
+    </div>`;
+  }
+  const discs = state.discTab === 'singles' ? R.singles : state.discTab === 'albums' ? R.albums : [...R.albums, ...R.singles];
+  return `<div class="ambient">${art(ARTIST.h)}</div><div class="page">
+    <div class="ahero">${art(ARTIST.h, 'round')}<div>
+      <div class="kicker">Artiste</div><h1 class="display">${ARTIST.name}</h1>
+      <div class="meta"><span>${ARTIST.listeners} auditeurs mensuels</span><span class="sep"></span><span>${R.artist.subs.replace('M', ' M')} abonnés</span><span class="sep"></span><span>${fmtPlays(+R.artist.views.replace(/\D/g, ''))} de vues</span></div>
+      <div class="genres" style="margin-top:12px">${ARTIST_GENRES.map((g) => `<span class="tag">${g}</span>`).join('')}</div>
+      <div class="album-actions artist-actions"><button class="play" data-play title="Lire">${I.play}</button><button class="btn">${I.shuffle} Aléatoire</button><button class="btn">${I.radio} Radio</button><button class="iconbtn" title="Plus">${I.dots}</button></div>
+    </div></div>
+    <div class="artist-layout">
+      <div class="artist-main">
+        <div class="h2" style="margin-top:0">Titres ${groupToggle()}${sortControl('sortTracks')}<a>Tout voir</a></div>${tracksMaybeGrouped(sortTracks(TOP), { album: true })}
+        <div class="h2">Discographie <span class="disc-tabs">${[['all', 'Tout'], ['albums', 'Albums'], ['singles', 'Singles et EP']].map(([k, l]) => `<button class="chip ${state.discTab === k ? 'on' : ''}" data-disc="${k}">${l}</button>`).join('')}</span>${sortControl('sortAlbums')}<a>Tout voir</a></div>
+        ${albumCards(sortAlbums(discs).slice(0, 10))}
+        <div class="h2">Clips et lives</div>
+        <div class="videos">${R.videos.slice(0, 4).map(([t, img, v], i) => `<div class="video reveal" style="--i:${i}"><div class="art">${`<img src="${esc(img)}" alt="" loading="lazy">`}<span class="ph">${I.play}</span></div><div class="t">${esc(t)}</div><div class="a">${v ? `${fmtPlays(playsOf(v))} de vues` : ''}</div></div>`).join('')}</div>
+        <div class="h2">Artistes similaires</div>${artistCards(SIMILAR.slice(0, 6))}
+      </div>
+      <aside class="artist-aside">
+        <section class="mine">
+          <div class="h2" style="margin:0 0 10px">Chez toi</div>
+          <div class="mine-stats"><div><b>59</b><span>titres</span></div><div><b>12</b><span>albums</span></div><div><b>16</b><span>écoutes</span></div></div>
+          <p class="mine-note">50 min d'écoute depuis le 2 oct. · dernière écoute hier</p>
+          <div class="pg" style="padding:12px 0 4px">Tes plus écoutés</div>
+          ${MY_TOP.map(([t, n], i) => `<div class="mine-row"><span class="n">${i + 1}</span><span class="t">${esc(t)}</span><span class="c">${n} écoute${n > 1 ? 's' : ''}</span></div>`).join('')}
+        </section>
+        <section>
+          <div class="h2" style="margin:0 0 10px">À propos</div>
+          <dl class="facts" style="margin:0;padding:0;border:0">
+            <div><dt>Origine</dt><dd>Berlin, Allemagne</dd></div>
+            <div><dt>Actif depuis</dt><dd>1994</dd></div>
+            <div><dt>Membres</dt><dd>Till Lindemann, Richard Z. Kruspe, Paul Landers, Oliver Riedel, Christoph Schneider, Flake Lorenz</dd></div>
+          </dl>
+          <div class="desc ${state.descOpen ? 'open' : ''}"><p>${esc(R.artist.desc.replace(/\n+/g, ' '))}</p><button data-desc>${state.descOpen ? 'Réduire' : 'Lire la suite'}</button><span class="src">YouTube Music</span></div>
+        </section>
+      </aside>
+    </div>
+  </div>`;
+}
+
+const ARTIST_GENRES = ['industrial metal', 'neue deutsche härte', 'industrial', 'metal'];
+const MY_TOP = [['Stripped', 4], ['Adieu', 3], ['Du riechst so gut', 2], ['Zerstören', 1]];
+/** Last.fm genre tags per track (strongest first, at most two), as the enrichment stores them. */
+const TRACK_GENRES = { 'Sonne': ['industrial metal', 'metal'], 'Du hast': ['industrial metal', 'neue deutsche härte'], 'Deutschland': ['industrial metal', 'industrial'], 'Engel': ['industrial metal', 'neue deutsche härte'], 'Ich will': ['industrial metal', 'metal'], 'Benzin': ['industrial metal', 'metal'], 'Donaukinder': ['industrial metal', 'gothic metal'], 'Sehnsucht': ['industrial metal', 'industrial'], 'Halleluja': ['industrial metal', 'industrial'], 'Armee der Tristen': ['industrial metal', 'heavy metal'], 'Zeit': ['industrial metal', 'ballad'], 'Zick Zack': ['industrial metal', 'heavy metal'], 'Angst': ['industrial metal', 'heavy metal'], 'Dicke Titten': ['industrial metal', 'heavy metal'], 'Adieu': ['industrial metal', 'heavy metal'], 'Giftig': ['industrial metal', 'metal'] };
+const genreTags = (title) => (TRACK_GENRES[title.replace(/ \(.*\)$/, '')] || []).map((g) => `<span class="gtag">${g}</span>`).join('');
+const ALBUM_GENRES = ['industrial metal', 'industrial', 'heavy metal', 'alternative metal'];
+const ALBUM_IN_LIBRARY = ['Zick Zack', 'Adieu'];
+const playsOf = (p) => { const m = String(p || '').match(/([\d.]+)\s*([KMB]?)/); return m ? +m[1] * ({ K: 1e3, M: 1e6, B: 1e9 }[m[2]] || 1) : 0; };
+const fmtPlays = (n) => n >= 1e9 ? `${(n / 1e9).toFixed(1).replace('.', ',')} Md` : n >= 1e6 ? `${Math.round(n / 1e6)} M` : `${Math.round(n / 1e3)} k`;
+
+/** Album tracklist: the cover and artist are the page's, so rows carry number, title, plays and length only. */
+function albumTracks() {
+  return `<div class="atl" role="table">
+    <div class="atl-head" role="row"><span>#</span><span>Titre</span><span class="r">Écoutes</span><span class="r">${I.clock}</span></div>
+    ${ALBUM_TRACKS.map(([t, d, a, plays], i) => `<div class="arow reveal" style="--i:${i}" role="row" data-track="${esc(t)}">
+      <span class="n"><span class="num">${i + 1}</span><button class="pb" data-play title="Lire">${I.play}</button></span>
+      <span style="min-width:0"><span class="t">${esc(t)}</span>${ALBUM_IN_LIBRARY.includes(t) ? '<span class="lib">Dans ta bibliothèque</span>' : ''}<div class="a">${a !== 'Rammstein' ? esc(a) : ''}${genreTags(t)}</div></span>
+      <span class="p">${fmtPlays(playsOf(plays))}</span>
+      <span class="d">${d}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
+/** Facts, genres and the Wikipedia blurb YTM ships with the album. */
+function albumInfo() {
+  const total = ALBUM_TRACKS.reduce((sum, t) => sum + playsOf(t[3]), 0);
+  const desc = (R.album.desc || '').split('\n')[0];
+  return `<dl class="facts">
+      <div><dt>Sortie</dt><dd>29 avril 2022</dd></div>
+      <div><dt>Durée</dt><dd>${ALBUM.duration.replace('minutes', 'min')} · ${ALBUM.count} titres</dd></div>
+      <div><dt>Écoutes</dt><dd>${fmtPlays(total)}</dd></div>
+      <div><dt>Label</dt><dd>Universal Music</dd></div>
+      <div><dt>Chez toi</dt><dd>${ALBUM_IN_LIBRARY.length} titres sur ${ALBUM.count}</dd></div>
+    </dl>
+    <div class="genres">${ALBUM_GENRES.map((g) => `<span class="tag">${g}</span>`).join('')}</div>
+    ${desc ? `<div class="desc ${state.descOpen ? 'open' : ''}"><p>${esc(desc)}</p><button data-desc>${state.descOpen ? 'Réduire' : 'Lire la suite'}</button><span class="src">Wikipédia</span></div>` : ''}`;
+}
+
+function viewAlbum() {
+  const actions = `<div class="album-actions">
+      <button class="play" data-play title="Lire">${I.play}</button>
+      <button class="btn">${I.shuffle} Aléatoire</button>
+      <button class="iconbtn" title="Plus">${I.dots}</button>
+      <button class="btn wide" disabled title="Arrive avec la partie 3">${I.plist} Enregistrer comme playlist</button>
+    </div>`;
+  const meta = `<div class="meta"><a class="link" data-go="artist" style="color:var(--text);font-weight:700">Rammstein</a><span class="sep"></span><span>${ALBUM.year}</span><span class="sep"></span><span>${ALBUM.count} titres</span><span class="sep"></span><span>${ALBUM.duration.replace('minutes', 'min')}</span></div>`;
+  const more = `<div class="h2 more-by">Plus de Rammstein <a data-go="artist">Voir l'artiste</a></div>${albumCards(sortAlbums(ALBUMS).filter((a) => a[0] !== ALBUM.title).slice(0, 5))}`;
+  if (state.v.album === 'A') {
+    return `<div class="ambient">${art(ALBUM.img)}</div><div class="page">
+      <div class="ahero" style="grid-template-columns:188px minmax(0,1fr)">${art(ALBUM.img).replace('class="art ', 'class="art sq ')}<div><div class="kicker">Album</div><h1 class="display">${esc(ALBUM.title)}</h1>${meta}<div class="actions"><button class="play" data-play title="Lire">${I.play}</button><button class="btn">${I.shuffle} Aléatoire</button><button class="btn" disabled title="Arrive avec la partie 3">${I.plist} Enregistrer comme playlist</button><button class="iconbtn" title="Plus">${I.dots}</button></div></div></div>
+      <div class="album-a">${albumTracks()}<aside>${albumInfo()}</aside></div>
+      ${more}
+    </div>`;
+  }
+  return `<div class="ambient">${art(ALBUM.img)}</div><div class="page"><div class="aside-layout">
+    <div class="cover">${art(ALBUM.img)}<div class="kicker" style="margin-top:20px">Album</div><h1>${esc(ALBUM.title)}</h1>${meta}${actions}${albumInfo()}</div>
+    <div>${albumTracks()}${more}</div>
+  </div></div>`;
+}
+
+function viewDiscover() {
+  return `<div class="page"><div class="kicker">Dimanche soir</div><h1 class="h1">Découvrir</h1><p style="color:var(--muted)">Page existante. Ouvre la palette avec ⌘K ou le champ de recherche.</p><div class="h2">Récemment écouté</div>${albumCards(ALBUMS)}</div>`;
+}
+
+/* ---------- palette ---------- */
+function paletteItems() {
+  const S = R.searchSongs, AL = R.searchAlbums;
+  if (state.emptyPalette) {
+    return [
+      { g: 'Récent', kind: 'recent', label: 'rammstein', sub: 'Recherche', icon: I.clock },
+      { g: 'Récent', kind: 'recent', label: ALBUM.title, sub: 'Album · Rammstein', h: ALBUM.img, go: 'album' },
+      { g: 'Récent', kind: 'recent', label: SIMILAR[0][0], sub: 'Artiste', h: SIMILAR[0][1], round: true, go: 'artist' },
+      { g: 'Aller à', label: 'Découvrir', hint: 'G' }, { g: 'Aller à', label: 'Bibliothèque', hint: 'L' },
+      { g: 'Actions', label: 'Pause', hint: 'Espace' }, { g: 'Actions', label: 'Afficher la file', hint: 'Q' },
+    ];
+  }
+  return [
+    { g: 'Dans ta bibliothèque', label: 'Ich will', sub: 'Rammstein · dans « Liked Music »', h: LIB_TRACKS[0][4], track: true },
+    { g: 'Dans ta bibliothèque', label: 'Benzin', sub: 'Rammstein · dans « Liked Music »', h: LIB_TRACKS[1][4], track: true },
+    { g: 'Meilleur résultat', top: true, label: ARTIST.name, sub: `Artiste · ${ARTIST.listeners} auditeurs`, h: ARTIST.img, round: true, go: 'artist', preview: 'artist' },
+    ...S.slice(1, 4).map(([t, a, al, d, img]) => ({ g: 'Titres', label: t, sub: a, h: img, track: true, hint: d })),
+    ...AL.slice(0, 2).map(([t, sub, img]) => ({ g: 'Albums', label: t, sub: `${sub} · Rammstein${COUNTS[t] ? ` · ${COUNTS[t]} titres` : ''}`, h: img, go: 'album', preview: 'album' })),
+    ...R.searchArtists.slice(0, 1).map(([t, img]) => ({ g: 'Artistes', label: t, sub: 'Artiste', h: img, round: true, go: 'artist', preview: 'artist' })),
+    ...PLAYLISTS.slice(0, 1).map(([t, sub, img]) => ({ g: 'Playlists', label: t, sub, h: img })),
+  ];
+}
+
+function previewPane(item) {
+  if (!item || !item.preview) {
+    return `<div class="preview">${art(item?.h ?? 40, item?.round ? 'round' : 'sqp')}<h3>${esc(item?.label ?? '')}</h3><p class="sub">${esc(item?.sub ?? '')}</p><p style="font-size:12.5px;color:var(--faint);text-align:center">Entrée pour ${item?.track ? 'mettre à la suite' : 'ouvrir'}</p></div>`;
+  }
+  const list = item.preview === 'artist' ? TOP.slice(0, 5).map((t) => [t[0], t[3]]) : ALBUM_TRACKS.slice(0, 6);
+  return `<div class="preview">${art(item.h, item.round ? 'round' : 'sqp')}<h3>${esc(item.label)}</h3><p class="sub">${esc(item.sub)}</p>
+    <div class="pg" style="padding:0 0 6px">${item.preview === 'artist' ? 'Titres populaires' : 'Pistes'}</div>
+    ${list.map(([t, d], i) => `<div class="pt"><span>${i + 1}</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t)}</span><span>${d}</span></div>`).join('')}</div>`;
+}
+
+function renderPalette() {
+  const layer = $('#layer');
+  if (!state.palette) { layer.innerHTML = ''; return; }
+  const items = paletteItems();
+  state.sel = Math.min(state.sel, items.length - 1);
+  let last = null;
+  const html = items.map((it, i) => {
+    const head = it.g !== last ? `<div class="pg">${it.g}${it.g === 'Récent' ? '' : ''}</div>` : '';
+    last = it.g;
+    const sel = i === state.sel ? 'sel' : '';
+    const visual = it.icon ? `<span style="width:30px;display:grid;place-items:center;color:var(--faint)">${it.icon}</span>` : it.h !== undefined ? art(it.h, it.round ? 'round' : '') : '';
+    if (it.top) {
+      return `${head}<button class="ptop ${sel}" data-i="${i}">${art(it.h, 'round')}<span style="min-width:0;flex:1"><b>${esc(it.label)}</b><div style="font-size:12.5px;color:var(--faint);font-weight:500">${esc(it.sub)}</div></span><span class="pplay" style="display:grid;width:32px;height:32px;border-radius:50%;place-items:center;background:var(--grad);color:var(--amber-ink)">${I.play}</span></button>`;
+    }
+    return `${head}<button class="pi ${sel}" data-i="${i}">${visual}<span class="lbl"><b>${esc(it.label)}</b>${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span>${it.kind === 'recent' ? `<span class="x" title="Retirer">${I.x}</span>` : ''}${it.track ? `<span class="pplay" title="Lire maintenant">${I.play}</span>` : ''}${it.hint ? (it.g === 'Aller à' || it.g === 'Actions' ? `<kbd>${it.hint}</kbd>` : `<span class="hint">${it.hint}</span>`) : ''}<span class="ret hint">${I.ret}</span></button>`;
+  }).join('');
+  const wide = state.v.palette === 'B' && !state.emptyPalette;
+  layer.innerHTML = `<div class="overlay" data-close></div>
+    <div class="palette ${wide ? 'wide' : ''}" role="dialog" aria-label="Rechercher">
+      <div class="pin">${I.search}<input id="pinput" value="${state.emptyPalette ? '' : esc(state.q)}" placeholder="Rechercher un artiste, un album, un titre…" autocomplete="off"></div>
+      <div class="pbody"><div class="plist scroll ${state.emptyPalette ? 'recent' : ''}">${html}</div>${wide ? previewPane(items[state.sel]) : ''}</div>
+      <div class="pfoot"><span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span><span><kbd>↵</kbd> ${items[state.sel]?.track ? 'à la suite' : 'ouvrir'}</span>${items[state.sel]?.track ? '<span><kbd>⇧</kbd><kbd>↵</kbd> lire</span>' : ''}${state.emptyPalette ? '' : `<a class="all" data-allresults>Tous les résultats pour « ${esc(state.q)} » <kbd>⌘</kbd><kbd>↵</kbd></a>`}</div>
+    </div>`;
+  const input = $('#pinput');
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+}
+
+/* ---------- dock ---------- */
+function renderDock() {
+  const views = [['palette', 'Palette ⌘K'], ['search', 'Page recherche'], ['artist', 'Artiste'], ['album', 'Album']];
+  const current = state.palette ? 'palette' : state.view;
+  const variantKey = current === 'discover' ? null : current;
+  $('#dock').innerHTML = `<span class="lab">Écran</span><div class="seg">${views.map(([k, l]) => `<button class="${current === k ? 'on' : ''}" data-screen="${k}">${l}</button>`).join('')}</div>
+    ${variantKey ? `<span class="sep"></span><span class="lab">Variante</span><div class="seg">${['A', 'B'].map((x) => `<button class="${state.v[variantKey] === x ? 'on' : ''}" data-variant="${x}">${x}</button>`).join('')}</div>` : ''}
+    ${current === 'palette' ? `<span class="sep"></span><div class="seg"><button class="${state.emptyPalette ? '' : 'on'}" data-empty="0">Saisie</button><button class="${state.emptyPalette ? 'on' : ''}" data-empty="1">Vide</button></div>` : ''}
+    ${current === 'search' ? `<span class="sep"></span><div class="seg"><button data-skeleton>Chargement</button></div>` : ''}`;
+  $('#vnote').innerHTML = variantKey ? NOTES[variantKey][state.v[variantKey]] : '';
+  $('#vnote').style.display = variantKey ? '' : 'none';
+}
+
+function render(enter = true) {
+  const v = $('#view');
+  const views = { search: viewSearch, artist: viewArtist, album: viewAlbum, discover: viewDiscover };
+  v.innerHTML = views[state.view]();
+  if (enter) { v.classList.remove('enter'); void v.offsetWidth; v.classList.add('enter'); v.scrollTop = 0; }
+  sidebar();
+  renderDock();
+  renderPalette();
+}
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 1600);
+}
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-disc],[data-desc],[data-group],[data-screen],[data-variant],[data-go],[data-chip],[data-play],[data-close],[data-open-palette],[data-empty],[data-skeleton],[data-allresults],.pi,.ptop,.row');
+  if (!el) return;
+  if (el.dataset.disc) { state.discTab = el.dataset.disc; render(false); return; }
+  if (el.hasAttribute('data-desc')) { state.descOpen = !state.descOpen; render(false); return; }
+  if (el.dataset.group !== undefined) { state.grouped = el.dataset.group === '1'; render(false); return; }
+  if (el.dataset.screen) {
+    const s = el.dataset.screen;
+    if (s === 'palette') { state.palette = true; if (state.view !== 'discover') state.view = 'discover'; render(); }
+    else { state.palette = false; state.view = s; render(); }
+    return;
+  }
+  if (el.dataset.variant) { const k = state.palette ? 'palette' : state.view; state.v[k] = el.dataset.variant; render(!state.palette); return; }
+  if (el.dataset.empty !== undefined) { state.emptyPalette = el.dataset.empty === '1'; state.sel = 0; render(false); return; }
+  if (el.hasAttribute('data-skeleton')) { state.loading = true; render(false); setTimeout(() => { state.loading = false; render(false); }, 1400); return; }
+  if (el.hasAttribute('data-open-palette')) { state.palette = true; render(false); return; }
+  if (el.hasAttribute('data-close')) { state.palette = false; render(false); return; }
+  if (el.hasAttribute('data-allresults')) { state.palette = false; state.view = 'search'; state.chip = 'Tout'; render(); return; }
+  if (el.hasAttribute('data-play')) { e.stopPropagation(); toast('Lecture'); return; }
+  if (el.dataset.chip) { state.chip = el.dataset.chip; render(false); return; }
+  if (el.dataset.go) { state.palette = false; state.view = el.dataset.go; render(); return; }
+  if (el.classList.contains('pi') || el.classList.contains('ptop')) {
+    const it = paletteItems()[+el.dataset.i];
+    if (it.go) { state.palette = false; state.view = it.go; render(); }
+    else if (it.track) { toast('Ajouté à la suite'); }
+    return;
+  }
+  if (el.classList.contains('row')) {
+    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    toast(e.detail > 1 ? 'Lecture' : 'Ajouté à la suite');
+  }
+});
+
+document.addEventListener('mouseover', (e) => {
+  const el = e.target.closest('.pi,.ptop');
+  if (el && +el.dataset.i !== state.sel) { state.sel = +el.dataset.i; renderPalette(); }
+});
+
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); state.palette = !state.palette; render(false); return; }
+  if (!state.palette) return;
+  const n = paletteItems().length;
+  if (e.key === 'Escape') { state.palette = false; render(false); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); state.sel = (state.sel + 1) % n; renderPalette(); $('.plist .sel')?.scrollIntoView({ block: 'nearest' }); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); state.sel = (state.sel - 1 + n) % n; renderPalette(); $('.plist .sel')?.scrollIntoView({ block: 'nearest' }); }
+  else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (e.metaKey || e.ctrlKey) { state.palette = false; state.view = 'search'; render(); return; }
+    $('.plist .sel')?.click();
+  }
+});
+
+document.addEventListener('change', (e) => {
+  if (e.target.dataset.sort) { state[e.target.dataset.sort] = e.target.value; render(false); }
+});
+
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'pinput') { state.q = e.target.value; const wasEmpty = state.emptyPalette; state.emptyPalette = e.target.value.trim() === ''; if (wasEmpty !== state.emptyPalette) { state.sel = 0; renderPalette(); renderDock(); } }
+  if (e.target.id === 'sinput') state.q = e.target.value;
+});
+
+render();
+</script>
+</body>
+</html>
