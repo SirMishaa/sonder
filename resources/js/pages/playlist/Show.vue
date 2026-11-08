@@ -12,9 +12,8 @@ import {
 import { computed, ref } from 'vue';
 import PlaylistRefreshController from '@/actions/App/Http/Controllers/PlaylistRefreshController';
 import Artwork from '@/components/music/Artwork.vue';
-import Equalizer from '@/components/music/Equalizer.vue';
 import SuggestionsBlock from '@/components/music/SuggestionsBlock.vue';
-import Waveform from '@/components/music/Waveform.vue';
+import TrackRow from '@/components/music/TrackRow.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { usePlayer } from '@/composables/usePlayer';
 import { useRelativeTime } from '@/composables/useRelativeTime';
@@ -263,94 +262,19 @@ useShortcuts({ r: refresh });
                         $t('Time')
                     }}</span>
                 </div>
-                <div
+                <TrackRow
                     v-for="(track, index) in tracks"
                     :key="`${track.videoId ?? track.title}-${index}`"
-                    class="track"
-                    :class="{
-                        'is-current': isCurrent(index),
-                        'is-unavailable': !track.isAvailable,
-                        'is-added': index >= playlist.tracks.length,
-                    }"
-                    role="row"
-                    :tabindex="track.isAvailable ? 0 : -1"
+                    :class="{ 'is-added': index >= playlist.tracks.length }"
+                    :track="track"
+                    :position="index + 1"
+                    :current="isCurrent(index)"
+                    :playing="player.state.playing"
+                    genre-column
                     @mousedown="preventSelection"
-                    @click="onTrackClick($event, index)"
-                    @keydown.enter="track.isAvailable && play(index)"
-                >
-                    <span
-                        class="cell justify-end text-[12.5px] font-medium text-faint"
-                        role="cell"
-                    >
-                        <Equalizer
-                            v-if="isCurrent(index)"
-                            :playing="player.state.playing"
-                        />
-                        <template v-else>
-                            <span class="number">{{ index + 1 }}</span>
-                            <button
-                                v-if="track.isAvailable"
-                                type="button"
-                                class="hover-play"
-                                tabindex="-1"
-                                :aria-label="
-                                    $t('Play :title', { title: track.title })
-                                "
-                                @click.stop="$event.detail <= 1 && play(index)"
-                            >
-                                <Play
-                                    class="size-3.5 fill-current text-amber"
-                                />
-                            </button>
-                        </template>
-                    </span>
-                    <span class="cell gap-2.5" role="cell">
-                        <Artwork
-                            :src="track.thumbnailUrl"
-                            class="size-8 shrink-0 rounded"
-                            data-track-artwork
-                        />
-                        <span class="min-w-0">
-                            <span class="title block truncate font-semibold">
-                                {{ track.title }}
-                                <span
-                                    v-if="track.isExplicit"
-                                    class="ml-1 rounded bg-raised px-1 text-[10px] font-semibold text-dim"
-                                    >E</span
-                                >
-                            </span>
-                            <span
-                                class="block truncate text-[12.5px] text-dim"
-                                >{{ track.artists }}</span
-                            >
-                        </span>
-                    </span>
-                    <span class="cell from-md relative text-dim" role="cell">
-                        <Waveform
-                            v-if="isCurrent(index)"
-                            :seed="track.title"
-                            :playing="player.state.playing"
-                            class="absolute inset-x-0 inset-y-2"
-                        />
-                        <span class="relative truncate">{{ track.album }}</span>
-                    </span>
-                    <span
-                        class="cell from-lg gap-1 overflow-hidden"
-                        role="cell"
-                    >
-                        <span
-                            v-for="genre in track.genres"
-                            :key="genre"
-                            class="genre"
-                            >{{ genre }}</span
-                        >
-                    </span>
-                    <span
-                        class="cell justify-end text-[12.5px] font-medium text-faint"
-                        role="cell"
-                        >{{ track.duration }}</span
-                    >
-                </div>
+                    @tap="onTrackClick($event, index)"
+                    @play="play(index)"
+                />
             </div>
 
             <div
@@ -470,17 +394,6 @@ useShortcuts({ r: refresh });
     }
 }
 
-.genre {
-    flex-shrink: 0;
-    padding: 0 8px;
-    border: 1px solid var(--color-line);
-    border-radius: 999px;
-    font-size: 11.5px;
-    line-height: 19px;
-    white-space: nowrap;
-    color: var(--color-dim);
-}
-
 .head {
     display: flex;
     padding: 8px 10px;
@@ -490,83 +403,21 @@ useShortcuts({ r: refresh });
     font-weight: 600;
 }
 
-.track {
-    display: contents;
-    cursor: pointer;
-    user-select: none;
-}
-
-.cell {
-    display: flex;
-    align-items: center;
-    min-width: 0;
-    padding: 7px 10px;
-    border-bottom: 1px solid oklch(0.285 0.012 60 / 0.55);
-    transition: background 140ms;
-}
-
 /* Scoped display rules outrank Tailwind's `hidden`, so columns hide here. */
 .head.from-md,
-.cell.from-md,
-.head.from-lg,
-.cell.from-lg {
+.head.from-lg {
     display: none;
 }
 
 @media (min-width: 768px) {
-    .head.from-md,
-    .cell.from-md {
+    .head.from-md {
         display: flex;
     }
 }
 
 @media (min-width: 1024px) {
-    .head.from-lg,
-    .cell.from-lg {
+    .head.from-lg {
         display: flex;
     }
-}
-
-.track:hover .cell,
-.track:focus-visible .cell {
-    background: var(--color-hover);
-}
-
-.track:focus-visible {
-    outline: none;
-}
-
-.hover-play {
-    display: none;
-}
-
-.track:not(.is-unavailable):hover .number {
-    display: none;
-}
-
-.track:hover .hover-play {
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-}
-
-.track.is-current .cell {
-    background: oklch(0.8 0.15 68 / 0.05);
-}
-
-.track.is-current .title {
-    color: var(--color-amber);
-}
-
-.track.is-unavailable {
-    cursor: default;
-}
-
-.track.is-unavailable .cell {
-    opacity: 0.4;
-}
-
-.track.is-added .cell {
-    animation: flash-amber 1.6s var(--ease-out-quint);
 }
 </style>
