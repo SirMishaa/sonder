@@ -77,3 +77,25 @@ it('maps an album with its plays', function () use ($fixture): void {
         ->and($album->playsByVideoId['t-NUBR2kufw'])->toBe(36000000)
         ->and($album->tracks[0]->album?->ref?->externalId)->toBe('MPREb_LJSVi8szMQL');
 });
+
+it('skips non-object search hits', function (): void {
+    $results = (new YouTubeMusicMapper())->searchResults([
+        null,
+        'oops',
+        (object) ['resultType' => 'song', 'title' => 'Sonne', 'videoId' => 'v1'],
+    ]);
+
+    expect($results->tracks)->toHaveCount(1);
+});
+
+it('parses counts', function (string $text, ?int $expected): void {
+    expect((new YouTubeMusicMapper())->artist((object) ['views' => $text], 'UC1')->views)->toBe($expected);
+})->with([
+    ['36M plays', 36000000],
+    ['8,401,443,283 views', 8401443283],
+    ['362K', 362000],
+    ['50 beats', 50],
+    ['12 monthly listeners', 12],
+    ['1.5M views', 1500000],
+    ['no views', null],
+]);

@@ -89,7 +89,7 @@ final readonly class YouTubeMusicMapper
      * Catalog hits keep an empty artist list when YouTube credits none, so the
      * caller can tell "unknown" from a real artist named so.
      *
-     * @param  list<object>  $payload
+     * @param  list<mixed>  $payload
      */
     public function searchResults(array $payload): CatalogResults
     {
@@ -97,6 +97,10 @@ final readonly class YouTubeMusicMapper
         $tracks = $albums = $artists = $playlists = [];
 
         foreach ($payload as $hit) {
+            if (! is_object($hit)) {
+                continue;
+            }
+
             switch ($this->string($hit, 'resultType')) {
                 case 'artist':
                     if ($this->string($hit, 'category') === 'Top result') {
@@ -358,7 +362,7 @@ final readonly class YouTubeMusicMapper
      */
     private function count(?string $text): ?int
     {
-        if ($text === null || preg_match('/(\d[\d.,\x{00A0}\x{202F} ]*)\s*([KMB])?/iu', $text, $match) !== 1) {
+        if ($text === null || preg_match('/(\d(?:[\d.,\x{00A0}\x{202F} ]*\d)?)\s*(?:([KMB])(?![A-Za-z]))?/u', $text, $match) !== 1) {
             return null;
         }
 
