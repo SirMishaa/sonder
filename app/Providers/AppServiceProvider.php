@@ -27,6 +27,7 @@ use App\Services\Music\YouTubeMusic\YouTubeMusicCredentials;
 use Illuminate\Cache\RateLimiter as CacheRateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\DevCommands;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -83,6 +84,11 @@ final class AppServiceProvider extends ServiceProvider
             Limit::perMinute(120)->by('youtube-music-catalog:minute:'.$key),
             Limit::perHour(3000)->by('youtube-music-catalog:hour:'.$key),
         ]);
+
+        // What one person may ask of the catalog routes; the command palette
+        // searches as they type, so its suggestions get twice the room.
+        RateLimiter::for('catalog', fn (Request $request): Limit => Limit::perMinute(60)->by($request->user()?->id ?: $request->ip()));
+        RateLimiter::for('catalog-suggestions', fn (Request $request): Limit => Limit::perMinute(120)->by($request->user()?->id ?: $request->ip()));
 
         // credits.fm documents no limit: stay polite. MusicBrainz allows one
         // request a second per IP and blocks clients that exceed it. Last.fm

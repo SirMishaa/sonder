@@ -2,12 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AlbumController;
+use App\Http\Controllers\ArtistController;
+use App\Http\Controllers\BrowsePlaylistController;
 use App\Http\Controllers\DiscoverController;
 use App\Http\Controllers\ExtensionConnectionController;
 use App\Http\Controllers\ListenController;
 use App\Http\Controllers\PlayerQueueController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistRefreshController;
+use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SearchSuggestionController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\ThumbnailController;
 use App\Http\Controllers\UserController;
@@ -48,6 +53,23 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('playlists/{playlistId}/refresh', [PlaylistRefreshController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('playlist-refresh.store');
+
+    // Catalog...
+    Route::get('search', [SearchController::class, 'index'])
+        ->middleware('throttle:catalog')
+        ->name('search.index');
+    Route::get('search/suggestions', [SearchSuggestionController::class, 'index'])
+        ->middleware('throttle:catalog-suggestions')
+        ->name('search.suggestions');
+    Route::get('artists/{artistId}', [ArtistController::class, 'show'])
+        ->middleware('throttle:catalog')
+        ->name('artist.show');
+    Route::get('albums/{albumId}', [AlbumController::class, 'show'])
+        ->middleware('throttle:catalog')
+        ->name('album.show');
+    Route::get('browse/playlists/{playlistId}', [BrowsePlaylistController::class, 'show'])
+        ->middleware('throttle:catalog')
+        ->name('browse-playlist.show');
 
     // Listens...
     Route::post('listens', [ListenController::class, 'store'])
