@@ -95,16 +95,24 @@ final readonly class YouTubeMusicMapper
     {
         $topArtist = null;
         $tracks = $albums = $artists = $playlists = [];
+        $inTopCard = false;
 
         foreach ($payload as $hit) {
             if (! is_object($hit)) {
+                $inTopCard = false;
+
                 continue;
             }
 
-            switch ($this->string($hit, 'resultType')) {
+            $type = $this->string($hit, 'resultType');
+            $wasInTopCard = $inTopCard;
+            $inTopCard = false;
+
+            switch ($type) {
                 case 'artist':
                     if ($this->string($hit, 'category') === 'Top result') {
                         $topArtist ??= $this->topResultArtist($hit);
+                        $inTopCard = $topArtist !== null;
 
                         break;
                     }
@@ -115,8 +123,12 @@ final readonly class YouTubeMusicMapper
 
                     break;
                 case 'song':
+                    $inTopCard = $wasInTopCard;
+
                     if (($track = $this->mapTrack($hit, false)) !== null) {
-                        $tracks[] = $track;
+                        $tracks[] = $wasInTopCard && $topArtist !== null && $track->artists === []
+                            ? $this->creditedTo($track, $topArtist)
+                            : $track;
                     }
 
                     break;
@@ -284,6 +296,25 @@ final readonly class YouTubeMusicMapper
         }
 
         return new CatalogArtistSummary($ref, $name, $this->thumbnail($hit), $this->string($hit, 'subscribers'));
+    }
+
+    /**
+     * The search "Top result" card lists its songs without artists: they belong to the card's artist.
+     */
+    private function creditedTo(RemoteTrack $track, CatalogArtistSummary $artist): RemoteTrack
+    {
+        return new RemoteTrack(
+            ref: $track->ref,
+            title: $track->title,
+            artists: [new RemoteArtist($artist->ref, $artist->name, ArtistRole::Main)],
+            album: $track->album,
+            durationSeconds: $track->durationSeconds,
+            isrc: $track->isrc,
+            kind: $track->kind,
+            isExplicit: $track->isExplicit,
+            isAvailable: $track->isAvailable,
+            thumbnailUrl: $track->thumbnailUrl,
+        );
     }
 
     private function artistSummary(object $hit, ?string $name): ?CatalogArtistSummary

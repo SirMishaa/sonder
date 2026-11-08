@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\ArtistRole;
 use App\Services\Music\YouTubeMusic\YouTubeMusicMapper;
 
 $fixture = fn (string $name): mixed => json_decode(
@@ -31,12 +32,41 @@ it('keeps songs, albums, artists and playlists and drops episodes, podcasts and 
         ->and($results->playlists[0]->ref->externalId)->toBe('RDCLAK5uy_nP1U38z5TIWBgTTiXDBgO_3DaHSaotjbc');
 });
 
-it('maps a song without credited artists with an empty artist list', function () use ($fixture): void {
-    $track = (new YouTubeMusicMapper())->searchResults($fixture('catalog-search'))->tracks[0];
+it('credits top result card songs to the top artist', function () use ($fixture): void {
+    $tracks = (new YouTubeMusicMapper())->searchResults($fixture('catalog-search'))->tracks;
 
-    expect($track->title)->toBe('Engel (Live in Mexico City)')
-        ->and($track->artists)->toBe([])
-        ->and($track->durationSeconds)->toBe(275);
+    expect($tracks[0]->title)->toBe('Engel (Live in Mexico City)')
+        ->and($tracks[0]->durationSeconds)->toBe(275)
+        ->and($tracks[0]->artistNames())->toBe('Rammstein')
+        ->and($tracks[0]->artists[0]->ref?->externalId)->toBe('UCs6GGpd9zvsYghuYe0VDFUQ')
+        ->and($tracks[0]->artists[0]->role)->toBe(ArtistRole::Main)
+        ->and($tracks[1]->artistNames())->toBe('Rammstein')
+        ->and($tracks[2]->artistNames())->toBe('Rammstein');
+});
+
+it('leaves an empty-artist song outside the top card uncredited', function (): void {
+    $song = fn (string $title, array $artists): stdClass => (object) [
+        'resultType' => 'song',
+        'title' => $title,
+        'videoId' => 'v-'.$title,
+        'artists' => $artists,
+    ];
+
+    $results = (new YouTubeMusicMapper())->searchResults([
+        (object) [
+            'resultType' => 'artist',
+            'category' => 'Top result',
+            'artists' => [(object) ['name' => 'Apashe', 'id' => 'UCapashe']],
+        ],
+        $song('Card song', []),
+        $song('Credited card song', [(object) ['name' => 'Other', 'id' => 'UCother']]),
+        (object) ['resultType' => 'album', 'title' => 'An album', 'browseId' => 'MPREb_1', 'artists' => []],
+        $song('Later song', []),
+    ]);
+
+    expect($results->tracks[0]->artistNames())->toBe('Apashe')
+        ->and($results->tracks[1]->artistNames())->toBe('Other')
+        ->and($results->tracks[2]->artists)->toBe([]);
 });
 
 it('maps a search song without album to a null album', function () use ($fixture): void {
