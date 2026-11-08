@@ -577,5 +577,15 @@
     "Sent from YouTube": "Envoyé depuis YouTube",
     "Precise volume, through the Sonder extension": "Volume précis, grâce à l'extension Sonder",
     "Install the Sonder extension to go below 1 %": "Installe l'extension Sonder pour descendre sous 1 %",
-    "In your library": "Dans votre bibliothèque"
+    "In your library": "Dans votre bibliothèque",
+    "Newest": "Plus récents",
+    "Oldest": "Plus anciens",
+    "Popular": "Populaires",
+    "A → Z": "A → Z",
+    "List": "Liste",
+    "By album": "Par album",
+    "Singles": "Singles",
+    "Sort": "Trier",
+    "Display": "Affichage",
+    ":count result|:count results": ":count résultat|:count résultats"
 }
