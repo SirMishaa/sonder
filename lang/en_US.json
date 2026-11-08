@@ -297,5 +297,21 @@
     "Artists": "Artists",
     "Playlists": "Playlists",
     "Retry": "Retry",
-    "Play": "Play"
+    "Play": "Play",
+    "Recent": "Recent",
+    "Up next": "Up next",
+    "Go to": "Go to",
+    "YouTube Music": "YouTube Music",
+    "Catalog unavailable": "Catalog unavailable",
+    "Queued :title next": "Queued :title next",
+    "Enter to open": "Enter to open",
+    "Enter to queue next, Shift+Enter to play now": "Enter to queue next, Shift+Enter to play now",
+    "Queue next": "Queue next",
+    "Run": "Run",
+    "Play now": "Play now",
+    "Navigate": "Navigate",
+    "All results for “:query”": "All results for “:query”",
+    "Remove from recent": "Remove from recent",
+    "Search an artist, an album, a track…": "Search an artist, an album, a track…",
+    "Search YouTube Music, or jump to a playlist, a queued track, a page or an action.": "Search YouTube Music, or jump to a playlist, a queued track, a page or an action."
 }
