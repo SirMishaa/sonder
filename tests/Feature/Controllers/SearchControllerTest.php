@@ -57,7 +57,7 @@ it('narrows results to one type', function (): void {
         ->assertOk()
         ->assertInertia(fn (AssertableInertia $page) => $page->where('type', 'albums')->loadDeferredProps(fn (AssertableInertia $reload) => $reload->has('results')));
 
-    expect($this->fakeProvider()->calls[0]['filter'])->toBe(CatalogFilter::Albums);
+    expect($this->fakeProvider()->calls[0])->toHaveKey('filter', CatalogFilter::Albums);
 });
 
 it('rejects an unknown type', function (): void {
@@ -167,7 +167,7 @@ it('throttles suggestions per user', function (): void {
     $this->fakeProvider()->searchResults = FakeProviderAdapter::aCatalogResults();
     $user = User::factory()->create();
 
-    foreach (range(1, 120) as $attempt) {
+    for ($i = 0; $i < 120; $i++) {
         $this->actingAs($user)->getJson(route('search.suggestions', ['q' => 'Rammstein']))->assertOk();
     }
 

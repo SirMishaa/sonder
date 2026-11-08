@@ -14,7 +14,7 @@ beforeEach(function (): void {
 });
 
 it('passes calls through while the minute budget lasts', function (): void {
-    foreach (range(1, 30) as $call) {
+    for ($i = 0; $i < 30; $i++) {
         $this->gateway->library('cookie');
     }
 
@@ -22,7 +22,7 @@ it('passes calls through while the minute budget lasts', function (): void {
 });
 
 it('refuses the call over the minute budget without reaching YouTube Music', function (): void {
-    foreach (range(1, 30) as $call) {
+    for ($i = 0; $i < 30; $i++) {
         $this->gateway->library('cookie');
     }
 
@@ -43,7 +43,7 @@ it('caps the calls of an hour even when each minute stays under budget', functio
 });
 
 it('gives every account its own budget', function (): void {
-    foreach (range(1, 30) as $call) {
+    for ($i = 0; $i < 30; $i++) {
         $this->gateway->library('cookie-a');
     }
 
@@ -53,7 +53,7 @@ it('gives every account its own budget', function (): void {
 });
 
 it('refuses catalog calls over the catalog budget', function (): void {
-    foreach (range(1, 120) as $hit) {
+    for ($i = 0; $i < 120; $i++) {
         Limiter::hit('youtube-music-catalog:minute:catalog', 60);
     }
 
@@ -62,7 +62,7 @@ it('refuses catalog calls over the catalog budget', function (): void {
 });
 
 it('keeps the catalog budget apart from account budgets', function (): void {
-    foreach (range(1, 30) as $call) {
+    for ($i = 0; $i < 30; $i++) {
         $this->gateway->library('cookie');
     }
 
