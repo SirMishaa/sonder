@@ -127,6 +127,24 @@ return [
     |
     */
 
-    'serializable_classes' => false,
+    'serializable_classes' => [
+        App\Enums\ArtistRole::class,
+        App\Enums\CatalogFilter::class,
+        App\Enums\Provider::class,
+        App\Enums\SourceKind::class,
+        App\Services\Music\Data\CatalogAlbum::class,
+        App\Services\Music\Data\CatalogAlbumSummary::class,
+        App\Services\Music\Data\CatalogArtist::class,
+        App\Services\Music\Data\CatalogArtistSummary::class,
+        App\Services\Music\Data\CatalogPlaylistSummary::class,
+        App\Services\Music\Data\CatalogResults::class,
+        App\Services\Music\Data\CatalogVideo::class,
+        App\Services\Music\Data\ProviderRef::class,
+        App\Services\Music\Data\RemoteAlbum::class,
+        App\Services\Music\Data\RemoteArtist::class,
+        App\Services\Music\Data\RemotePlaylist::class,
+        App\Services\Music\Data\RemotePlaylistSummary::class,
+        App\Services\Music\Data\RemoteTrack::class,
+    ],
 
 ];

@@ -31,7 +31,7 @@ final readonly class SearchCatalog
             return new CatalogResults(null, [], [], [], []);
         }
 
-        $key = sprintf('catalog:search:%s:%s:%d', hash('xxh128', $normalized), $filter->value ?? 'all', $limit);
+        $key = sprintf('catalog:search:%s:%s:%d', hash('xxh128', $normalized), $filter instanceof CatalogFilter ? $filter->value : 'all', $limit);
 
         return Cache::remember(
             $key,

@@ -5,8 +5,10 @@ declare(strict_types=1);
 use App\Actions\CountAlbumTracks;
 use App\Actions\DescribeAlbum;
 use App\Actions\DescribeArtist;
+use App\Actions\DescribePublicPlaylist;
 use App\Actions\SearchCatalog;
 use App\Exceptions\Providers\ProviderUnavailable;
+use Illuminate\Support\Facades\Cache;
 use Tests\Support\FakeProviderAdapter;
 
 it('caches a search for ten minutes per normalized query', function (): void {
@@ -83,4 +85,45 @@ it('counts only cached albums when asked', function (): void {
 
     expect(resolve(CountAlbumTracks::class)->handle(['MPREb_a', 'MPREb_b'], cachedOnly: true))->toBe(['MPREb_a' => 7])
         ->and($this->fakeProvider()->calls)->toBe([]);
+});
+
+it('caches a public playlist for a day', function (): void {
+    $this->fakeProvider()->publicPlaylists['PL_1'] = FakeProviderAdapter::aPlaylist('PL_1');
+
+    resolve(DescribePublicPlaylist::class)->handle('PL_1');
+    resolve(DescribePublicPlaylist::class)->handle('PL_1');
+
+    expect($this->fakeProvider()->callCount('publicPlaylist'))->toBe(1);
+
+    $this->travel(25)->hours();
+    resolve(DescribePublicPlaylist::class)->handle('PL_1');
+
+    expect($this->fakeProvider()->callCount('publicPlaylist'))->toBe(2);
+});
+
+it('gets cached catalog data back equal after a real serialize round-trip', function (): void {
+    config(['cache.stores.array.serialize' => true]);
+    Cache::forgetDriver('array');
+
+    $album = FakeProviderAdapter::aCatalogAlbum();
+    $results = FakeProviderAdapter::aCatalogResults();
+    $playlist = FakeProviderAdapter::aPlaylist('PL_1');
+    $this->fakeProvider()->albums[$album->summary->ref->externalId] = $album;
+    $this->fakeProvider()->searchResults = $results;
+    $this->fakeProvider()->publicPlaylists['PL_1'] = $playlist;
+
+    $cases = [
+        [fn () => resolve(DescribeAlbum::class)->handle($album->summary->ref->externalId), $album, 'album'],
+        [fn () => resolve(SearchCatalog::class)->handle('rammstein'), $results, 'search'],
+        [fn () => resolve(DescribePublicPlaylist::class)->handle('PL_1'), $playlist, 'publicPlaylist'],
+    ];
+
+    foreach ($cases as [$fetch, $original, $method]) {
+        $fetch();
+        $cached = $fetch();
+
+        expect($cached)->toEqual($original)
+            ->and($cached)->not->toBe($original)
+            ->and($this->fakeProvider()->callCount($method))->toBe(1);
+    }
 });
