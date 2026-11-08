@@ -10,13 +10,13 @@ use App\Models\User;
 use App\Models\YouTubeMusicAccount;
 use App\Services\Music\Data\RemoteTrack;
 use App\Support\MusicText;
-use Illuminate\Support\Facades\DB;
 
 final readonly class MatchLibraryTracks
 {
     /**
      * Which catalog tracks the user's library holds: by video id, else by
-     * normalized title and first artist.
+     * normalized title and first artist. The user's rows are fetched once
+     * and compared in PHP, as normalization cannot be done in SQL.
      *
      * @param  list<RemoteTrack>  $tracks
      * @return array<int, bool> index in $tracks => in the library
@@ -27,17 +27,6 @@ final readonly class MatchLibraryTracks
             return [];
         }
 
-        $videoIds = [];
-        $titles = [];
-
-        foreach ($tracks as $track) {
-            if ($track->ref !== null) {
-                $videoIds[] = $track->ref->externalId;
-            }
-
-            $titles[] = mb_strtolower($track->title);
-        }
-
         $ids = [];
         $keys = [];
 
@@ -46,10 +35,6 @@ final readonly class MatchLibraryTracks
                 'youtube_music_account_id',
                 YouTubeMusicAccount::query()->select('id')->where('user_id', $user->id),
             ))
-            ->where(function ($query) use ($videoIds, $titles): void {
-                $query->whereIn('youtube_video_id', $videoIds)
-                    ->orWhereIn(DB::raw('lower(title)'), $titles);
-            })
             ->get(['youtube_video_id', 'title', 'artists'])
             ->each(function (Track $track) use (&$ids, &$keys): void {
                 if ($track->youtube_video_id !== null) {
