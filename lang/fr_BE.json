@@ -644,5 +644,14 @@
     ":count listen|:count listens": ":count écoute|:count écoutes",
     "About": "À propos",
     "Read more": "Lire la suite",
-    "Show less": "Réduire"
+    "Show less": "Réduire",
+    ":count min": ":count min",
+    ":hours h :minutes min": ":hours h :minutes min",
+    "Duration": "Durée",
+    "Plays": "Écoutes",
+    ":count of :total": ":count sur :total",
+    "Coming soon": "Bientôt disponible",
+    "Save as playlist": "Enregistrer comme playlist",
+    "More by :artist": "Plus de :artist",
+    "This album has no tracks": "Cet album n'a aucun titre"
 }

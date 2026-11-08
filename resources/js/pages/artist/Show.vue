@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import { trans } from 'laravel-vue-i18n';
-import { Copy, Ellipsis, ExternalLink, Play, Shuffle } from 'lucide-vue-next';
+import { Play, Shuffle } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AlbumCard from '@/components/catalog/AlbumCard.vue';
 import ArtistAside from '@/components/catalog/ArtistAside.vue';
 import ArtistCard from '@/components/catalog/ArtistCard.vue';
 import CatalogError from '@/components/catalog/CatalogError.vue';
+import CatalogMenu from '@/components/catalog/CatalogMenu.vue';
 import VideoCard from '@/components/catalog/VideoCard.vue';
 import AlbumGroup from '@/components/music/AlbumGroup.vue';
 import Artwork from '@/components/music/Artwork.vue';
@@ -14,22 +15,13 @@ import GenreTags from '@/components/music/GenreTags.vue';
 import GroupToggle from '@/components/music/GroupToggle.vue';
 import SortControl from '@/components/music/SortControl.vue';
 import TrackRow from '@/components/music/TrackRow.vue';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useAlbumGrouping } from '@/composables/useAlbumGrouping';
 import { useCatalogSort } from '@/composables/useCatalogSort';
 import { useDiscographyTab } from '@/composables/useDiscographyTab';
 import type { DiscographyTab } from '@/composables/useDiscographyTab';
-import { usePlayer } from '@/composables/usePlayer';
-import { useToast } from '@/composables/useToast';
-import { useTrackTap } from '@/composables/useTrackTap';
+import { useTrackListPlayback } from '@/composables/useTrackListPlayback';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { formatCompactNumber, parseCompactCount } from '@/lib/i18n';
-import { shuffled } from '@/lib/utils';
 
 defineOptions({ layout: AppLayout });
 
@@ -41,8 +33,6 @@ type Props = {
 
 const props = defineProps<Props>();
 
-const player = usePlayer();
-const { toast } = useToast();
 const trackSort = useCatalogSort('artist.tracks');
 const albumSort = useCatalogSort('artist.albums');
 const { grouped, group } = useAlbumGrouping();
@@ -51,7 +41,6 @@ const source = computed(() => ({
     playlistId: null,
     title: props.page?.artist.name ?? '',
 }));
-const { tap, preventSelection } = useTrackTap(() => source.value);
 
 /** A count YouTube Music abbreviates ("43.3M"), shortened in the active language. */
 function compact(value: string | null): string | null {
@@ -104,8 +93,18 @@ const groupStarts = computed(() => {
         return start;
     });
 });
-const playable = computed(() =>
-    tracks.value.some((track) => track.isAvailable),
+const {
+    player,
+    playable,
+    isCurrent,
+    play,
+    shuffle,
+    onTrackTap,
+    preventSelection,
+} = useTrackListPlayback(
+    () => tracks.value,
+    () => source.value,
+    'search',
 );
 
 const tabs = computed<{ value: DiscographyTab; label: string }[]>(() =>
@@ -163,31 +162,6 @@ function albumCount(
     return props.albumTrackCounts[album.id] ?? album.trackCount;
 }
 
-function isCurrent(index: number): boolean {
-    const track = tracks.value[index];
-
-    return (
-        track !== undefined &&
-        player.isCurrentTrack(source.value.playlistId, track, index)
-    );
-}
-
-function play(index: number): void {
-    player.playTracks(tracks.value, index, source.value, 'search');
-}
-
-function shuffle(): void {
-    player.playTracks(shuffled(tracks.value), 0, source.value, 'search');
-}
-
-function onTrackTap(event: MouseEvent, index: number): void {
-    const track = tracks.value[index];
-
-    if (track?.isAvailable) {
-        tap(event, track, index, () => play(index));
-    }
-}
-
 function indexOf(track: App.Data.CatalogTrackData): number {
     return tracks.value.indexOf(track);
 }
@@ -217,15 +191,6 @@ const youTubeMusicUrl = computed(() =>
         ? `https://music.youtube.com/channel/${encodeURIComponent(props.page.artist.id)}`
         : '',
 );
-
-async function copyLink(): Promise<void> {
-    try {
-        await navigator.clipboard.writeText(window.location.href);
-        toast(trans('Link copied'));
-    } catch {
-        toast(trans('Could not copy the link'));
-    }
-}
 </script>
 
 <template>
@@ -289,7 +254,7 @@ async function copyLink(): Promise<void> {
                     >
                         <button
                             type="button"
-                            class="play"
+                            class="round-play"
                             :disabled="!playable"
                             :aria-label="$t('Play')"
                             :title="$t('Play')"
@@ -299,7 +264,7 @@ async function copyLink(): Promise<void> {
                         </button>
                         <button
                             type="button"
-                            class="button"
+                            class="action-button"
                             :disabled="!playable"
                             @click="shuffle"
                         >
@@ -307,39 +272,7 @@ async function copyLink(): Promise<void> {
                                 $t('Shuffle')
                             }}
                         </button>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger
-                                class="button icon"
-                                :aria-label="$t('More')"
-                                :title="$t('More')"
-                            >
-                                <Ellipsis class="size-4" />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                class="min-w-52 rounded-lg"
-                                align="start"
-                                :side-offset="6"
-                            >
-                                <DropdownMenuItem as-child>
-                                    <a
-                                        :href="youTubeMusicUrl"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="cursor-pointer"
-                                    >
-                                        <ExternalLink class="size-4" />
-                                        {{ $t('Open in YouTube Music') }}
-                                    </a>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    class="cursor-pointer"
-                                    @select="copyLink"
-                                >
-                                    <Copy class="size-4" />
-                                    {{ $t('Copy link') }}
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <CatalogMenu :you-tube-music-url="youTubeMusicUrl" />
                     </div>
                 </div>
             </header>
@@ -554,66 +487,6 @@ async function copyLink(): Promise<void> {
     height: 3px;
     border-radius: 999px;
     background: var(--color-faint);
-}
-
-.play {
-    display: grid;
-    place-items: center;
-    width: 46px;
-    height: 46px;
-    border-radius: 999px;
-    background: var(--accent-grad-d);
-    color: var(--color-amber-ink);
-    box-shadow: 0 10px 24px -12px oklch(0.66 0.17 48 / 0.8);
-    transition:
-        transform 140ms,
-        filter 140ms;
-}
-
-.play:hover:not(:disabled) {
-    filter: brightness(1.06);
-}
-
-.play:active:not(:disabled) {
-    transform: scale(0.95);
-}
-
-.button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    height: 40px;
-    padding: 0 16px;
-    border: 1px solid var(--color-line);
-    border-radius: 9px;
-    background: oklch(0.19 0.013 60 / 0.8);
-    font-weight: 600;
-    transition:
-        background 140ms,
-        border-color 140ms,
-        transform 140ms;
-}
-
-.button.icon {
-    width: 40px;
-    padding: 0;
-}
-
-.button:hover:not(:disabled),
-.button[data-state='open'] {
-    border-color: oklch(0.38 0.014 60);
-    background: var(--color-raised);
-}
-
-.button:active:not(:disabled) {
-    transform: scale(0.97);
-}
-
-.play:disabled,
-.button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }
 
 /* The aside sits beside the content once the page itself is wide enough. */

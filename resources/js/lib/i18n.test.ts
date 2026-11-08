@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { parseCompactCount } from '@/lib/i18n';
+import { formatListeningTime, parseCompactCount } from '@/lib/i18n';
 
 describe('parseCompactCount', () => {
     it('reads the abbreviated counts YouTube Music gives', () => {
@@ -19,5 +19,14 @@ describe('parseCompactCount', () => {
         expect(parseCompactCount('many')).toBeNull();
         expect(parseCompactCount('43,3 M')).toBeNull();
         expect(parseCompactCount('12X')).toBeNull();
+    });
+});
+
+describe('formatListeningTime', () => {
+    it('gives minutes under an hour, hours and minutes past it', () => {
+        expect(formatListeningTime(48 * 60 + 20)).toBe('48 min');
+        expect(formatListeningTime(40)).toBe('1 min');
+        expect(formatListeningTime(3600 + 12 * 60)).toBe('1 h 12 min');
+        expect(formatListeningTime(2 * 3600)).toBe('2 h');
     });
 });

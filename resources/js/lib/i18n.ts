@@ -1,4 +1,4 @@
-import { getActiveLanguage } from 'laravel-vue-i18n';
+import { getActiveLanguage, trans } from 'laravel-vue-i18n';
 
 type Catalog = Record<string, string>;
 
@@ -85,4 +85,22 @@ export function formatAgo(
     return new Intl.RelativeTimeFormat(languageTag(), {
         numeric: 'auto',
     }).format(-amount, unit);
+}
+
+/** A running time as "48 min" or "1 h 12 min", rounded to the minute. */
+export function formatListeningTime(seconds: number): string {
+    const totalMinutes = Math.max(1, Math.round(seconds / 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours === 0) {
+        return trans(':count min', { count: String(minutes) });
+    }
+
+    return minutes === 0
+        ? trans(':hours h', { hours: String(hours) })
+        : trans(':hours h :minutes min', {
+              hours: String(hours),
+              minutes: String(minutes),
+          });
 }

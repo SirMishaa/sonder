@@ -261,6 +261,69 @@
         color: var(--color-amber-ink);
     }
 
+    /* The round amber play button that leads a catalog page's actions. */
+    .round-play {
+        display: grid;
+        place-items: center;
+        width: 46px;
+        height: 46px;
+        border-radius: 999px;
+        background: var(--accent-grad-d);
+        color: var(--color-amber-ink);
+        box-shadow: 0 10px 24px -12px oklch(0.66 0.17 48 / 0.8);
+        transition:
+            transform 140ms,
+            filter 140ms;
+    }
+
+    .round-play:hover:not(:disabled) {
+        filter: brightness(1.06);
+    }
+
+    .round-play:active:not(:disabled) {
+        transform: scale(0.95);
+    }
+
+    /* A 40px secondary action beside it (Shuffle, the ⋯ menu). */
+    .action-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 16px;
+        border: 1px solid var(--color-line);
+        border-radius: 9px;
+        background: oklch(0.19 0.013 60 / 0.8);
+        font-weight: 600;
+        white-space: nowrap;
+        transition:
+            background 140ms,
+            border-color 140ms,
+            transform 140ms;
+    }
+
+    .action-button.icon {
+        width: 40px;
+        padding: 0;
+    }
+
+    .action-button:hover:not(:disabled),
+    .action-button[data-state='open'] {
+        border-color: oklch(0.38 0.014 60);
+        background: var(--color-raised);
+    }
+
+    .action-button:active:not(:disabled) {
+        transform: scale(0.97);
+    }
+
+    .round-play:disabled,
+    .action-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
     .skeleton {
         position: relative;
         overflow: hidden;

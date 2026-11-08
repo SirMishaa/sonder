@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useResizeObserver } from '@vueuse/core';
-import { computed, ref, useTemplateRef, watch } from 'vue';
+import { computed } from 'vue';
+import ClampedDescription from '@/components/catalog/ClampedDescription.vue';
 import { useRelativeTime } from '@/composables/useRelativeTime';
 import { formatNumber } from '@/lib/i18n';
 
@@ -30,33 +30,6 @@ const stats = computed(() => [
     { count: props.inLibrary.albumCount, label: 'album|albums' },
     { count: props.inLibrary.listenCount, label: 'listen|listens' },
 ]);
-
-const expanded = ref(false);
-
-/** Line breaks only once expanded; clamped, the text runs on. */
-const shownDescription = computed(() =>
-    expanded.value
-        ? (props.description ?? '').trim()
-        : (props.description ?? '').replace(/\s+/g, ' ').trim(),
-);
-const overflowing = ref(false);
-
-watch(
-    () => props.artistId,
-    () => {
-        expanded.value = false;
-    },
-);
-const text = useTemplateRef<HTMLElement>('text');
-
-/** Whether the clamp hides anything, so "Read more" only shows when useful. */
-useResizeObserver(text, () => {
-    const element = text.value;
-
-    if (element && !expanded.value) {
-        overflowing.value = element.scrollHeight > element.clientHeight + 1;
-    }
-});
 </script>
 
 <template>
@@ -140,28 +113,11 @@ useResizeObserver(text, () => {
 
         <section v-if="description" class="about">
             <h2 class="aside-title">{{ $t('About') }}</h2>
-            <p
-                id="artist-description"
-                ref="text"
-                class="desc"
-                :class="{ open: expanded }"
-                v-text="shownDescription"
+            <ClampedDescription
+                :key="artistId"
+                :text="description"
+                :source="$t('YouTube Music')"
             />
-            <div class="mt-1.5 flex items-baseline gap-2.5">
-                <button
-                    v-if="overflowing"
-                    type="button"
-                    class="text-[12.5px] font-semibold text-paper transition-colors duration-150 hover:text-amber"
-                    aria-controls="artist-description"
-                    :aria-expanded="expanded"
-                    @click="expanded = !expanded"
-                >
-                    {{ expanded ? $t('Show less') : $t('Read more') }}
-                </button>
-                <span class="text-xs text-faint">{{
-                    $t('YouTube Music')
-                }}</span>
-            </div>
         </section>
     </aside>
 </template>
@@ -189,20 +145,5 @@ useResizeObserver(text, () => {
 .about {
     padding-top: 24px;
     border-top: 1px solid oklch(0.285 0.012 60 / 0.55);
-}
-
-.desc {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4;
-    color: var(--color-dim);
-    font-size: 13px;
-    line-height: 1.55;
-}
-
-.desc.open {
-    display: block;
-    white-space: pre-line;
 }
 </style>

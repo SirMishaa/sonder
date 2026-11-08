@@ -339,5 +339,15 @@
     ":count listen|:count listens": ":count listen|:count listens",
     "About": "About",
     "Read more": "Read more",
-    "Show less": "Show less"
+    "Show less": "Show less",
+    ":count min": ":count min",
+    ":hours h": ":hours h",
+    ":hours h :minutes min": ":hours h :minutes min",
+    "Duration": "Duration",
+    "Plays": "Plays",
+    ":count of :total": ":count of :total",
+    "Coming soon": "Coming soon",
+    "Save as playlist": "Save as playlist",
+    "More by :artist": "More by :artist",
+    "This album has no tracks": "This album has no tracks"
 }
