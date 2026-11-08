@@ -18,8 +18,8 @@ const grouped = defineModel<boolean>({ required: true });
             class="rounded-md px-[9px] py-0.5 text-xs font-semibold whitespace-nowrap transition-colors duration-150"
             :class="
                 grouped === option.value
-                    ? 'bg-raised text-ink shadow-[inset_0_0_0_1px_var(--color-line)]'
-                    : 'text-dim hover:text-ink'
+                    ? 'bg-raised text-paper shadow-[inset_0_0_0_1px_var(--color-line)]'
+                    : 'text-dim hover:text-paper'
             "
             :aria-pressed="grouped === option.value"
             @click="grouped = option.value"

@@ -129,7 +129,7 @@ function onKeydownEnter(event: KeyboardEvent): void {
                         <Link
                             v-if="catalog.artistId"
                             :href="ArtistController.show(catalog.artistId)"
-                            class="truncate hover:text-ink hover:underline"
+                            class="truncate hover:text-paper hover:underline"
                             >{{ track.artists }}</Link
                         >
                         <span v-else class="truncate">{{ track.artists }}</span>
@@ -156,7 +156,7 @@ function onKeydownEnter(event: KeyboardEvent): void {
             <Link
                 v-if="catalog.albumId && track.album"
                 :href="AlbumController.show(catalog.albumId)"
-                class="relative truncate hover:text-ink hover:underline"
+                class="relative truncate hover:text-paper hover:underline"
                 >{{ track.album }}</Link
             >
             <span v-else class="relative truncate">{{ track.album }}</span>

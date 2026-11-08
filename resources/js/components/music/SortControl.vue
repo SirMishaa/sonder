@@ -15,7 +15,7 @@ const labels: Record<CatalogSort, string> = {
 
 <template>
     <label
-        class="relative inline-flex cursor-pointer items-center gap-1.5 rounded-[7px] border border-line py-0.5 pr-2 pl-[7px] text-xs font-semibold text-dim transition-colors duration-150 focus-within:text-ink hover:text-ink"
+        class="relative inline-flex cursor-pointer items-center gap-1.5 rounded-[7px] border border-line py-0.5 pr-2 pl-[7px] text-xs font-semibold text-dim transition-colors duration-150 focus-within:border-[oklch(0.38_0.014_60)] focus-within:text-paper focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-amber hover:border-[oklch(0.38_0.014_60)] hover:text-paper"
         :title="$t('Sort')"
     >
         <ArrowDownUp class="size-3.5" aria-hidden="true" />
@@ -50,6 +50,6 @@ const labels: Record<CatalogSort, string> = {
 
 .sort-select option {
     background: var(--color-panel);
-    color: var(--color-ink);
+    color: var(--color-paper);
 }
 </style>

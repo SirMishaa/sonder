@@ -11,15 +11,22 @@ export type AlbumGroupData = {
 /**
  * "List / By album" preference plus the grouping itself. Groups follow the
  * first appearance of each album in the (already sorted) list; tracks
- * without an album are collected under "Singles".
+ * without an album are collected under "Singles". An album the track does
+ * not name is titled from `albums`, else "Unknown album".
  */
 export function useAlbumGrouping(): {
     grouped: Ref<boolean>;
-    group: (tracks: App.Data.CatalogTrackData[]) => AlbumGroupData[];
+    group: (
+        tracks: App.Data.CatalogTrackData[],
+        albums?: App.Data.CatalogAlbumData[],
+    ) => AlbumGroupData[];
 } {
     const grouped = useLocalStorage('sonder.grouped', false);
 
-    function group(tracks: App.Data.CatalogTrackData[]): AlbumGroupData[] {
+    function group(
+        tracks: App.Data.CatalogTrackData[],
+        albums: App.Data.CatalogAlbumData[] = [],
+    ): AlbumGroupData[] {
         const groups = new Map<string, AlbumGroupData>();
 
         for (const track of tracks) {
@@ -30,7 +37,10 @@ export function useAlbumGrouping(): {
                 entry = {
                     albumId: track.albumId,
                     title: track.albumId
-                        ? (track.album ?? trans('Singles'))
+                        ? (track.album ??
+                          albums.find(({ id }) => id === track.albumId)
+                              ?.title ??
+                          trans('Unknown album'))
                         : trans('Singles'),
                     tracks: [],
                 };

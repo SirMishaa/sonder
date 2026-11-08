@@ -121,4 +121,10 @@ describe('useCatalogSort', () => {
         expect(useCatalogSort('albums').sort.value).toBe('az');
         expect(useCatalogSort('songs').sort.value).toBe('recent');
     });
+
+    it('falls back to newest for an unknown stored value', () => {
+        localStorage.setItem('sonder.sort.songs', 'loudest');
+
+        expect(useCatalogSort('songs').sort.value).toBe('recent');
+    });
 });

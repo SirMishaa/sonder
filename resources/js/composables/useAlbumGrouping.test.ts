@@ -63,6 +63,26 @@ describe('useAlbumGrouping', () => {
         expect(groups[0].tracks.map((t) => t.videoId)).toEqual(['1', '3']);
     });
 
+    it('names an album without title from the albums lookup', () => {
+        const { group } = useAlbumGrouping();
+        const album = {
+            id: 'a',
+            title: 'Mutter',
+            type: 'Album',
+            year: 2001,
+            artists: 'Rammstein',
+            artistId: null,
+            thumbnailUrl: null,
+            trackCount: 11,
+        };
+
+        expect(group([track('1', null, 'a')], [album])[0]).toMatchObject({
+            albumId: 'a',
+            title: 'Mutter',
+        });
+        expect(group([track('2', null, 'b')])[0].title).not.toBe('Singles');
+    });
+
     it('persists the grouped flag', async () => {
         expect(useAlbumGrouping().grouped.value).toBe(false);
 

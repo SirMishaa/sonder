@@ -1,4 +1,5 @@
 import { useLocalStorage } from '@vueuse/core';
+import { computed } from 'vue';
 import type { Ref } from 'vue';
 
 export type CatalogSort = 'recent' | 'oldest' | 'popular' | 'az';
@@ -15,6 +16,7 @@ const collator = new Intl.Collator('fr', { sensitivity: 'base' });
 /**
  * Sort choice for one catalog section, persisted per storage key.
  * `popular` keeps the provider order; ties and unknown years stay stable.
+ * A stored value that is no longer a known sort reads as `recent`.
  */
 export function useCatalogSort(storageKey: string): {
     sort: Ref<CatalogSort>;
@@ -24,10 +26,17 @@ export function useCatalogSort(storageKey: string): {
         titleOf: (item: T) => string,
     ) => T[];
 } {
-    const sort = useLocalStorage<CatalogSort>(
+    const stored = useLocalStorage<string>(
         `sonder.sort.${storageKey}`,
         'recent',
     );
+    const sort = computed<CatalogSort>({
+        get: () =>
+            CATALOG_SORTS.find((known) => known === stored.value) ?? 'recent',
+        set: (value) => {
+            stored.value = value;
+        },
+    });
 
     function apply<T>(
         items: T[],
