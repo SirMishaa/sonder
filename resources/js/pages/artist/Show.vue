@@ -2,7 +2,7 @@
 import { Head } from '@inertiajs/vue3';
 import { trans } from 'laravel-vue-i18n';
 import { Copy, Ellipsis, ExternalLink, Play, Shuffle } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import AlbumCard from '@/components/catalog/AlbumCard.vue';
 import ArtistAside from '@/components/catalog/ArtistAside.vue';
 import ArtistCard from '@/components/catalog/ArtistCard.vue';
@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAlbumGrouping } from '@/composables/useAlbumGrouping';
 import { useCatalogSort } from '@/composables/useCatalogSort';
+import { useDiscographyTab } from '@/composables/useDiscographyTab';
+import type { DiscographyTab } from '@/composables/useDiscographyTab';
 import { usePlayer } from '@/composables/usePlayer';
 import { useToast } from '@/composables/useToast';
 import { useTrackTap } from '@/composables/useTrackTap';
@@ -30,8 +32,6 @@ import { formatCompactNumber, parseCompactCount } from '@/lib/i18n';
 import { shuffled } from '@/lib/utils';
 
 defineOptions({ layout: AppLayout });
-
-type DiscographyTab = 'all' | 'albums' | 'singles';
 
 type Props = {
     page: App.Data.ArtistPageData | null;
@@ -108,7 +108,6 @@ const playable = computed(() =>
     tracks.value.some((track) => track.isAvailable),
 );
 
-const tab = ref<DiscographyTab>('all');
 const tabs = computed<{ value: DiscographyTab; label: string }[]>(() =>
     props.page?.albums.length && props.page.singles.length
         ? [
@@ -117,6 +116,10 @@ const tabs = computed<{ value: DiscographyTab; label: string }[]>(() =>
               { value: 'singles', label: trans('Singles & EP') },
           ]
         : [],
+);
+const tab = useDiscographyTab(
+    () => tabs.value.map(({ value }) => value),
+    () => props.page?.artist.id ?? null,
 );
 const discography = computed(() => {
     const list =

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core';
-import { computed, ref, useTemplateRef } from 'vue';
+import { computed, ref, useTemplateRef, watch } from 'vue';
 import { useRelativeTime } from '@/composables/useRelativeTime';
 import { formatNumber } from '@/lib/i18n';
 
@@ -39,6 +39,13 @@ const shownDescription = computed(() =>
         : (props.description ?? '').replace(/\s+/g, ' ').trim(),
 );
 const overflowing = ref(false);
+
+watch(
+    () => props.description,
+    () => {
+        expanded.value = false;
+    },
+);
 const text = useTemplateRef<HTMLElement>('text');
 
 /** Whether the clamp hides anything, so "Read more" only shows when useful. */
@@ -106,7 +113,7 @@ useResizeObserver(text, () => {
                     <ol>
                         <li
                             v-for="(track, index) in inLibrary.topTracks"
-                            :key="track.title"
+                            :key="`${index}-${track.title}`"
                             class="grid grid-cols-[16px_minmax(0,1fr)_auto] gap-2.5 py-[5px] text-[13px]"
                         >
                             <span class="text-right text-faint tabular-nums">{{
