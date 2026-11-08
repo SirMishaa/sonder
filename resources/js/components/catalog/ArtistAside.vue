@@ -10,6 +10,7 @@ import { formatNumber } from '@/lib/i18n';
  * clamped to four lines with its source.
  */
 type Props = {
+    artistId: string;
     artistName: string;
     inLibrary: App.Data.ArtistInLibraryData;
     description: string | null;
@@ -41,7 +42,7 @@ const shownDescription = computed(() =>
 const overflowing = ref(false);
 
 watch(
-    () => props.description,
+    () => props.artistId,
     () => {
         expanded.value = false;
     },

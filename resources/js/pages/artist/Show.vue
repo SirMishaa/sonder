@@ -467,6 +467,7 @@ async function copyLink(): Promise<void> {
 
                 <ArtistAside
                     class="side"
+                    :artist-id="page.artist.id"
                     :artist-name="page.artist.name"
                     :in-library="page.inLibrary"
                     :description="page.description"
