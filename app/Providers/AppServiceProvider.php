@@ -77,6 +77,13 @@ final class AppServiceProvider extends ServiceProvider
             Limit::perHour(500)->by('youtube-music:hour:'.$account),
         ]);
 
+        // Anonymous catalog calls (search, artist, album, public playlist)
+        // share one budget, apart from the accounts..
+        RateLimiter::for(RateLimitedGateway::CATALOG_LIMITER, fn (string $key): array => [
+            Limit::perMinute(120)->by('youtube-music-catalog:minute:'.$key),
+            Limit::perHour(3000)->by('youtube-music-catalog:hour:'.$key),
+        ]);
+
         // credits.fm documents no limit: stay polite. MusicBrainz allows one
         // request a second per IP and blocks clients that exceed it. Last.fm
         // allows five requests a second averaged over five minutes.

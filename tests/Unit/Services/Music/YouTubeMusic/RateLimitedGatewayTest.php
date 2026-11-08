@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Exceptions\Providers\ProviderRateLimited;
 use App\Services\Music\YouTubeMusic\Gateway\RateLimitedGateway;
 use Illuminate\Cache\RateLimiter;
+use Illuminate\Support\Facades\RateLimiter as Limiter;
 use Tests\Support\FakeYouTubeMusicGateway;
 
 beforeEach(function (): void {
@@ -49,4 +50,23 @@ it('gives every account its own budget', function (): void {
     $this->gateway->library('cookie-b');
 
     expect($this->inner->callCount('library'))->toBe(31);
+});
+
+it('refuses catalog calls over the catalog budget', function (): void {
+    foreach (range(1, 120) as $hit) {
+        Limiter::hit('youtube-music-catalog:minute:catalog', 60);
+    }
+
+    expect(fn () => $this->gateway->search('daft punk', null, 20))->toThrow(ProviderRateLimited::class);
+    expect($this->inner->callCount('search'))->toBe(0);
+});
+
+it('keeps the catalog budget apart from account budgets', function (): void {
+    foreach (range(1, 30) as $call) {
+        $this->gateway->library('cookie');
+    }
+
+    $this->inner->artists['UC1'] = (object) ['name' => 'Daft Punk'];
+
+    expect($this->gateway->artist('UC1'))->toBe($this->inner->artists['UC1']);
 });

@@ -44,6 +44,32 @@ final readonly class YtmusicapiGateway implements YouTubeMusicGateway
         return $this->object($this->call('playlist', $cookie, fn (YTMusic $music): mixed => $music->get_playlist($playlistId, limit: 500)));
     }
 
+    public function search(string $query, ?string $filter, int $limit): array
+    {
+        $payload = $this->call('search', null, fn (YTMusic $music): mixed => $music->search($query, filter: $filter, limit: $limit));
+
+        if (! is_array($payload)) {
+            throw new ProviderUnavailable(Provider::YouTubeMusic, 'the search result is not a list');
+        }
+
+        return array_values(array_filter($payload, is_object(...)));
+    }
+
+    public function artist(string $channelId): object
+    {
+        return $this->object($this->call('artist', null, fn (YTMusic $music): mixed => $music->get_artist($channelId)));
+    }
+
+    public function album(string $browseId): object
+    {
+        return $this->object($this->call('album', null, fn (YTMusic $music): mixed => $music->get_album($browseId)));
+    }
+
+    public function publicPlaylist(string $playlistId): object
+    {
+        return $this->object($this->call('public_playlist', null, fn (YTMusic $music): mixed => $music->get_playlist($playlistId, limit: 500)));
+    }
+
     /**
      * The package declares no return types; an unexpected shape means the
      * private API changed, which is an outage from Sonder's point of view.
@@ -60,11 +86,11 @@ final readonly class YtmusicapiGateway implements YouTubeMusicGateway
      * served the session signed in and which cookies it rotated, so a
      * signed-out cookie shows up in traces the moment it happens. Traces, not
      * metrics: the daily check makes a single call per process, which a
-     * cumulative counter would lose.
+     * cumulative counter would lose. A null cookie is an anonymous catalog call.
      *
      * @param  callable(YTMusic): mixed  $callback
      */
-    private function call(string $endpoint, #[SensitiveParameter] string $cookie, callable $callback): mixed
+    private function call(string $endpoint, #[SensitiveParameter] ?string $cookie, callable $callback): mixed
     {
         $observer = new SessionObserver();
 
@@ -73,7 +99,7 @@ final readonly class YtmusicapiGateway implements YouTubeMusicGateway
             ->setAttribute('sonder.youtube_music.endpoint', $endpoint)
             ->measure(function () use ($cookie, $callback, $observer): mixed {
                 try {
-                    return $callback(new YTMusic($cookie, requests_session: $observer->attach(CookielessSession::create())));
+                    return $callback(new YTMusic($cookie ?? '', requests_session: $observer->attach(CookielessSession::create())));
                 } catch (Throwable $failure) {
                     throw $this->errors->translate($failure);
                 } finally {

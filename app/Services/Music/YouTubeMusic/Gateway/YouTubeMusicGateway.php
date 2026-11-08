@@ -31,4 +31,29 @@ interface YouTubeMusicGateway
      * @throws ProviderException
      */
     public function playlist(string $cookie, string $playlistId): object;
+
+    /**
+     * Anonymous catalog search; no account is involved.
+     *
+     * @param  string|null  $filter  songs, albums, artists or playlists
+     * @return list<object>
+     *
+     * @throws ProviderException
+     */
+    public function search(string $query, ?string $filter, int $limit): array;
+
+    /**
+     * @throws ProviderException
+     */
+    public function artist(string $channelId): object;
+
+    /**
+     * @throws ProviderException
+     */
+    public function album(string $browseId): object;
+
+    /**
+     * @throws ProviderException
+     */
+    public function publicPlaylist(string $playlistId): object;
 }
