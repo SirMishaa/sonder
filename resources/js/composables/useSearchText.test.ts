@@ -29,6 +29,43 @@ describe('useSearchText', () => {
         expect(text.value).toBe('mutter');
     });
 
+    it('follows history back to the query it last requested', async () => {
+        const query = ref('');
+        const { text, requested } = useSearchText(() => query.value);
+
+        text.value = 'ram';
+        requested('ram');
+        query.value = 'ram';
+        await nextTick();
+        query.value = 'x';
+        await nextTick();
+        query.value = 'ram';
+        await nextTick();
+
+        expect(text.value).toBe('ram');
+    });
+
+    it('stays in sync through back and forward', async () => {
+        const query = ref('');
+        const { text, requested } = useSearchText(() => query.value);
+
+        text.value = 'a';
+        requested('a');
+        query.value = 'a';
+        await nextTick();
+        text.value = 'b';
+        requested('b');
+        query.value = 'b';
+        await nextTick();
+
+        for (const step of ['a', 'b', 'a', 'b']) {
+            query.value = step;
+            await nextTick();
+
+            expect(text.value).toBe(step);
+        }
+    });
+
     it('squishes the typed text', () => {
         const { text, current } = useSearchText(() => '');
 

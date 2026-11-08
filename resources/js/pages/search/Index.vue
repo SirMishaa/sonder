@@ -87,9 +87,8 @@ function submit(): void {
     }
 }
 
+/** Switches the result type, carrying any text still waiting on the debounce. */
 function choose(type: SearchType | null): void {
-    debounce.stop();
-
     if (type !== props.type) {
         visit(current(), type, false);
     }
