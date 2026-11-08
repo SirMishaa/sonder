@@ -32,11 +32,44 @@ export function formatDateTime(timestamp: string): string {
     }).format(new Date(timestamp));
 }
 
-/** A large number, shortened in the active language, e.g. "171 k" / "171K" / "1,2 M". */
-export function formatCompactNumber(value: number): string {
-    return new Intl.NumberFormat(languageTag(), { notation: 'compact' }).format(
-        value,
+/**
+ * A large number, shortened in the active language, e.g. "171 k" / "171K" /
+ * "1,2 M"; `significantDigits` keeps more of it ("43,3 M" instead of "43 M").
+ */
+export function formatCompactNumber(
+    value: number,
+    significantDigits?: number,
+): string {
+    return new Intl.NumberFormat(languageTag(), {
+        notation: 'compact',
+        maximumSignificantDigits: significantDigits,
+    }).format(value);
+}
+
+const COMPACT_SUFFIXES: Record<string, number> = {
+    '': 1,
+    K: 1e3,
+    M: 1e6,
+    B: 1e9,
+};
+
+/**
+ * A count as YouTube Music abbreviates it ("43.3M", "2.41K", "1,234"), as a
+ * number to format in the active language. Null when it reads otherwise.
+ */
+export function parseCompactCount(value: string): number | null {
+    const match = /^(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*([KMB]?)$/i.exec(
+        value.trim(),
     );
+
+    if (!match) {
+        return null;
+    }
+
+    const amount = Number(match[1].replaceAll(',', ''));
+    const factor = COMPACT_SUFFIXES[match[2].toUpperCase()];
+
+    return Math.round(amount * factor);
 }
 
 /** A number in the active language, e.g. "1 262" / "1,262". */
