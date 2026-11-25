@@ -24,6 +24,7 @@ use App\Services\Music\YouTubeMusic\Gateway\YouTubeMusicGateway;
 use App\Services\Music\YouTubeMusic\Gateway\YtmusicapiGateway;
 use App\Services\Music\YouTubeMusic\YouTubeMusicAdapter;
 use App\Services\Music\YouTubeMusic\YouTubeMusicCredentials;
+use App\Services\OpenTelemetry\OtlpClientCertificate;
 use Illuminate\Cache\RateLimiter as CacheRateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\DevCommands;
@@ -58,13 +59,14 @@ final class AppServiceProvider extends ServiceProvider
             $this->app->make(CallBudget::class),
         ));
 
-        $this->app->singleton(ProviderRegistry::class, fn (): ProviderRegistry => (new ProviderRegistry($this->app))
+        $this->app->singleton(ProviderRegistry::class, fn (): ProviderRegistry => new ProviderRegistry($this->app)
             ->register(Provider::YouTubeMusic, YouTubeMusicAdapter::class, YouTubeMusicCredentials::class));
 
         Gate::define('viewInertiaDevTools', fn (User $user): bool => $user->email === 'mishaa.pro@proton.me');
 
         $this->registerOpenTelemetryLoggerFallback();
         $this->identifyTelemetryInstance();
+        $this->materializeOtlpClientCertificate();
     }
 
     public function boot(): void
@@ -146,6 +148,27 @@ final class AppServiceProvider extends ServiceProvider
     {
         if (blank(config('opentelemetry.service_instance_id'))) {
             config(['opentelemetry.service_instance_id' => (string) Str::uuid()]);
+        }
+    }
+
+    /**
+     * Turn the base64 mTLS certificate and key from the environment into the
+     * files the OTLP exporter expects. Runs in register(): the OpenTelemetry
+     * package only builds its exporters when it boots.
+     */
+    private function materializeOtlpClientCertificate(): void
+    {
+        $certificate = config('opentelemetry.exporters.otlp.client_certificate_base64');
+        $key = config('opentelemetry.exporters.otlp.client_key_base64');
+
+        $paths = OtlpClientCertificate::materialize(
+            is_string($certificate) ? $certificate : null,
+            is_string($key) ? $key : null,
+            storage_path('framework/otel'),
+        );
+
+        foreach ($paths as $configKey => $path) {
+            config(["opentelemetry.exporters.otlp.{$configKey}" => $path]);
         }
     }
 

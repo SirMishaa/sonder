@@ -188,6 +188,16 @@ return [
              * Override protocol for logs export
              */
             'logs_protocol' => env(Variables::OTEL_EXPORTER_OTLP_LOGS_PROTOCOL),
+            /**
+             * mTLS (Cloudflare client certificate in front of otel.mishaa.dev).
+             * Paths, as in the spec; on Laravel Cloud set the *_BASE64 variables
+             * instead and AppServiceProvider writes the files at boot.
+             */
+            'certificate' => env(Variables::OTEL_EXPORTER_OTLP_CERTIFICATE),
+            'client_certificate' => env('OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE'),
+            'client_key' => env('OTEL_EXPORTER_OTLP_CLIENT_KEY'),
+            'client_certificate_base64' => env('OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE_BASE64'),
+            'client_key_base64' => env('OTEL_EXPORTER_OTLP_CLIENT_KEY_BASE64'),
         ],
 
         'zipkin' => [

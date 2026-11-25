@@ -126,7 +126,8 @@
         },
         "patches": {
             "keepsuit/laravel-opentelemetry": {
-                "Drop empty-datapoint metrics before OTLP export (Grafana Cloud/Mimir rejects the whole batch otherwise, e.g. the SDK's own otel.sdk.* self-diagnostics counters)": "patches/keepsuit-laravel-opentelemetry-drop-empty-metrics.patch"
+                "Drop empty-datapoint metrics before OTLP export (Grafana Cloud/Mimir rejects the whole batch otherwise, e.g. the SDK's own otel.sdk.* self-diagnostics counters)": "patches/keepsuit-laravel-opentelemetry-drop-empty-metrics.patch",
+                "Pass the OTLP CA/client certificate/key files to the HTTP transport (mTLS), as the OTEL_EXPORTER_OTLP_*CERTIFICATE*/CLIENT_KEY spec variables describe": "patches/keepsuit-laravel-opentelemetry-otlp-client-certificate.patch"
             }
         }
     },

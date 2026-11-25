@@ -1,0 +1,47 @@
+--- a/src/LaravelOpenTelemetryServiceProvider.php
++++ b/src/LaravelOpenTelemetryServiceProvider.php
+@@ -356,6 +356,9 @@
+      *     logs_protocol?: string,
+      *     logs_timeout?: int,
+      *     logs_headers?: string|array<string, string>,
++     *     certificate?: string|null,
++     *     client_certificate?: string|null,
++     *     client_key?: string|null,
+      * }  $config
+      * @param  Signals::TRACE|Signals::METRICS|Signals::LOGS  $signal
+      * @return TransportInterface<ContentTypes::PROTOBUF|ContentTypes::JSON>
+@@ -366,6 +369,12 @@
+ 
+         $maxRetries = $config['max_retries'] ?? 3;
+ 
++        // TLS files (paths), as in the OTEL_EXPORTER_OTLP_CERTIFICATE /
++        // OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE / OTEL_EXPORTER_OTLP_CLIENT_KEY spec variables.
++        $cacert = ($config['certificate'] ?? null) ?: null;
++        $cert = ($config['client_certificate'] ?? null) ?: null;
++        $key = ($config['client_key'] ?? null) ?: null;
++
+         $protocol = match ($signal) {
+             Signals::TRACE => $config['traces_protocol'] ?? null,
+             Signals::METRICS => $config['metrics_protocol'] ?? null,
+@@ -402,7 +411,10 @@
+                 contentType: 'application/json',
+                 headers: $headers,
+                 timeout: $timeoutMillis / 1000,
+-                maxRetries: $maxRetries
++                maxRetries: $maxRetries,
++                cacert: $cacert,
++                cert: $cert,
++                key: $key,
+             ),
+             default => (new OtlpHttpTransportFactory)->create(
+                 endpoint: (new HttpEndpointResolver)->resolveToString($endpoint, $signal),
+@@ -410,6 +422,9 @@
+                 headers: $headers,
+                 timeout: $timeoutMillis / 1000,
+                 maxRetries: $maxRetries,
++                cacert: $cacert,
++                cert: $cert,
++                key: $key,
+             ),
+         };
+     }
